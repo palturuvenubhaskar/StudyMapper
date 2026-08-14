@@ -1,0 +1,187 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
+import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
+import { useToast } from '../../components/ToastProvider/ToastProvider';
+import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import './PlacementHub.css';
+
+export default function AptitudePractice() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const timerRef = useRef(null);
+
+  const [profile, setProfile] = useState(null);
+  const [subcategory, setSubcategory] = useState('Quantitative Aptitude');
+  const [difficulty, setDifficulty] = useState('Medium');
+  const [generating, setGenerating] = useState(false);
+
+  // Quiz state
+  const [questions, setQuestions] = useState([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [quizDone, setQuizDone] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+
+  useEffect(() => {
+    (async () => { const p = await getStudentProfile(); setProfile(p); })();
+  }, []);
+
+  // Timer
+  useEffect(() => {
+    if (questions.length > 0 && !quizDone && !showExplanation) {
+      timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+      return () => clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [questions.length, currentIdx, quizDone, showExplanation]);
+
+  const generateQuestions = async () => {
+    setGenerating(true);
+    try {
+      const messages = generateAptitudeQuestionsPrompt(subcategory, difficulty, 5);
+      const responseText = await callOpenRouter(messages);
+      const parsed = extractJson(responseText);
+
+      if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+        const sid = await createPlacementSession(profile?.id || 'guest', 'aptitude');
+        const saved = await savePlacementQuestions(sid, parsed.map(q => ({
+          ...q, category: 'aptitude', subcategory, difficulty
+        })));
+        setSessionId(sid);
+        setQuestions(saved);
+        setCurrentIdx(0);
+        setSelectedAnswer(null);
+        setShowExplanation(false);
+        setTimer(0);
+        setQuizDone(false);
+        toast('Questions generated!', 'success');
+      } else {
+        toast('Failed to generate questions. Try again.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Error: ' + err.message, 'error');
+    }
+    setGenerating(false);
+  };
+
+  const handleAnswer = async (answer) => {
+    if (selectedAnswer !== null) return;
+    clearInterval(timerRef.current);
+    setSelectedAnswer(answer);
+    setShowExplanation(true);
+
+    const q = questions[currentIdx];
+    const isCorrect = answer === q.correct_answer;
+    await updatePlacementQuestion(q.id, { user_answer: answer, is_correct: isCorrect, time_taken: timer });
+    setQuestions(prev => prev.map((qq, i) => i === currentIdx ? { ...qq, user_answer: answer, is_correct: isCorrect } : qq));
+  };
+
+  const nextQuestion = () => {
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx(currentIdx + 1);
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+      setTimer(0);
+    } else {
+      setQuizDone(true);
+    }
+  };
+
+  const correctCount = questions.filter(q => q.is_correct).length;
+  const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  return (
+    <div className="practice-page">
+      <button className="btn btn-ghost back-btn" onClick={() => navigate('/placement')}>
+        <ArrowLeft size={18} /> Back to Placement Hub
+      </button>
+
+      <h1 style={{ marginBottom: '24px' }}>Aptitude Practice</h1>
+
+      <div className="practice-controls">
+        <select className="input" value={subcategory} onChange={e => setSubcategory(e.target.value)}>
+          <option>Quantitative Aptitude</option>
+          <option>Logical Reasoning</option>
+          <option>Verbal Ability</option>
+        </select>
+        <select className="input" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+          <option>Easy</option>
+          <option>Medium</option>
+          <option>Hard</option>
+        </select>
+        <button className="btn btn-primary" onClick={generateQuestions} disabled={generating}>
+          {generating ? <><Loader size={16} className="spin-icon" /> Generating...</> : <><RefreshCw size={16} /> Generate 5 Questions</>}
+        </button>
+      </div>
+
+      {questions.length > 0 && !quizDone && (
+        <div className="quiz-container">
+          <div className="glass-card quiz-card">
+            <div className="quiz-progress">
+              <span>Question {currentIdx + 1} of {questions.length}</span>
+              <div className="quiz-timer"><Clock size={14} /> {formatTime(timer)}</div>
+              <span className="badge badge-accent">{difficulty}</span>
+            </div>
+
+            <div className="quiz-question">{questions[currentIdx].question}</div>
+
+            <div className="quiz-options">
+              {(questions[currentIdx].options || []).map((opt, i) => {
+                const letter = String.fromCharCode(65 + i);
+                let cls = 'quiz-option';
+                if (selectedAnswer !== null) {
+                  if (letter === questions[currentIdx].correct_answer) cls += ' correct';
+                  else if (letter === selectedAnswer) cls += ' wrong';
+                } else if (selectedAnswer === letter) {
+                  cls += ' selected';
+                }
+                return (
+                  <button key={i} className={cls} onClick={() => handleAnswer(letter)}>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+
+            {showExplanation && (
+              <div className="quiz-explanation">
+                <strong>{selectedAnswer === questions[currentIdx].correct_answer ? '✅ Correct!' : `❌ Wrong! Answer: ${questions[currentIdx].correct_answer}`}</strong>
+                <br /><br />
+                {questions[currentIdx].explanation}
+              </div>
+            )}
+
+            <div className="quiz-nav">
+              <div></div>
+              {showExplanation && (
+                <button className="btn btn-primary" onClick={nextQuestion}>
+                  {currentIdx < questions.length - 1 ? 'Next Question →' : 'See Results'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {quizDone && (
+        <div className="quiz-container">
+          <div className="glass-card quiz-results">
+            <h2>Quiz Complete!</h2>
+            <div className="score-display">{correctCount}/{questions.length}</div>
+            <p style={{ marginBottom: '24px' }}>
+              {correctCount === questions.length ? '🎉 Perfect Score!' : correctCount >= questions.length / 2 ? '👍 Good job! Keep practicing.' : '💪 Keep going, practice makes perfect!'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={generateQuestions}>Generate More Questions</button>
+              <button className="btn btn-secondary" onClick={() => navigate('/placement')}>Back to Hub</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,172 @@
+.lr-container {
+  padding: 24px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Sections */
+.lr-section {
+  margin-bottom: 32px;
+}
+
+.lr-section-header {
+  cursor: pointer;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  transition: var(--transition-fast);
+}
+
+.lr-section-header:hover {
+  background: var(--bg-surface-hover);
+}
+
+.lr-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lr-section-title h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.lr-spacer {
+  width: 20px;
+}
+
+.lr-section-content {
+  position: relative;
+  padding-left: 26px; /* Space for the timeline line */
+}
+
+/* Removed timeline lines for cleaner look */
+
+/* Children container */
+.lr-children {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Node Container */
+.lr-node-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Node Row */
+.lr-node-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Icons */
+.lr-node-icon-wrapper {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.lr-icon-done { color: var(--success); }
+.lr-icon-in-progress { color: var(--warning); }
+.lr-icon-pending { color: var(--text-muted); }
+
+/* Node Box */
+.lr-node-box {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  transition: var(--transition-fast);
+}
+
+.lr-node-box.clickable {
+  cursor: pointer;
+}
+
+.lr-node-box.clickable:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+/* Status Overrides for Node Box */
+.lr-node-box.done {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.lr-node-box.in-progress {
+  border-color: var(--warning);
+  /* background: var(--warning-soft);  assuming we had one, otherwise transparent */
+}
+
+/* Node Types Overrides */
+.lr-node-box.type-topic {
+  background: var(--bg-surface-active);
+  border-color: var(--border-strong);
+}
+
+.lr-node-box.type-subtopic {
+  background: var(--bg-surface);
+}
+
+.lr-node-box.type-subgroup {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+}
+
+/* Content */
+.lr-node-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.lr-node-desc {
+  margin: 6px 0 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.lr-node-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--accent-brand);
+  font-weight: 500;
+}
+
+/* Subchildren (nested topics) */
+.lr-subchildren {
+  margin-top: 16px;
+  padding-left: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+/* Removed sub timeline lines */

@@ -1,0 +1,173 @@
+.create-page {
+  padding: 32px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  margin-bottom: 20px;
+}
+
+.create-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.create-hero h1 {
+  margin-bottom: 8px;
+}
+
+.create-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.create-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.create-option:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
+}
+
+.create-option svg {
+  color: var(--accent);
+}
+
+.create-option h3 {
+  font-size: 1.15rem;
+}
+
+.create-option p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.manual-form {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.manual-form .input {
+  font-size: 1.1rem;
+  padding: 16px;
+}
+
+/* Review */
+.review-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.review-subject-edit {
+  flex: 1;
+  min-width: 200px;
+}
+
+.review-subject-edit label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.subject-name-input {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.review-units {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-unit {
+  padding: 20px;
+}
+
+.unit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.unit-reorder,
+.topic-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unit-reorder .btn,
+.topic-reorder .btn {
+  padding: 2px 6px;
+  font-size: 0.7rem;
+}
+
+.unit-title-input {
+  font-weight: 600;
+  font-size: 1.05rem;
+  flex: 1;
+}
+
+.unit-topics {
+  padding-left: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topic-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.add-topic-btn {
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
+@media (max-width: 600px) {
+  .create-options {
+    grid-template-columns: 1fr;
+  }
+  .review-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .unit-topics {
+    padding-left: 16px;
+  }
+}

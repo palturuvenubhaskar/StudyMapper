@@ -1,0 +1,118 @@
+.premium-custom-select {
+  position: relative;
+  width: 100%;
+  min-width: 150px;
+  user-select: none;
+}
+
+.premium-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.premium-select-trigger:hover,
+.premium-select-trigger.open {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-brand);
+}
+
+.premium-select-trigger .chevron {
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.premium-select-trigger .chevron.open {
+  transform: rotate(180deg);
+  color: var(--accent-brand);
+}
+
+.premium-select-dropdown {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+.premium-select-dropdown.bottom {
+  top: calc(100% + 4px);
+  animation: slideDown 0.15s ease-out;
+}
+
+.premium-select-dropdown.top {
+  bottom: calc(100% + 4px);
+  animation: slideUp 0.15s ease-out;
+}
+
+.premium-select-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.premium-select-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+.premium-select-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.premium-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.premium-select-option:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.premium-select-option.selected {
+  background: var(--accent-brand-soft);
+  color: var(--accent-brand);
+  font-weight: 500;
+}
+
+.check-icon {
+  color: var(--accent-brand);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

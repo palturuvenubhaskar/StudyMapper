@@ -1,0 +1,23 @@
+{
+  "name": "StudyMapper",
+  "short_name": "StudyMapper",
+  "description": "AI-powered offline learning platform. Convert any syllabus into organized study notes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/STUDYMAPPER%20LOGO.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/STUDYMAPPER%20LOGO.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

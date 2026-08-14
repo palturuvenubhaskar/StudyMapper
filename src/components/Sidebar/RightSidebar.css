@@ -1,0 +1,150 @@
+.right-sidebar {
+  width: 280px;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px 32px 16px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: none;
+}
+
+.right-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.rs-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.rs-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rs-section-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rs-section-link:hover {
+  color: var(--accent-brand);
+}
+
+.rs-courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.rs-course-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rs-course-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.rs-course-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-surface);
+}
+
+.rs-course-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.rs-course-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rs-course-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.rs-course-arrow {
+  color: var(--text-muted);
+}
+
+.rs-premium-banner {
+  margin-top: auto;
+  background: #000;
+  border-radius: var(--radius-2xl);
+  padding: 24px 16px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.rs-premium-3d-placeholder {
+  width: 120px;
+  height: 120px;
+  /* Simulating the 3D donut/torus graphic */
+  background: radial-gradient(circle at 30% 30%, #e2e8f0 0%, #94a3b8 100%);
+  border-radius: 50%;
+  box-shadow: inset -10px -10px 20px rgba(0,0,0,0.2), 10px 10px 20px rgba(0,0,0,0.2);
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.rs-premium-3d-placeholder::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background: #000;
+  border-radius: 50%;
+  box-shadow: inset 5px 5px 10px rgba(255,255,255,0.2);
+}
+
+.rs-premium-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.rs-premium-text:hover {
+  color: #d8b4fe;
+}
