@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, getPlacementStats, saveStudentProfile } from '../../data/repository';
 import { ArrowLeft, Brain, Code2, Users, TrendingUp, ChevronRight, Target, Briefcase, Award, Edit2, Check, X } from 'lucide-react';
-import './PlacementHub.css';
+import './Placement.css';
 
-export default function PlacementHub() {
+export default function Placement() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);

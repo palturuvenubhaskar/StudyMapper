@@ -5,7 +5,7 @@ import { generateCodingProblemPrompt, generateLearningLessonPrompt, extractJson,
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen, CheckCircle2, Circle, Lock, Play, RotateCcw, Type, Calculator, GitBranch, Repeat, Box, List, TerminalSquare, Database, Cpu, FileCode, Clock } from 'lucide-react';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
-import './CodingHub.css';
+import './CodingPractice.css';
 
 const LANGUAGES = ['HTML', 'CSS', 'C', 'C++', 'C#', 'Java', 'Python', 'JavaScript', 'TypeScript', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'R', 'Dart', 'Scala'];
 const TOPICS = ['Arrays', 'Strings', 'Linked Lists', 'Stacks', 'Queues', 'Trees', 'Graphs', 'Dynamic Programming', 'Recursion', 'Sorting', 'Searching', 'Hashing', 'Greedy', 'Backtracking'];
@@ -50,7 +50,7 @@ const CURRICULUMS = {
 
 const getCurriculum = (lang) => CURRICULUMS[lang] || CURRICULUMS.default;
 
-export default function CodingHub() {
+export default function CodingPractice() {
   const navigate = useNavigate();
   const toast = useToast();
 

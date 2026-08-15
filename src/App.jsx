@@ -13,11 +13,11 @@ import BookmarksPage from './pages/BookmarksPage/BookmarksPage';
 import CreateQuestionBank from './pages/CreateQuestionBank/CreateQuestionBank';
 import QuestionBankView from './pages/QuestionBankView/QuestionBankView';
 import SkillRoadmap from './pages/SkillRoadmap/SkillRoadmap';
-import PlacementHub from './pages/Placement/PlacementHub';
+import Placement from './pages/Placement/Placement';
 import AptitudePractice from './pages/Placement/AptitudePractice';
 import TechnicalInterview from './pages/Placement/TechnicalInterview';
 import HRInterview from './pages/Placement/HRInterview';
-import CodingHub from './pages/CodingPractice/CodingHub';
+import CodingPractice from './pages/CodingPractice/CodingPractice';
 import CodingWorkspace from './pages/CodingPractice/CodingWorkspace';
 import LearningWorkspace from './pages/CodingPractice/LearningWorkspace';
 import StudyPlanner from './pages/StudyPlanner/StudyPlanner';
@@ -55,11 +55,11 @@ function AppContent() {
             {/* AI Career Features */}
             <Route path="/roadmap" element={<SkillRoadmap />} />
             <Route path="/roadmap/:roadmapId" element={<SkillRoadmap />} />
-            <Route path="/placement" element={<PlacementHub />} />
+            <Route path="/placement" element={<Placement />} />
             <Route path="/placement/aptitude" element={<AptitudePractice />} />
             <Route path="/placement/technical" element={<TechnicalInterview />} />
             <Route path="/placement/hr" element={<HRInterview />} />
-            <Route path="/coding" element={<CodingHub />} />
+            <Route path="/coding" element={<CodingPractice />} />
             <Route path="/coding/workspace/:problemId" element={<CodingWorkspace />} />
             <Route path="/coding/learning/:lessonId" element={<LearningWorkspace />} />
             <Route path="/planner" element={<StudyPlanner />} />
