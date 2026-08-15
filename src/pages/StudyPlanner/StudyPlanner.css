@@ -309,3 +309,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .study-planner-container { padding: 16px; }
+  .planner-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .planner-layout { flex-direction: column !important; }
+  .sp-sidebar { width: 100% !important; margin-bottom: 24px; height: auto !important; position: static !important; }
+  .calendar-grid { grid-template-columns: repeat(7, 1fr) !important; gap: 4px; }
+  .calendar-day { padding: 4px !important; min-height: 60px !important; }
+  .kanban-board { flex-direction: column !important; }
+  .kanban-column { width: 100% !important; }
+}

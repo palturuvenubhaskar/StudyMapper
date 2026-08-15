@@ -99,5 +99,13 @@
   padding: 16px;
 }
 .dashed-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
+}
+
+@media (max-width: 768px) {
+  .create-qb-container { padding: 16px; }
+  .create-qb-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .cqb-layout { flex-direction: column !important; }
+  .cqb-main, .cqb-sidebar { width: 100% !important; border-left: none; padding: 0 !important; }
+  .form-grid { grid-template-columns: 1fr !important; }
 }

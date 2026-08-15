@@ -171,3 +171,11 @@
     padding-left: 16px;
   }
 }
+
+@media (max-width: 768px) {
+  .create-subject-container { padding: 16px; }
+  .cs-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .cs-layout { flex-direction: column !important; }
+  .cs-main, .cs-sidebar { width: 100% !important; border-left: none; padding: 0 !important; }
+  .form-grid { grid-template-columns: 1fr !important; }
+}

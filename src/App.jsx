@@ -27,6 +27,8 @@ import RightSidebar from './components/Sidebar/RightSidebar';
 import CommandPalette from './components/CommandPalette/CommandPalette';
 import Login from './pages/Login/Login';
 import Settings from './pages/Settings/Settings';
+import MobileHeader from './components/MobileHeader/MobileHeader';
+import MobileNav from './components/MobileNav/MobileNav';
 
 function AppContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -37,6 +39,7 @@ function AppContent() {
   return (
     <div className="app-layout">
       {!isLoginPage && <Sidebar />}
+      {!isLoginPage && <MobileHeader onSearchClick={() => setIsSearchOpen(true)} />}
       <div className="content-container">
         <div className={`main-content-wrapper ${isLoginPage ? 'full-width' : ''} ${!isDashboard ? 'no-right-sidebar' : ''}`}>
           <Routes>
@@ -67,6 +70,7 @@ function AppContent() {
         </div>
         {isDashboard && <RightSidebar />}
       </div>
+      {!isLoginPage && <MobileNav />}
       {!isLoginPage && <AIAssistant />}
       <CommandPalette isOpen={isSearchOpen} onClose={setIsSearchOpen} />
     </div>

@@ -6,7 +6,7 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Play, Loader, Code2, BookOpen, Sparkles } from 'lucide-react';
-import './CodingHub.css';
+import './CodingPractice.css';
 
 export default function LearningWorkspace() {
   const { lessonId } = useParams();

@@ -266,3 +266,10 @@
   color: var(--text-primary);
   word-break: break-word;
 }
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    display: none !important;
+  }
+}
+

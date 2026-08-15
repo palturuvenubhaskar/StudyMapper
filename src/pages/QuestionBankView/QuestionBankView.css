@@ -332,3 +332,11 @@
   50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
+
+@media (max-width: 768px) {
+  .qb-view-container { padding: 16px; }
+  .qb-view-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .test-workspace { flex-direction: column !important; }
+  .qb-view-main, .qb-view-sidebar { width: 100% !important; border-left: none; padding: 0 !important; }
+  .flashcards-grid, .questions-grid { grid-template-columns: 1fr !important; }
+}

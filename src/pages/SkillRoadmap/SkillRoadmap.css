@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap');
+
 /* ============================
    SKILL ROADMAP — roadmap.sh Style -> PREMIUM DESIGN
    ============================ */
@@ -1270,8 +1272,16 @@
 }
 
 /* Balsamiq Sans Font for Exact Precision Match */
-@import url('https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap');
-
 .fc-svg text, .fc-svg foreignObject div {
   font-family: 'Balsamiq Sans', 'Comic Sans MS', cursive !important;
+}
+
+@media (max-width: 768px) {
+  .skill-roadmap-page { padding: 16px; }
+  .rb-top-header { padding: 24px 16px; }
+  .rb-hero-card { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .roadmaps-grid { grid-template-columns: 1fr !important; }
+  .roadmap-canvas { overflow-x: auto; overflow-y: hidden; }
+  .rb-filters { flex-direction: column !important; width: 100%; align-items: stretch !important; gap: 12px !important; margin-top: 16px; }
+  .rb-filters > div { width: 100% !important; }
 }

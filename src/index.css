@@ -615,3 +615,39 @@ p {
   padding-left: 1em;
   color: var(--text-secondary);
 }
+
+/* ============================
+   MOBILE RESPONSIVENESS OVERRIDES
+   ============================ */
+
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .content-container {
+    border-radius: 0;
+    flex-direction: column;
+    margin-bottom: 70px; /* Space for Mobile Nav */
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .main-content-wrapper {
+    border-radius: 0;
+    overflow-y: visible; /* Let the content container scroll on mobile */
+    height: auto;
+    flex: none;
+  }
+
+  /* Prevent flex-height collapse for all page containers on mobile */
+  .main-content-wrapper > * {
+    height: auto !important;
+    flex: none !important;
+    overflow-y: visible !important;
+    min-height: 100%; /* Ensure they at least take up the screen if content is short */
+  }
+}
+
+

@@ -6,7 +6,7 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Send, MessageSquare } from 'lucide-react';
-import './PlacementHub.css';
+import './Placement.css';
 
 
 export default function HRInterview() {

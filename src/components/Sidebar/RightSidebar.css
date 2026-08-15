@@ -151,3 +151,14 @@
 .rs-premium-text:hover {
   color: #d8b4fe;
 }
+
+@media (max-width: 768px) {
+  .right-sidebar {
+    width: 100%;
+    height: auto;
+    padding: 24px 16px 80px 16px; /* Extra bottom padding for safe scrolling */
+    border-top: 1px solid var(--border-glass);
+    overflow: visible;
+  }
+}
+

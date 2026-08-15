@@ -4,7 +4,7 @@ import { getStudentProfile, createPlacementSession, savePlacementQuestions, upda
 import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
-import './PlacementHub.css';
+import './Placement.css';
 
 export default function AptitudePractice() {
   const navigate = useNavigate();

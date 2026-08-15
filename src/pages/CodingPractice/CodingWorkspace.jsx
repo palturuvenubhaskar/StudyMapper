@@ -6,7 +6,7 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Play, Loader, Eye, EyeOff, Code2, CheckCircle2 } from 'lucide-react';
-import './CodingHub.css';
+import './CodingPractice.css';
 
 export default function CodingWorkspace() {
   const { problemId } = useParams();

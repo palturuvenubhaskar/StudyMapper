@@ -127,3 +127,12 @@
   transform: translateX(20px);
   background-color: #ffffff;
 }
+
+@media (max-width: 768px) {
+  .settings-container { padding: 16px; }
+  .settings-layout { flex-direction: column !important; gap: 24px !important; }
+  .settings-sidebar { width: 100% !important; flex: none !important; margin-bottom: 24px; }
+  .settings-content { padding: 16px !important; width: 100% !important; }
+  .settings-section-title { font-size: 1.2rem; }
+  .btn { width: 100%; justify-content: center; margin-bottom: 8px; }
+}

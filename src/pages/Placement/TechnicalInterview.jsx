@@ -6,7 +6,7 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import './PlacementHub.css';
+import './Placement.css';
 
 
 const TOPICS = ['Data Structures', 'Algorithms', 'Operating Systems', 'DBMS', 'Computer Networks', 'OOP', 'C/C++', 'Java', 'Python', 'JavaScript'];

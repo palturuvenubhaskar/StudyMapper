@@ -162,3 +162,10 @@
   color: #ef4444;
   transform: scale(1.05);
 }
+
+@media (max-width: 768px) {
+  .bookmarks-page { padding: 16px; }
+  .bookmarks-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .bookmarks-controls { width: 100%; overflow-x: auto; padding-bottom: 8px; }
+  .bookmarks-grid { grid-template-columns: 1fr !important; }
+}

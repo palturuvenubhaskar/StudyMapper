@@ -647,3 +647,18 @@
     flex-direction: column;
   }
 }
+
+@media (max-width: 768px) {
+  .coding-hub { padding: 16px; }
+  .coding-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .hero-glow { display: none; }
+  .tracks-grid, .challenges-grid { grid-template-columns: 1fr !important; }
+  .workspace-layout { flex-direction: column !important; }
+  .workspace-pane, .workspace-editor { width: 100% !important; min-height: 400px; height: auto !important; }
+  .hero-stats-overview { flex-wrap: wrap; gap: 12px; }
+  .stat-pill { flex: 1; min-width: 120px; justify-content: center; }
+  .premium-generate-controls { flex-direction: column !important; width: 100%; }
+  .premium-form-group { min-width: 100%; }
+  .coding-tabs-container { flex-direction: column; width: 100%; }
+  .premium-tab { justify-content: center; width: 100%; }
+}

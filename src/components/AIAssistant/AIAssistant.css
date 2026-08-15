@@ -430,3 +430,19 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 768px) {
+  .ai-assistant-wrapper {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    height: 100vh !important;
+    z-index: 9999;
+  }
+  .ai-fab {
+    bottom: 90px !important; /* Above mobile nav */
+  }
+  .ai-sidebar {
+    height: 100vh !important;
+  }
+}

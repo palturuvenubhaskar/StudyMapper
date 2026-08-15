@@ -207,3 +207,11 @@
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+@media (max-width: 768px) {
+  .subject-view-container { padding: 16px; }
+  .sv-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .sv-layout { flex-direction: column !important; }
+  .sv-main, .sv-sidebar { width: 100% !important; border-left: none; padding: 0 !important; }
+  .topics-grid, .resources-grid { grid-template-columns: 1fr !important; }
+}

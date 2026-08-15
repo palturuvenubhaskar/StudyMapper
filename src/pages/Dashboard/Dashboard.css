@@ -279,3 +279,34 @@
   box-shadow: var(--shadow-md);
   border-color: rgba(255, 255, 255, 0.3);
 }
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 16px;
+    overflow-y: visible; /* Let the parent container handle scroll */
+    height: auto;
+    flex: none;
+  }
+
+  .fluid-hero-banner {
+    padding: 24px;
+    min-height: auto;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .donut1, .ring1, .ring2 {
+    display: none; /* Hide 3D decorations on mobile to save space and reduce clutter */
+  }
+}
+

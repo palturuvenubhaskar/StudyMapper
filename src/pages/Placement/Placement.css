@@ -552,3 +552,12 @@
     width: 100%;
   }
 }
+
+@media (max-width: 768px) {
+  .placement-hub { padding: 16px; }
+  .hub-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .hero-glow-hub { display: none; }
+  .roles-grid, .resources-grid, .placement-grid { grid-template-columns: 1fr !important; }
+  .prep-workspace { flex-direction: column !important; }
+  .prep-sidebar { width: 100% !important; border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 24px; }
+}

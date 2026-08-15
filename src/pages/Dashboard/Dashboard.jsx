@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSubjects, deleteSubject, getSubjectProgress, getUnitsForSubject, getAllQuestionBanks } from '../../data/repository';
 import { Search, Calendar, ChevronRight, MoreHorizontal, Play, Book, FileText, BarChart2, Plus, Award } from 'lucide-react';
+import StudyPlanner from '../StudyPlanner/StudyPlanner';
+import BookmarksPage from '../BookmarksPage/BookmarksPage';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -11,6 +13,13 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadSubjects = async () => {
     setLoading(true);
@@ -105,12 +114,23 @@ export default function Dashboard() {
                    <div style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{stats.avgProgress}%</div>
                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: '500' }}>Avg Progress</div>
                 </div>
-             </div>
-          </div>
+              </div>
+           </div>
 
 
-        </div>
-      )}
+         </div>
+       )}
+
+       {isMobile && !loading && (
+         <div className="mobile-dashboard-extensions">
+           <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-glass)' }}>
+             <StudyPlanner />
+           </div>
+           <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-glass)' }}>
+             <BookmarksPage />
+           </div>
+         </div>
+       )}
     </div>
   );
 }
