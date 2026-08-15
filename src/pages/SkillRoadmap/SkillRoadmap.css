@@ -3,14 +3,16 @@
    ============================ */
 
 .skill-roadmap-page {
-  padding: 0;
+  padding: 24px 32px 64px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
   height: 100%;
   overflow-y: auto;
   border-radius: var(--radius-2xl);
 }
 
 .back-btn {
-  margin: 16px 24px 0;
+  margin: 0 0 24px 0;
 }
 
 /* ============================
@@ -20,57 +22,92 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--bg-surface);
+  background: transparent;
   border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 
-/* Top Header */
+/* Top Header Hero Card */
 .rb-top-header {
   padding: 40px 64px 24px;
-  background: var(--bg-surface);
-  border-top-left-radius: var(--radius-2xl);
-  border-top-right-radius: var(--radius-2xl);
-  position: sticky;
-  top: 0;
-  z-index: 20;
 }
 
-.rb-header-content {
+.rb-hero-card {
+  position: relative;
+  padding: 48px 40px;
+  border-radius: 24px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  margin-bottom: 40px;
+  overflow: hidden;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-  max-width: 1400px;
-  margin: 0 auto 24px;
-  gap: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.hero-glow-roadmap {
+  position: absolute;
+  top: -50%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .rb-title-section {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.rb-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .rb-title {
-  font-size: 2.2rem;
+  font-size: 3rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  color: var(--text-primary);
+}
+
+.rb-title span {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .rb-subtitle {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--text-secondary);
-  line-height: 1.6;
 }
 
 /* Search */
+.rb-filters {
+  position: relative;
+  z-index: 1;
+}
+
 .rb-search-wrapper {
   position: relative;
   width: 320px;
-  flex-shrink: 0;
 }
 
 .rb-search-icon {
@@ -107,11 +144,9 @@
 /* Main Content */
 .rb-content {
   flex: 1;
-  padding: 48px 64px 100px;
+  padding: 0 0 100px;
   min-width: 0;
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
 }
 
 /* Group sections */
@@ -152,7 +187,9 @@
   justify-content: space-between;
   padding: 16px 20px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-light);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -252,9 +289,8 @@
   display: flex;
   flex-direction: row;
   gap: 32px;
-  padding: 32px 40px;
-  max-width: 1600px;
-  margin: 0 auto;
+  padding: 0 0 100px;
+  width: 100%;
   align-items: flex-start;
 }
 

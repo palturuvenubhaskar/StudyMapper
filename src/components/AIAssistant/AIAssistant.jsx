@@ -202,7 +202,7 @@ export default function AIAssistant() {
         {/* Left Sidebar (History) */}
         <div className={`ai-history-panel ${historyOpen ? '' : 'closed'}`}>
           <div className="ai-history-header">
-            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-bone)' }}>History</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>History</span>
             {/* Mobile close history button could go here */}
           </div>
           
@@ -214,7 +214,7 @@ export default function AIAssistant() {
           <div className="history-list">
             {groupSessionsByTime(sessions).map(group => (
               <div key={group.label} className="history-group">
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#948e9d', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 12px 4px 12px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 12px 4px 12px' }}>
                   {group.label}
                 </div>
                 {group.items.map(s => (
@@ -233,7 +233,7 @@ export default function AIAssistant() {
                             border: 'none', 
                             color: 'inherit', 
                             outline: 'none',
-                            borderBottom: '1px solid #494552'
+                            borderBottom: '1px solid var(--border-strong)'
                           }}
                           value={newTitle} 
                           onChange={e => setNewTitle(e.target.value)}

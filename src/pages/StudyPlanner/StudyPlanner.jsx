@@ -109,7 +109,7 @@ export default function StudyPlanner() {
 
   if (!profile) {
     return (
-      <div className="empty-state">
+      <div className="empty-state" style={{ background: 'transparent', border: 'none', height: '100%', flex: 1, marginTop: 0 }}>
         <BookOpen size={48} className="empty-icon" />
         <h3>Profile Required</h3>
         <p>Please complete your profile on the Dashboard to use the Study Planner.</p>

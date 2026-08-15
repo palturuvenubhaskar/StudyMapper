@@ -34,9 +34,10 @@
   position: relative;
   padding: 48px 40px;
   border-radius: 24px;
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-glass);
   border: 1px solid var(--border-glass);
   margin-bottom: 40px;
   overflow: hidden;
@@ -82,7 +83,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 .hero-title span {
@@ -143,8 +144,9 @@
 
 .premium-placement-card {
   position: relative;
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-glass);
   border-radius: 24px;
   padding: 24px;
@@ -262,6 +264,7 @@
 
 .stat-value {
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .progress-track {

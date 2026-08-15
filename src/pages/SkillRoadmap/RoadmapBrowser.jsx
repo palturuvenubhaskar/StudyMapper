@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Bookmark, BookmarkCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { Search, Bookmark, BookmarkCheck, Sparkles, ArrowRight, Map } from 'lucide-react';
 import { ALL_ROADMAPS, ROADMAP_CATEGORIES, getCategoryCounts, NEW_ROADMAPS } from './data/roadmapData';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
 
@@ -83,23 +83,25 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
   return (
     <div className="roadmap-browser">
       {/* Top Header & Navigation */}
-      <header className="rb-top-header">
-        <div className="rb-header-content">
-          <div className="rb-title-section">
-            <h1 className="rb-title">Skill Roadmaps</h1>
-            <p className="rb-subtitle">Community driven, up-to-date paths to learn any tool or technology.</p>
+      <div className="rb-hero-card">
+        <div className="hero-glow-roadmap"></div>
+        
+        <div className="rb-title-section">
+          <div className="rb-hero-badge"><Map size={16}/> Path Finder</div>
+          <h1 className="rb-title">Skill <span>Roadmaps</span></h1>
+          <p className="rb-subtitle">Community driven, up-to-date paths to learn any tool or technology.</p>
+        </div>
+        
+        <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ width: '220px' }}>
+            <PremiumSelect 
+              value={currentActiveDisplay}
+              onChange={handleCategoryChange}
+              options={categories.map(c => c.displayLabel)}
+            />
           </div>
           
-          <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div style={{ width: '220px' }}>
-              <PremiumSelect 
-                value={currentActiveDisplay}
-                onChange={handleCategoryChange}
-                options={categories.map(c => c.displayLabel)}
-              />
-            </div>
-            
-            <div className="rb-search-wrapper">
+          <div className="rb-search-wrapper">
               <Search size={16} className="rb-search-icon" />
               <input
                 type="text"
@@ -111,7 +113,6 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
             </div>
           </div>
         </div>
-      </header>
 
       {/* Main content */}
       <main className="rb-content">

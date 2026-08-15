@@ -48,12 +48,11 @@
   align-items: center;
   justify-content: center;
   padding: 80px 24px;
-  background: rgba(18, 18, 20, 0.6);
-  border: 1px dashed var(--border-strong);
-  border-radius: 24px;
+  background: transparent;
+  border: none;
+  height: 60vh;
   text-align: center;
-  margin-top: 32px;
-  backdrop-filter: blur(10px);
+  margin-top: 0;
 }
 
 .bookmarks-page .empty-state svg {

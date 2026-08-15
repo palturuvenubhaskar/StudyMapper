@@ -4,11 +4,12 @@
 
 :root {
   /* Core Colors */
-  --bg-root: linear-gradient(135deg, #d8f0ff 0%, #e8e3ff 50%, #fbe4e4 100%);
+  --bg-root: radial-gradient(at 0% 0%, #aee6ff 0px, transparent 50%), radial-gradient(at 100% 0%, #f8bbd0 0px, transparent 50%), radial-gradient(at 100% 100%, #ffe0b2 0px, transparent 50%), radial-gradient(at 0% 100%, #d1c4e9 0px, transparent 50%), #eef2ff;
   --bg-app: transparent;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #f8fafc;
-  --bg-surface-active: #f1f5f9;
+  --bg-panel: rgba(255, 255, 255, 0.2);
+  --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
+  --bg-surface-hover: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
+  --bg-surface-active: rgba(255, 255, 255, 0.9);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -62,11 +63,12 @@
 }
 
 [data-theme='light'] {
-  --bg-root: #F0F3FA;
-  --bg-app: #F0F3FA;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #F8FAFD;
-  --bg-surface-active: #E2E8F0;
+  --bg-root: radial-gradient(at 0% 0%, #7dd3fc 0px, transparent 50%), radial-gradient(at 100% 0%, #f9a8d4 0px, transparent 50%), radial-gradient(at 100% 100%, #fcd34d 0px, transparent 50%), radial-gradient(at 0% 100%, #c4b5fd 0px, transparent 50%), #e0e7ff;
+  --bg-app: transparent;
+  --bg-panel: rgba(255, 255, 255, 0.2);
+  --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
+  --bg-surface-hover: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
+  --bg-surface-active: rgba(255, 255, 255, 0.9);
 
   --text-primary: #0F172A;
   --text-secondary: #334155;
@@ -93,11 +95,12 @@
 }
 
 [data-theme='dark'] {
-  --bg-root: linear-gradient(135deg, #09090b 0%, #111116 50%, #0d0c12 100%);
+  --bg-root: #0a0a0f;
   --bg-app: transparent;
-  --bg-surface: #18181b;
-  --bg-surface-hover: #27272a;
-  --bg-surface-active: #3f3f46;
+  --bg-panel: #15151a;
+  --bg-surface: linear-gradient(135deg, rgba(35, 35, 42, 0.95) 0%, rgba(20, 20, 25, 0.8) 100%);
+  --bg-surface-hover: linear-gradient(135deg, rgba(45, 45, 52, 1) 0%, rgba(25, 25, 30, 0.9) 100%);
+  --bg-surface-active: rgba(50, 50, 55, 1);
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -105,7 +108,7 @@
 
   --border-light: rgba(255, 255, 255, 0.05);
   --border-strong: rgba(255, 255, 255, 0.12);
-  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-glass: rgba(255, 255, 255, 0.08);
 
   --bg-glass-container: rgba(24, 24, 27, 0.6);
   --bg-glass: rgba(24, 24, 27, 0.5);
@@ -216,9 +219,8 @@ a:hover {
   display: flex;
   flex-direction: row;
   min-width: 0;
-  background: var(--bg-surface);
+  background: var(--bg-panel);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-glass);
   overflow: hidden;
   position: relative;
 }
@@ -277,7 +279,10 @@ p {
 /* --- Utilities & Cards --- */
 .surface-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-light);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
   border-radius: var(--radius-lg);
   padding: 24px;
   transition: all var(--transition-fast);
@@ -285,6 +290,7 @@ p {
 
 .surface-card:hover {
   border-color: var(--border-strong);
+  background: var(--bg-surface-hover);
 }
 
 /* --- Buttons --- */
@@ -482,7 +488,9 @@ p {
 
 .modal-content {
   background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 100%;
@@ -531,8 +539,10 @@ p {
   padding: 12px 16px;
   border-radius: var(--radius-md);
   background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--text-primary);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-glass);
   box-shadow: var(--shadow-md);
   animation: slideLeft 300ms cubic-bezier(0.16, 1, 0.3, 1);
   font-size: 0.875rem;

@@ -152,7 +152,7 @@ export default function PlacementHub() {
               <div className="card-footer">
                 <div className="progress-info">
                   <span className="stat-label">Progress</span>
-                  <span className="stat-value" style={{ color: sec.color }}>{sec.statText}</span>
+                  <span className="stat-value" style={{ color: 'var(--text-primary)' }}>{sec.statText}</span>
                 </div>
                 <div className="progress-track">
                   <div className="progress-fill" style={{ width: `${sec.progress}%`, backgroundColor: sec.color }}></div>

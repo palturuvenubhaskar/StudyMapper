@@ -126,8 +126,8 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
       <div className="ai-chat-area">
         <div className="ai-chat-container">
           {messages.length === 0 && !isGenerating && (
-            <div className="empty-state">
-              <Sparkles size={48} style={{ color: 'var(--primary)', opacity: 0.8 }} />
+            <div className="ai-empty-state">
+              <Sparkles size={48} style={{ color: 'var(--accent-primary)', opacity: 0.8 }} />
               <h2>How can I help you today?</h2>
               <p>I can explain concepts, write code, or summarize your notes.</p>
             </div>
@@ -216,7 +216,7 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
 
         {attachment && (
           <div style={{ maxWidth: '800px', width: '100%', marginBottom: '8px', display: 'flex' }}>
-            <div style={{ background: '#1e2020', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-light)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
               <FileText size={14} />
               <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachment.name}</span>
               <button className="ai-btn-ghost" style={{ padding: '2px' }} onClick={removeAttachment}><X size={14} /></button>
@@ -257,7 +257,7 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
             {isGenerating ? <Loader size={16} className="spin-icon" /> : <ArrowUp size={18} strokeWidth={3} />}
           </button>
         </div>
-        <div style={{ fontSize: '0.75rem', color: '#948e9d', marginTop: '12px', textAlign: 'center' }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'center' }}>
           AI Assistant can make mistakes. Consider verifying important information.
         </div>
       </div>
