@@ -38,7 +38,7 @@ export default function StudyPlanner() {
 
   const generatePlan = async () => {
     if (!profile) {
-      toast("Please complete your profile first in the Dashboard.", "error");
+      toast("Please complete your profile first by generating a Custom AI Roadmap in the Skill Roadmap section.", "error");
       return;
     }
 
@@ -112,7 +112,7 @@ export default function StudyPlanner() {
       <div className="empty-state" style={{ background: 'transparent', border: 'none', height: '100%', flex: 1, marginTop: 0 }}>
         <BookOpen size={48} className="empty-icon" />
         <h3>Profile Required</h3>
-        <p>Please complete your profile on the Dashboard to use the Study Planner.</p>
+        <p>Please complete your profile by generating a Custom AI Roadmap in the <strong>Skill Roadmap</strong> section to use the Study Planner.</p>
       </div>
     );
   }

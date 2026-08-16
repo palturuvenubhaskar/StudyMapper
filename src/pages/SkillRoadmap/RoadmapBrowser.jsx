@@ -92,7 +92,7 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
           <p className="rb-subtitle">Community driven, up-to-date paths to learn any tool or technology.</p>
         </div>
         
-        <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ width: '220px' }}>
             <PremiumSelect 
               value={currentActiveDisplay}
@@ -101,7 +101,7 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
             />
           </div>
           
-          <div className="rb-search-wrapper">
+          <div className="rb-search-wrapper" style={{ flex: 1, minWidth: '200px' }}>
               <Search size={16} className="rb-search-icon" />
               <input
                 type="text"
@@ -110,9 +110,13 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-            </div>
           </div>
+          
+          <button className="btn btn-primary" onClick={onGenerateCustom} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+            <Sparkles size={18} /> Create Custom Roadmap
+          </button>
         </div>
+      </div>
 
       {/* Main content */}
       <main className="rb-content">

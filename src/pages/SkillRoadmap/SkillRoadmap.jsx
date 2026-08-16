@@ -187,7 +187,16 @@ export default function SkillRoadmap() {
         <ArrowLeft size={18} /> Back to All Roadmaps
       </button>
 
-      <h1 className="roadmap-title"><Sparkles size={28} /> Custom AI Roadmap</h1>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 className="roadmap-title" style={{ marginBottom: '8px' }}>
+          <Sparkles size={28} /> Custom AI Roadmap
+        </h1>
+        {roadmap && roadmap.career_goal && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginLeft: '36px' }}>
+            Goal: <strong style={{ color: 'var(--text-primary)' }}>{roadmap.career_goal}</strong>
+          </p>
+        )}
+      </div>
 
       {!profile || !roadmap ? (
         <ProfileSetup onSubmit={handleProfileSubmit} loading={generating} existingProfile={profile} />
@@ -249,9 +258,9 @@ export default function SkillRoadmap() {
                     </div>
                     {skill.why_important && <p className="skill-why">{skill.why_important}</p>}
 
-                    {skill.roadmap_id && (
+                    {skill.target_roadmap_id && (
                       <div className="skill-content" style={{ padding: '0 24px 24px', borderTop: 'none' }}>
-                        <button className="btn btn-primary" onClick={() => handleViewRoadmap(skill.roadmap_id)}>
+                        <button className="btn btn-primary" onClick={() => handleViewRoadmap(skill.target_roadmap_id)}>
                           View Full Roadmap <ArrowRight size={16} />
                         </button>
                       </div>

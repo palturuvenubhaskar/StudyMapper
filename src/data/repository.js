@@ -309,7 +309,7 @@ export const createRoadmap = async (profileId, title, careerGoal, skills) => {
     await db.roadmaps.add({ id: roadmapId, profile_id: profileId, title, career_goal: careerGoal, created_at: new Date().toISOString() });
     if (skills && skills.length > 0) {
       const items = skills.map((s, idx) => ({
-        id: uuidv4(), roadmap_id: roadmapId, name: s.name, why_important: s.why_important || '',
+        id: uuidv4(), roadmap_id: roadmapId, target_roadmap_id: s.roadmap_id || null, name: s.name, why_important: s.why_important || '',
         estimated_time: s.estimated_time || '', order_index: idx, status: 'pending', content: null
       }));
       await db.roadmap_skills.bulkAdd(items);
