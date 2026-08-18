@@ -64,13 +64,13 @@ export default function Settings() {
   }
 
   return (
-    <div className="settings-container" style={{ padding: '64px 48px', maxWidth: '1200px', margin: '0 auto', width: '100%', paddingBottom: '100px' }}>
+    <div className="settings-container">
       <div className="settings-header" style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>Settings</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Manage your account settings and preferences.</p>
       </div>
 
-      <div className="settings-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+      <div className="settings-layout">
         
         <div className="settings-column" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Public Profile Card */}

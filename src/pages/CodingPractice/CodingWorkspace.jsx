@@ -11,7 +11,7 @@ import './CodingPractice.css';
 export default function CodingWorkspace() {
   const { problemId } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
+  const toast = useToast(); // Force HMR
 
   const [problem, setProblem] = useState(null);
   const [code, setCode] = useState('');
@@ -76,11 +76,16 @@ export default function CodingWorkspace() {
   return (
     <div className="coding-workspace">
       <div className="workspace-header">
-        <h1>
-          <button className="btn btn-ghost btn-icon" onClick={() => navigate('/coding')}><ArrowLeft size={18} /></button>
-          <Code2 size={20} /> {problem.title}
+        <h1 style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', margin: 0, flex: '1 1 100%' }}>
+          <button className="btn btn-ghost btn-icon" onClick={() => navigate('/coding')} style={{ flexShrink: 0, margin: 0 }}>
+            <ArrowLeft size={18} />
+          </button>
+          <span style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
+            <Code2 size={20} style={{ flexShrink: 0, marginTop: '4px' }} />
+            <span style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>{problem.title}</span>
+          </span>
         </h1>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span className="badge" style={{ background: problem.difficulty === 'Easy' ? 'var(--success-soft)' : problem.difficulty === 'Medium' ? 'var(--warning-soft)' : 'var(--danger-soft)', color: problem.difficulty === 'Easy' ? 'var(--success)' : problem.difficulty === 'Medium' ? 'var(--warning)' : 'var(--danger)' }}>{problem.difficulty}</span>
           <span className="badge badge-accent">{problem.language}</span>
           <span className="badge badge-accent">{problem.topic}</span>

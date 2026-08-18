@@ -173,20 +173,19 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100vh;
+  height: 100%;
 }
 
 .ai-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 28px;
-  position: absolute;
-  top: 0;
-  left: 0;
+  padding: 24px 28px 16px 28px;
+  position: relative;
   width: 100%;
   z-index: 10;
-  background: linear-gradient(to bottom, var(--bg-app) 80%, transparent);
+  flex-shrink: 0;
+  background: transparent;
   border-bottom: 1px solid var(--border-glass);
 }
 
@@ -195,7 +194,7 @@
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 80px 24px 160px 24px;
+  padding: 24px 24px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -263,15 +262,15 @@
 
 /* Bottom Input Area */
 .ai-input-area {
-  position: absolute;
-  bottom: 0;
-  left: 0;
+  position: relative;
   width: 100%;
-  padding: 24px;
+  padding: 16px 24px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(to top, var(--bg-app) 80%, transparent);
+  flex-shrink: 0;
+  background: transparent;
+  z-index: 10;
 }
 
 .ai-input-wrapper {

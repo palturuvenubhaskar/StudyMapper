@@ -1,5 +1,15 @@
 .settings-container {
-  padding-bottom: 60px;
+  padding: 64px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 100px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 32px;
 }
 
 /* Custom utilities for specialized glass effects respecting themes */
@@ -129,10 +139,14 @@
 }
 
 @media (max-width: 768px) {
-  .settings-container { padding: 16px; }
-  .settings-layout { flex-direction: column !important; gap: 24px !important; }
+  .settings-container { padding: 16px; padding-bottom: 100px; }
+  .settings-layout { 
+    display: flex;
+    flex-direction: column; 
+    gap: 24px; 
+  }
   .settings-sidebar { width: 100% !important; flex: none !important; margin-bottom: 24px; }
   .settings-content { padding: 16px !important; width: 100% !important; }
   .settings-section-title { font-size: 1.2rem; }
-  .btn { width: 100%; justify-content: center; margin-bottom: 8px; }
+  .settings-container .btn { width: 100%; justify-content: center; margin-bottom: 8px; }
 }

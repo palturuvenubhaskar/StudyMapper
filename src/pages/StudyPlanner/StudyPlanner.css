@@ -1,8 +1,11 @@
 .study-planner-container {
+  width: 100%;
   padding: 24px 32px 64px 32px;
   max-width: 1280px;
   margin: 0 auto;
   min-height: 100vh;
+  container-type: inline-size;
+  container-name: planner;
 }
 
 .planner-hero {
@@ -304,13 +307,13 @@
   }
 }
 
-@media (max-width: 1024px) {
+@container planner (max-width: 1024px) {
   .planner-content {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
+@container planner (max-width: 768px) {
   .study-planner-container { padding: 16px; }
   .planner-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
   .planner-layout { flex-direction: column !important; }

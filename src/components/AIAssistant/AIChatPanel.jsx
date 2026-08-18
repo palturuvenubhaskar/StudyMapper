@@ -25,7 +25,7 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingText]);
+  }, [messages]);
 
   const handleFileAttach = (e) => {
     const file = e.target.files?.[0];
