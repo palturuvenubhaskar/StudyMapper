@@ -2,13 +2,20 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Free models from OpenRouter (ordered by speed/reliability preference)
+// Free models — ordered to prioritize models that can generate VERY long JSON without truncating
 const FREE_MODELS = [
-  "google/gemini-2.0-flash-lite-preview-02-05:free",
-  "meta-llama/llama-3-8b-instruct:free",
-  "mistralai/mistral-7b-instruct:free",
-  "cognitivecomputations/dolphin-mixtral-8x7b:free",
-  "nvidia/nemotron-3-ultra-550b-a55b:free"
+  "google/gemma-4-31b-it:free",               // 31B — large context, very reliable for long JSON
+  "nvidia/nemotron-3-ultra-550b-a55b:free",   // 550B — capable of long generation
+  "nvidia/nemotron-3-super-120b-a12b:free",   // 120B — capable of long generation
+  "poolside/laguna-s-2.1:free",
+  "openrouter/free"
+];
+
+// Vision-capable models
+const VISION_MODELS = [
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-nano-12b-v2-vl:free",
+  "dots-studio/dots-3-note-preview:free",
 ];
 
 // Non-streaming call (used for syllabus extraction and JSON responses)
@@ -17,7 +24,7 @@ export const callOpenRouter = async (messages) => {
 
   for (const model of FREE_MODELS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout — big models take time to start
 
     try {
       const response = await fetch(OPENROUTER_BASE_URL, {
@@ -56,39 +63,52 @@ export const callOpenRouter = async (messages) => {
 };
 
 export const callOpenRouterVision = async (base64Image, prompt) => {
-  const model = "google/gemini-2.0-flash-lite-preview-02-05:free";
-  
-  const messages = [
-    {
-      role: "user",
-      content: [
-        { type: "text", text: prompt },
-        { type: "image_url", image_url: { url: base64Image } }
-      ]
+  let lastError = null;
+
+  for (const model of VISION_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s for vision
+
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: base64Image } }
+          ]
+        }
+      ];
+
+      const response = await fetch(OPENROUTER_BASE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "StudyMapper",
+        },
+        body: JSON.stringify({ model, messages }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`API error (${response.status}): ${err}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || null;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.warn(`Vision model ${model} failed, trying next...`, error);
+      lastError = error;
     }
-  ];
-
-  const response = await fetch(OPENROUTER_BASE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-      "HTTP-Referer": window.location.origin,
-      "X-Title": "StudyMapper",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error (${response.status}): ${err}`);
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || null;
+  throw new Error(`All vision models failed. Last error: ${lastError?.message || 'Unknown error'}`);
 };
 
 // Streaming call — calls onChunk(textSoFar) as each token arrives
@@ -197,6 +217,12 @@ Handle Roman numerals (I, II, III), Arabic numerals (1, 2, 3), bullets, and nest
 Recognize patterns like "UNIT I", "Unit 1", "Module 1", "Chapter 1".
 Ignore page numbers and unnecessary symbols.
 
+IMPORTANT RULES FOR TOPICS:
+1. You MUST separate distinct topics into individual strings.
+2. Syllabus topics are often separated by hyphens (-), en-dashes (–), commas (,), or semicolons (;). You MUST split them aggressively. 
+   Example: "Topic A - Topic B – Topic C" becomes ["Topic A", "Topic B", "Topic C"].
+3. NEVER combine multiple distinct concepts into a single long string.
+
 Return ONLY a valid JSON object matching this schema exactly:
 {
   "subject": "Name of Subject",
@@ -248,6 +274,33 @@ ${ocrText}`
   }
 
   const responseText = await callOpenRouter(messages);
+  return extractJson(responseText);
+};
+
+export const extractSyllabusFromImage = async (base64Image) => {
+  const prompt = `Extract the syllabus structure from this image.
+Identify the Subject Name (if available), Units, Modules, Chapters, and Topics/Subtopics.
+Handle Roman numerals (I, II, III), Arabic numerals (1, 2, 3), bullets, and nested topics.
+Recognize patterns like "UNIT I", "Unit 1", "Module 1", "Chapter 1".
+Ignore page numbers and unnecessary symbols.
+
+IMPORTANT RULES FOR TOPICS:
+1. You MUST separate distinct topics into individual strings.
+2. Syllabus topics are often separated by hyphens (-), en-dashes (–), commas (,), or semicolons (;). You MUST split them aggressively. 
+   Example: "Topic A - Topic B – Topic C" becomes ["Topic A", "Topic B", "Topic C"].
+3. NEVER combine multiple distinct concepts into a single long string.
+
+Return ONLY a valid JSON object matching this schema exactly:
+{
+  "subject": "Name of Subject",
+  "units": [
+    {
+      "title": "Unit Title",
+      "topics": ["Topic 1", "Topic 2"]
+    }
+  ]
+}`;
+  const responseText = await callOpenRouterVision(base64Image, prompt);
   return extractJson(responseText);
 };
 
@@ -372,9 +425,9 @@ Question: ${questionText}
 Marks Allocated: ${marks}
 
 Instructions based on marks:
-- If 1-3 Marks: Provide a very brief, direct answer (1-3 sentences or a short bulleted list). Get straight to the point.
-- If 4-6 Marks: Provide a medium-length answer (1-2 paragraphs) with core concepts. Include a Mermaid block diagram or flowchart if helpful to visualize the concept.
-- If Unknown: Provide a medium-length, well-rounded answer.
+- If 1-3 Marks: ${detailLevel === 'simple' ? 'Provide an extremely brief, one-sentence direct answer. No extra fluff.' : 'Provide a slightly more detailed short answer (3-4 sentences), including a quick example or definition breakdown.'}
+- If 4-6 Marks: ${detailLevel === 'simple' ? 'Provide a concise summary (1 paragraph) focusing strictly on core concepts.' : 'Provide a comprehensive answer (2-3 paragraphs) with deep explanation.'} Include a Mermaid block diagram or flowchart if helpful.
+- If Unknown: Provide a ${detailLevel === 'simple' ? 'short summary' : 'highly detailed, well-rounded'} answer.
 
 If the question is worth 7 or more marks (e.g., 10 Marks), you MUST follow this EXACT format and structure for a high-scoring university exam answer:
 

@@ -71,11 +71,11 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--text-primary);
+  background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bg-surface);
+  color: var(--accent-primary-fg);
 }
 
 .rs-course-info {
@@ -150,6 +150,67 @@
 
 .rs-premium-text:hover {
   color: #d8b4fe;
+}
+
+/* Delete button on each item — hidden by default, shown on hover */
+.rs-item-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rs-course-item:hover .rs-item-delete-btn {
+  opacity: 1;
+}
+.rs-item-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Sidebar delete confirmation overlay */
+.rs-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rs-delete-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 320px;
+  width: 85%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+.rs-delete-modal h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+.rs-delete-modal p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.rs-delete-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { extractTextFromImage } from '../../core/ocr/ocrService';
-import { extractSyllabusFromText } from '../../core/api/aiService';
+import { extractSyllabusFromText, extractSyllabusFromImage } from '../../core/api/aiService';
 import { saveSyllabus } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,30 +30,16 @@ export default function CreateSubject() {
 
     try {
       setStep('ocr_processing');
-      setOcrProgress(0);
-
-      // Step 1: OCR
-      const text = await extractTextFromImage(file, (p) => setOcrProgress(p));
-      if (!text || text.trim().length === 0) {
-        toast('Could not extract text from image. Try a clearer image.', 'error');
-        setStep('choose');
-        return;
-      }
-
-      // Step 2: AI extraction
       setAiProcessing(true);
-      setStep('review'); // Show progressive parsing
 
-      const result = await extractSyllabusFromText(text, (partialData) => {
-        if (partialData.subject) setSubjectTitle(partialData.subject);
-        if (partialData.units) {
-          setUnits(partialData.units.map((u, i) => ({
-            id: `stream-u-${i}`,
-            title: u.title || `Unit ${i + 1}`,
-            topics: (u.topics || []).map((t, j) => ({ id: `stream-t-${i}-${j}`, title: t })),
-          })));
-        }
+      const base64Image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
       });
+
+      const result = await extractSyllabusFromImage(base64Image);
       
       setAiProcessing(false);
 
@@ -64,13 +49,14 @@ export default function CreateSubject() {
         return;
       }
 
-      // Map final results to UUIDs for editing safety
       setSubjectTitle(result.subject || 'New Subject');
       setUnits(result.units.map((u, i) => ({
         id: uuidv4(),
         title: u.title || `Unit ${i + 1}`,
         topics: (u.topics || []).map(t => ({ id: uuidv4(), title: t })),
       })));
+      
+      setStep('review');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Something went wrong during extraction.', 'error');

@@ -6,7 +6,6 @@ import { callOpenRouterStream, getTopicNotesPrompt, extractJson } from '../../co
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
-import remarkGfm from 'remark-gfm';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
 import './TopicStudy.css';
 
@@ -31,10 +30,13 @@ const SECTION_MAP = [
 // Try to parse partial JSON by closing open brackets/braces
 const tryParsePartialJson = (raw) => {
   if (!raw) return null;
-  const start = raw.indexOf('{');
+  // Clean trailing markdown backticks that AI models often append
+  let cleanedRaw = raw.replace(/```[\s\S]*$/, '').replace(/`+$/, '');
+  
+  const start = cleanedRaw.indexOf('{');
   if (start === -1) return null;
 
-  let text = raw.substring(start);
+  let text = cleanedRaw.substring(start);
 
   // Count open brackets and braces, close them
   let openBraces = 0, openBrackets = 0;
@@ -161,16 +163,32 @@ export default function TopicStudy() {
     setParsedContent(null);
     setContent(null);
 
+    let lastSuccessfulParse = null;
+
     try {
       const messages = getTopicNotesPrompt(topic.title, subject.title);
 
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
         const partial = tryParsePartialJson(textSoFar);
-        if (partial) setStreamParsed(partial);
+        if (partial) {
+          lastSuccessfulParse = partial;
+          setStreamParsed(partial);
+        }
       });
 
       // Final parse
-      const parsed = extractJson(fullText);
+      let parsed = extractJson(fullText);
+      if (!parsed) {
+        // Fallback: If strict parsing failed (e.g. model hit length limit, or added markdown backticks)
+        // use our robust partial parser to salvage what was generated
+        parsed = tryParsePartialJson(fullText);
+      }
+      
+      // Absolute final fallback: use the last successful parse from the stream
+      if (!parsed && lastSuccessfulParse) {
+        parsed = lastSuccessfulParse;
+      }
+
       if (parsed) {
         const jsonStr = JSON.stringify(parsed);
         const saved = await saveTopicContent(topicId, jsonStr);
@@ -262,6 +280,38 @@ export default function TopicStudy() {
 
 
 
+  // Normalize markdown strings: fix literal \n, escaped pipes, table formatting
+  const normalizeMarkdown = (text) => {
+    if (typeof text !== 'string') return text;
+    let result = text
+      .replace(/\\n/g, '\n')       // literal \n → real newline
+      .replace(/\\t/g, '\t')       // literal \t → real tab
+      .replace(/\\\|/g, '|')       // escaped pipes → real pipes
+      .replace(/\r\n/g, '\n');     // normalize line endings
+
+    // Fix markdown tables: ensure table rows have no leading whitespace
+    // and separator rows use proper dashes
+    const lines = result.split('\n');
+    const fixedLines = lines.map(line => {
+      const trimmed = line.trim();
+      // If line looks like a table row (starts and/or contains pipes)
+      if (trimmed.startsWith('|') || (trimmed.includes('|') && trimmed.match(/^\|.*\|$/))) {
+        return trimmed; // Remove leading/trailing whitespace
+      }
+      // Fix separator lines like |---|---|
+      if (trimmed.match(/^\|[\s\-:]+(\|[\s\-:]+)+\|?$/)) {
+        return trimmed;
+      }
+      return line;
+    });
+    result = fixedLines.join('\n');
+
+    // Ensure a blank line before table starts (required by markdown parsers)
+    result = result.replace(/([^\n])\n(\|[^\n]+\|\n\|[-:\s|]+\|)/g, '$1\n\n$2');
+
+    return result;
+  };
+
   // Render a section card (same for streaming and final)
   const renderSection = (key, title, data) => {
     if (!data) return null;
@@ -277,7 +327,6 @@ export default function TopicStudy() {
           <div className="section-body">
             {typeof data === 'string' && (
               <MarkdownRenderer 
-                remarkPlugins={[remarkGfm]} 
                 components={{ 
                   p: 'p',
                   code({node, inline, className, children, ...props}) {
@@ -289,21 +338,21 @@ export default function TopicStudy() {
                   }
                 }}
               >
-                {data}
+                {normalizeMarkdown(data)}
               </MarkdownRenderer>
             )}
             {Array.isArray(data) && data.length > 0 && (
               typeof data[0] === 'string' ? (
-                <ul>{data.map((item, i) => <li key={i}><MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{item}</MarkdownRenderer></li>)}</ul>
+                <ul>{data.map((item, i) => <li key={i}><MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item)}</MarkdownRenderer></li>)}</ul>
               ) : (
                 <div className="qa-list">
                   {data.map((item, i) => (
                     <div key={i} className="qa-item">
-                      {item.term && <><strong>{item.term}:</strong> <MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{item.definition}</MarkdownRenderer></>}
+                      {item.term && <><strong>{item.term}:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.definition)}</MarkdownRenderer></>}
                       {item.q && (
                         <>
-                          <div className="qa-q"><strong>Q:</strong> <MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{item.q}</MarkdownRenderer></div>
-                          <div className="qa-a"><strong>A:</strong> <MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{item.a}</MarkdownRenderer></div>
+                          <div className="qa-q"><strong>Q:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.q)}</MarkdownRenderer></div>
+                          <div className="qa-a"><strong>A:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.a)}</MarkdownRenderer></div>
                         </>
                       )}
                     </div>

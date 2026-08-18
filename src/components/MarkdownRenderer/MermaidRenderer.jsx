@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../../context/ThemeProvider';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 /**
  * Renders a Mermaid diagram.
@@ -12,6 +13,35 @@ export default function MermaidRenderer({ chart, handDrawn = false }) {
   const [svgContent, setSvgContent] = useState('');
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [scale, setScale] = useState(100);
+  const zoomIntervalRef = useRef(null);
+
+  const startZooming = (direction) => {
+    // Initial click step
+    setScale(s => {
+      const step = direction === 'in' ? 15 : -15;
+      return Math.min(300, Math.max(10, s + step));
+    });
+
+    // Continuous zoom on hold
+    zoomIntervalRef.current = setInterval(() => {
+      setScale(s => {
+        const step = direction === 'in' ? 5 : -5; 
+        return Math.min(300, Math.max(10, s + step));
+      });
+    }, 50); 
+  };
+
+  const stopZooming = () => {
+    if (zoomIntervalRef.current) {
+      clearInterval(zoomIntervalRef.current);
+      zoomIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => stopZooming();
+  }, []);
   
   const themeContext = useTheme();
   const currentTheme = themeContext?.theme || (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
@@ -118,23 +148,76 @@ export default function MermaidRenderer({ chart, handDrawn = false }) {
   }
 
   return (
-    <div 
-      className="mermaid-wrapper" 
-      ref={containerRef}
-      dangerouslySetInnerHTML={{ __html: svgContent }} 
-      style={{
+    <div style={{ position: 'relative', margin: '1.5rem 0' }} className="mermaid-outer-container">
+      {/* Zoom Controls */}
+      <div style={{
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
         display: 'flex',
-        justifyContent: 'center',
-        margin: '1.5rem 0',
-        width: '100%',
-        maxWidth: '100%',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        background: handDrawn ? 'transparent' : 'rgba(255,255,255,0.03)', // Subtle background for the diagram
-        borderRadius: '12px',
-        padding: '1.5rem',
-        border: handDrawn ? 'none' : '1px solid var(--border-light)'
-      }}
-    />
+        gap: '4px',
+        background: 'var(--bg-panel)',
+        padding: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)',
+        zIndex: 10
+      }}>
+        <button 
+          className="btn btn-ghost btn-icon btn-sm" 
+          onMouseDown={() => startZooming('out')}
+          onMouseUp={stopZooming}
+          onMouseLeave={stopZooming}
+          onTouchStart={(e) => { e.preventDefault(); startZooming('out'); }}
+          onTouchEnd={(e) => { e.preventDefault(); stopZooming(); }}
+          title="Zoom Out"
+        >
+          <ZoomOut size={16} />
+        </button>
+        <button 
+          className="btn btn-ghost btn-icon btn-sm" 
+          onClick={() => setScale(100)}
+          title="Reset Zoom"
+        >
+          <RotateCcw size={16} />
+        </button>
+        <button 
+          className="btn btn-ghost btn-icon btn-sm" 
+          onMouseDown={() => startZooming('in')}
+          onMouseUp={stopZooming}
+          onMouseLeave={stopZooming}
+          onTouchStart={(e) => { e.preventDefault(); startZooming('in'); }}
+          onTouchEnd={(e) => { e.preventDefault(); stopZooming(); }}
+          title="Zoom In"
+        >
+          <ZoomIn size={16} />
+        </button>
+      </div>
+
+      <div 
+        style={{
+          display: 'flex',
+          justifyContent: scale > 100 ? 'flex-start' : 'center', // Align left when zoomed in so it scrolls properly
+          width: '100%',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          background: handDrawn ? 'transparent' : 'rgba(255,255,255,0.03)',
+          borderRadius: '12px',
+          padding: '2.5rem 1.5rem 1.5rem 1.5rem', // Extra top padding for controls
+          border: handDrawn ? 'none' : '1px solid var(--border-light)'
+        }}
+      >
+        <div 
+          className="mermaid-wrapper" 
+          ref={containerRef}
+          dangerouslySetInnerHTML={{ __html: svgContent }} 
+          style={{
+            width: `${scale}%`,
+            minWidth: `${scale}%`,
+            transition: 'width 0.2s ease-out, min-width 0.2s ease-out',
+          }}
+        />
+      </div>
+    </div>
   );
 }

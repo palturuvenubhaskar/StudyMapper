@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSubjectById, getUnitsForSubject, getTopicsForUnit, updateSubject, getQuestionBanksForSubject, getLatestTopicContent } from '../../data/repository';
-import { ArrowLeft, BookOpen, ChevronRight, Edit3, Check, FileText, Plus, Download, Loader, X } from 'lucide-react';
+import { getSubjectById, getUnitsForSubject, getTopicsForUnit, updateSubject, getQuestionBanksForSubject, getLatestTopicContent, deleteSubject, deleteQuestionBank } from '../../data/repository';
+import { ArrowLeft, BookOpen, ChevronRight, Edit3, Check, FileText, Plus, Download, Loader, X, Trash2 } from 'lucide-react';
 
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import './SubjectView.css';
@@ -16,6 +16,7 @@ export default function SubjectView() {
   const [titleInput, setTitleInput] = useState('');
   const [expandedUnits, setExpandedUnits] = useState(new Set());
   const [questionBanks, setQuestionBanks] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState(null); // 'subject' | bankId | null
   
   const toast = useToast();
 
@@ -65,6 +66,28 @@ export default function SubjectView() {
     });
   };
 
+  const handleDeleteSubject = async () => {
+    try {
+      await deleteSubject(subjectId);
+      toast('Subject deleted successfully', 'success');
+      navigate('/');
+    } catch (err) {
+      toast('Failed to delete subject', 'error');
+    }
+    setConfirmDelete(null);
+  };
+
+  const handleDeleteQB = async (bankId) => {
+    try {
+      await deleteQuestionBank(bankId);
+      setQuestionBanks(prev => prev.filter(b => b.id !== bankId));
+      toast('Question bank deleted', 'success');
+    } catch (err) {
+      toast('Failed to delete question bank', 'error');
+    }
+    setConfirmDelete(null);
+  };
+
 
 
   if (loading) {
@@ -82,6 +105,26 @@ export default function SubjectView() {
   return (
     <div className="subject-view">
 
+      {/* Confirmation Modal */}
+      {confirmDelete && (
+        <div className="delete-modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
+            <Trash2 size={32} className="delete-modal-icon" />
+            <h3>{confirmDelete === 'subject' ? 'Delete Subject?' : 'Delete Question Bank?'}</h3>
+            <p>
+              {confirmDelete === 'subject'
+                ? 'This will permanently delete this subject, all its units, topics, notes, and generated content. This action cannot be undone.'
+                : 'This will permanently delete this question bank and all its questions. This action cannot be undone.'}
+            </p>
+            <div className="delete-modal-actions">
+              <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={() => confirmDelete === 'subject' ? handleDeleteSubject() : handleDeleteQB(confirmDelete)}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="subject-view-header">
         {editingTitle ? (
@@ -98,7 +141,9 @@ export default function SubjectView() {
         <div className="subject-stats">
           <span className="badge badge-accent">{unitsWithTopics.length} Units</span>
           <span className="badge badge-success">{studiedTopics}/{totalTopics} Topics Studied</span>
-
+          <button className="btn btn-ghost btn-sm btn-delete-subject" onClick={() => setConfirmDelete('subject')} title="Delete Subject">
+            <Trash2 size={16} /> Delete
+          </button>
         </div>
       </div>
 
@@ -148,10 +193,19 @@ export default function SubjectView() {
       ) : (
         <div className="qb-grid">
           {questionBanks.map(bank => (
-            <div key={bank.id} className="glass-card qb-card" onClick={() => navigate(`/qb/${bank.id}`)}>
-              <FileText size={24} color="var(--accent)" />
-              <h4>{bank.title}</h4>
-              <p>Uploaded {new Date(bank.created_at).toLocaleDateString()}</p>
+            <div key={bank.id} className="glass-card qb-card">
+              <div className="qb-card-content" onClick={() => navigate(`/qb/${bank.id}`)}>
+                <FileText size={24} color="var(--accent)" />
+                <h4>{bank.title}</h4>
+                <p>Uploaded {new Date(bank.created_at).toLocaleDateString()}</p>
+              </div>
+              <button
+                className="btn btn-ghost btn-icon qb-delete-btn"
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(bank.id); }}
+                title="Delete Question Bank"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>
