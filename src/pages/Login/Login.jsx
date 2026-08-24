@@ -118,16 +118,17 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <div className="login-illustration">
-        <div className="illustration-bg-shape"></div>
-        <div className="illustration-content">
-          <h1>StudyMapper</h1>
-          <p>Your intelligent companion for organized learning, skill mapping, and career placement preparation.</p>
+      <div className="login-card-wrapper">
+        <div className="login-illustration">
+          <div className="illustration-bg-shape"></div>
+          <div className="illustration-content">
+            <h1>StudyMapper</h1>
+            <p>Your intelligent companion for organized learning, skill mapping, and career placement preparation.</p>
+          </div>
         </div>
-      </div>
-      
-      <div className="login-form-section">
-        <div className="login-card">
+        
+        <div className="login-form-section">
+          <div className="login-card">
           <div className="login-header">
             <h2>{isRegistering && activeTab === 'email' ? 'Create Account' : 'Welcome Back'}</h2>
             <p>{isRegistering && activeTab === 'email' ? 'Sign up to start your learning journey.' : 'Sign in to continue your learning journey.'}</p>
@@ -295,6 +296,7 @@ export default function Login() {
           )}
 
         </div>
+      </div>
       </div>
     </div>
   );
