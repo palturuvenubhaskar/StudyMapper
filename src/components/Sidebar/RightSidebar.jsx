@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ChevronRight, Grid, BookOpen, Calculator, Beaker, FileText, Trash2 } from 'lucide-react';
+import { Bell, ChevronRight, BookOpen, FileText, Trash2 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../data/db';
 import { deleteSubject, deleteQuestionBank } from '../../data/repository';
@@ -16,12 +16,9 @@ export default function RightSidebar() {
   const qbanks = useLiveQuery(() => db.question_banks.toArray()) || [];
   const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'subject'|'qbank', id, title }
   
-  // Pick a random icon for subjects based on name length for visual variety
-  const getSubjectIcon = (title) => {
-    const icons = [Grid, BookOpen, Calculator, Beaker, FileText];
-    const index = title.length % icons.length;
-    const Icon = icons[index];
-    return <Icon size={20} />;
+  // Always use BookOpen for subjects
+  const getSubjectIcon = () => {
+    return <BookOpen size={20} />;
   };
 
   const handleConfirmDelete = async () => {

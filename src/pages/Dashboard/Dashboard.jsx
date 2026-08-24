@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSubjects, deleteSubject, getSubjectProgress, getUnitsForSubject, getAllQuestionBanks } from '../../data/repository';
-import { Search, Calendar, ChevronRight, MoreHorizontal, Play, Book, FileText, BarChart2, Plus, Award } from 'lucide-react';
+import { Search, Calendar, ChevronRight, MoreHorizontal, Play, BookOpen, FileText, BarChart2, Plus, Award } from 'lucide-react';
 import StudyPlanner from '../StudyPlanner/StudyPlanner';
 import BookmarksPage from '../BookmarksPage/BookmarksPage';
 import './Dashboard.css';
@@ -104,7 +104,7 @@ export default function Dashboard() {
              {/* Stats Card */}
              <div className="surface-card" style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center', minWidth: '100px' }}>
-                   <Book size={24} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
+                   <BookOpen size={24} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
                    <div style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{stats.totalUnits}</div>
                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: '500' }}>Subjects</div>
                 </div>

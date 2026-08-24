@@ -79,7 +79,15 @@ export default function Settings() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>This is how others will see you on the platform.</p>
             
             <div className="profile-avatar-section" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-              <img src={user.avatar || 'https://i.pravatar.cc/150'} alt="Profile Avatar" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-brand)' }} />
+              <img 
+                src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`} 
+                alt="Profile Avatar" 
+                style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-brand)' }} 
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+                }}
+              />
               <div className="avatar-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>Change</button>
                 <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>Remove</button>

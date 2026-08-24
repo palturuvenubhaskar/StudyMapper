@@ -187,8 +187,8 @@
   justify-content: center;
 }
 .rs-delete-modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--bg-surface-active);
+  border: 1px solid var(--border-glass);
   border-radius: 16px;
   padding: 24px;
   max-width: 320px;

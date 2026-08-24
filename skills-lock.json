@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "skills": {
+    "anti-ui-slop": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "b26657f2e6bdd1160f4d439dbeb864bccff0a8e7df3a35eedbdeffc534300e20",
+      "wellKnownDigest": "sha256:46ec08c5ea335d8cc5577c76d1300c126cc2d8b10d1c80bc6cca58a5259d1e14"
+    },
+    "code-review": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/code-review/SKILL.md",
+      "computedHash": "ed37e8274799af5bd0642d1cf02046aef8ed74ffe457cdd4e3859d4061a90f34"
+    },
+    "design-taste-frontend": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "game-ui-design": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/game-ui-design/SKILL.md",
+      "computedHash": "cff8acaf58f3f4255f76fb962775fb1a2fec1fce49a54a50bde2c1efd5eb33ec"
+    },
+    "ui-design": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "c163b0a641f0212e5a5d44c53210d0b7547570ecf34bcb8d881f8716f33f4332",
+      "wellKnownDigest": "sha256:9ba2f4aea4a6367ab830e95dd856448ca17409884596e3e2878b821aeec8b4e5"
+    },
+    "ui-radar": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "34305420bba52f3fe7d1d3b2dd355b64ccf12de7411cbbf4557a1231e8ef8ddb",
+      "wellKnownDigest": "sha256:461cf4d25b9e74840cb6f20ab81751ec5352dbcb28dac8e3bce001602965279e"
+    },
+    "ui-slop-score": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "797c0c907e21e9051586b3734db94bfcd637ffde86c724e5da27dbe6e0c27d26",
+      "wellKnownDigest": "sha256:7b3cb321949aef78892728139b751ea9fa3c0f85521e8bd459662e29ea079c33"
+    }
+  }
+}
