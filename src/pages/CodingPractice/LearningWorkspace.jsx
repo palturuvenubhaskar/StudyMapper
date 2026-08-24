@@ -178,9 +178,9 @@ export default function LearningWorkspace() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
               {generatingLesson ? (
                 <div className="markdown-body">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--accent)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--accent-brand)' }}>
                      <Sparkles size={24} className="spin-icon" />
-                     <h2 style={{ margin: 0, color: 'var(--accent)' }}>Generating Lesson...</h2>
+                     <h2 style={{ margin: 0, color: 'var(--accent-brand)' }}>Generating Lesson...</h2>
                   </div>
                   <MarkdownRenderer remarkPlugins={[remarkGfm]}>{streamedTheory}</MarkdownRenderer>
                   <span className="cursor-blink">|</span>

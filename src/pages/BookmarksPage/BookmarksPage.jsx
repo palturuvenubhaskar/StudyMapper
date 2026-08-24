@@ -90,7 +90,7 @@ export default function BookmarksPage() {
               <div className="bookmarks-list">
                 {topicBookmarks.map(bm => (
                   <div key={bm.id} className="bookmark-item" onClick={() => navigate(`/topic/${bm.topic_id}`)}>
-                    <Bookmark size={24} color="#a78bfa" style={{ flexShrink: 0 }} />
+                    <Bookmark size={24} color="var(--accent-brand)" style={{ flexShrink: 0 }} />
                     <div className="bookmark-info">
                       <h4>{bm.topic_title}</h4>
                       <p>Bookmarked {new Date(bm.created_at).toLocaleDateString()}</p>

@@ -179,7 +179,7 @@
 }
 
 .active-streaming {
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
   box-shadow: 0 0 20px rgba(108, 99, 255, 0.15);
 }
 
@@ -270,7 +270,7 @@
   padding: 24px;
   background: var(--bg-glass);
   border-radius: var(--radius-sm);
-  border-top: 3px solid var(--accent);
+  border-top: 3px solid var(--accent-brand);
 }
 
 .answer-badge {

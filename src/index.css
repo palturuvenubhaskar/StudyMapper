@@ -27,8 +27,8 @@
   --accent-primary-fg: #ffffff;
   --accent-primary-hover: #333333;
 
-  --accent-brand: #6366f1;
-  --accent-brand-soft: rgba(99, 102, 241, 0.1);
+  --accent-brand: #38bdf8;
+  --accent-brand-soft: rgba(56, 189, 248, 0.15);
 
   --success: #10b981;
   --success-soft: rgba(16, 185, 129, 0.1);
@@ -118,7 +118,7 @@
   --accent-primary-fg: #000000;
   --accent-primary-hover: #e2e8f0;
 
-  --accent-brand: #818cf8;
+  --accent-brand: #60a5fa;
   --accent-brand-soft: rgba(129, 140, 248, 0.15);
 
   --success: #10b981;

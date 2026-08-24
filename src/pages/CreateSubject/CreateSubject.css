@@ -41,7 +41,7 @@
 }
 
 .create-option svg {
-  color: var(--accent);
+  color: var(--accent-brand);
 }
 
 .create-option h3 {

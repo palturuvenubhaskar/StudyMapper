@@ -195,7 +195,7 @@
 
 .qb-card:hover {
   transform: translateY(-2px);
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
 }
 
 .qb-card h4 {

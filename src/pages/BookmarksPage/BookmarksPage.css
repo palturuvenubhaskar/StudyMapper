@@ -17,7 +17,7 @@
 }
 
 .bookmarks-page h1 svg {
-  color: #a78bfa;
+  color: var(--accent-brand);
 }
 
 .premium-back-btn {
@@ -56,7 +56,7 @@
 }
 
 .bookmarks-page .empty-state svg {
-  color: #a78bfa;
+  color: var(--accent-brand);
   margin-bottom: 20px;
   filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.4));
 }
@@ -113,7 +113,7 @@
   top: 0;
   height: 100%;
   width: 4px;
-  background: linear-gradient(180deg, #a78bfa, #8b5cf6);
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
   opacity: 0;
   transition: opacity 0.3s ease;
 }

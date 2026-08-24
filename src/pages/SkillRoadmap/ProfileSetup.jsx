@@ -7,7 +7,7 @@ export default function ProfileSetup({ onSubmit, loading, existingProfile }) {
   return (
     <div className="profile-setup glass-card">
       <div className="setup-header">
-        <Sparkles size={32} color="var(--accent)" />
+        <Sparkles size={32} color="var(--accent-brand)" />
         <h2>Create a Custom Roadmap</h2>
         <p>Tell us what you want to learn. We will build a custom curriculum for you!</p>
       </div>

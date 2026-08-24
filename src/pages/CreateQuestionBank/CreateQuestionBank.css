@@ -31,7 +31,7 @@
 }
 
 .file-upload-box:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
   background: var(--bg-hover);
 }
 
@@ -46,7 +46,7 @@
 }
 
 .file-upload-box svg {
-  color: var(--accent);
+  color: var(--accent-brand);
 }
 
 .review-header {

@@ -233,7 +233,7 @@
   top: 0;
   left: 0;
   height: 4px;
-  background: var(--accent);
+  background: var(--accent-brand);
   z-index: 1000;
   transition: width 0.1s ease-out;
   border-radius: 0 2px 2px 0;

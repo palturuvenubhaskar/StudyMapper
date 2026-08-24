@@ -400,7 +400,7 @@ export default function TopicStudy() {
           {!streaming && (
             <>
               <button className="btn btn-ghost btn-icon" onClick={toggleBookmark} title={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
-                {bookmarked ? <BookmarkCheck size={20} color="var(--accent)" /> : <Bookmark size={20} />}
+                {bookmarked ? <BookmarkCheck size={20} color="var(--accent-brand)" /> : <Bookmark size={20} />}
               </button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowNotes(!showNotes)}>
                 <StickyNote size={14} /> Notes ({notes.length})

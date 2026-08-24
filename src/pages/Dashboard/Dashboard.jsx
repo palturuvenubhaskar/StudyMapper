@@ -72,7 +72,7 @@ export default function Dashboard() {
           <div className="surface-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between', alignItems: 'center', padding: '32px', marginBottom: '24px' }}>
             <div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                Good <span style={{ background: 'linear-gradient(135deg, #a78bfa, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>afternoon</span>
+                Good <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>afternoon</span>
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Here's what's happening with your studies today.</p>
             </div>

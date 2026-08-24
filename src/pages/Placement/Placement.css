@@ -87,7 +87,7 @@
 }
 
 .hero-title span {
-  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -392,12 +392,12 @@
 }
 
 .quiz-option:hover:not(.selected):not(.correct):not(.wrong) {
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
   background: var(--accent-soft);
 }
 
 .quiz-option.selected {
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
   background: var(--accent-soft);
 }
 
@@ -415,7 +415,7 @@
   padding: 20px;
   background: var(--bg-hover);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-brand);
   margin-bottom: 20px;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -440,7 +440,7 @@
 .score-display {
   font-size: 3rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), var(--success));
+  background: linear-gradient(135deg, var(--accent-brand), var(--success));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 16px;
@@ -525,7 +525,7 @@
   padding: 20px;
   background: var(--bg-hover);
   border-radius: var(--radius-sm);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-brand);
 }
 
 .hr-feedback-section .markdown-body {

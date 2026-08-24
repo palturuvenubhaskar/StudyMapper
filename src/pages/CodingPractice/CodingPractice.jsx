@@ -359,7 +359,7 @@ export default function CodingPractice() {
                 >
                   <div className="lesson-card-header">
                     <div className="lesson-icon-wrapper">
-                      {isCompleted ? <CheckCircle2 size={24} color="var(--success)" /> : !isUnlocked ? <Lock size={24} color="var(--text-muted)" /> : <Icon size={24} color={isActive ? "var(--accent)" : "var(--text-primary)"} />}
+                      {isCompleted ? <CheckCircle2 size={24} color="var(--success)" /> : !isUnlocked ? <Lock size={24} color="var(--text-muted)" /> : <Icon size={24} color={isActive ? "var(--accent-brand)" : "var(--text-primary)"} />}
                     </div>
                     <span className="lesson-number">Step {idx + 1}</span>
                   </div>

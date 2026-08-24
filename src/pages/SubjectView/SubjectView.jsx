@@ -195,7 +195,7 @@ export default function SubjectView() {
           {questionBanks.map(bank => (
             <div key={bank.id} className="glass-card qb-card">
               <div className="qb-card-content" onClick={() => navigate(`/qb/${bank.id}`)}>
-                <FileText size={24} color="var(--accent)" />
+                <FileText size={24} color="var(--accent-brand)" />
                 <h4>{bank.title}</h4>
                 <p>Uploaded {new Date(bank.created_at).toLocaleDateString()}</p>
               </div>
