@@ -1,24 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCodingProblem, updateCodingProblem } from '../../data/repository';
-import { analyzeCodingSolutionPrompt, callOpenRouterStream } from '../../core/api/aiService';
+import { analyzeCodingSolutionPrompt, generateVisualDebugPrompt, generateCodeReviewPrompt, callOpenRouterStream } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, Play, Loader, Eye, EyeOff, Code2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Play, Loader, Eye, EyeOff, Code2, CheckCircle2, Bug, Search } from 'lucide-react';
+import { awardXP } from '../../core/gamification/xpEngine';
+import { updateQuestProgress } from '../../core/gamification/dailyQuests';
+import { checkAchievements } from '../../core/gamification/achievementChecker';
+import { logEvent } from '../../core/analytics/tracker';
 import './CodingPractice.css';
 
 export default function CodingWorkspace() {
   const { problemId } = useParams();
   const navigate = useNavigate();
-  const toast = useToast(); // Force HMR
+  const toast = useToast();
 
   const [problem, setProblem] = useState(null);
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // Modes: 'analysis' | 'debug' | 'review'
+  const [activeMode, setActiveMode] = useState('analysis');
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState('');
-  const [streamingAnalysis, setStreamingAnalysis] = useState('');
+  
+  const [analysisContent, setAnalysisContent] = useState('');
+  const [debugContent, setDebugContent] = useState('');
+  const [reviewContent, setReviewContent] = useState('');
+  
+  const [streamingContent, setStreamingContent] = useState('');
   const [showHints, setShowHints] = useState(false);
 
   useEffect(() => {
@@ -27,36 +38,65 @@ export default function CodingWorkspace() {
       if (!p) { navigate('/coding'); return; }
       setProblem(p);
       setCode(p.user_code || '');
-      setAnalysis(p.ai_analysis || '');
+      setAnalysisContent(p.ai_analysis || '');
       setLoading(false);
     })();
   }, [problemId]);
 
-  const handleSubmit = async () => {
+  const handleAction = async (mode) => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
+    
+    setActiveMode(mode);
     setAnalyzing(true);
-    setStreamingAnalysis('');
-    setAnalysis('');
+    setStreamingContent('');
+    
+    // Clear previous content for the mode
+    if (mode === 'analysis') setAnalysisContent('');
+    else if (mode === 'debug') setDebugContent('');
+    else if (mode === 'review') setReviewContent('');
 
     try {
       await updateCodingProblem(problemId, { user_code: code });
 
-      const messages = analyzeCodingSolutionPrompt(problem, code, problem.language);
+      let messages;
+      if (mode === 'analysis') {
+        messages = analyzeCodingSolutionPrompt(problem, code, problem.language);
+      } else if (mode === 'debug') {
+        messages = generateVisualDebugPrompt(problem, code, problem.language);
+      } else if (mode === 'review') {
+        messages = generateCodeReviewPrompt(problem, code, problem.language);
+      }
+
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
-        setStreamingAnalysis(textSoFar);
+        setStreamingContent(textSoFar);
       });
 
-      setAnalysis(fullText);
-      setStreamingAnalysis('');
+      if (mode === 'analysis') {
+        setAnalysisContent(fullText);
+        // Correctness check logic
+        const isSolved = fullText.toLowerCase().includes('✅') || fullText.toLowerCase().includes('correct');
+        await updateCodingProblem(problemId, { ai_analysis: fullText, status: isSolved ? 'solved' : 'attempted' });
+        setProblem(prev => ({ ...prev, status: isSolved ? 'solved' : 'attempted', ai_analysis: fullText, user_code: code }));
+        
+        if (isSolved && problem.status !== 'solved') {
+          await awardXP('guest', 100, 'coding_problem', problemId);
+          await updateQuestProgress('guest', 'solve_code', 1);
+          await checkAchievements('guest');
+        }
+        await logEvent('guest', problemId, 'coding_problem_attempt', 0, isSolved ? 100 : 0);
+        toast(isSolved ? '✅ Solution looks correct!' : '⚠️ Analysis complete', isSolved ? 'success' : 'info');
+      } else if (mode === 'debug') {
+        setDebugContent(fullText);
+        toast('🐞 Debug trace complete', 'info');
+      } else if (mode === 'review') {
+        setReviewContent(fullText);
+        toast('👀 Code review complete', 'success');
+      }
 
-      // Check if verdict contains "Correct"
-      const isSolved = fullText.toLowerCase().includes('✅') || fullText.toLowerCase().includes('correct');
-      await updateCodingProblem(problemId, { ai_analysis: fullText, status: isSolved ? 'solved' : 'attempted' });
-      setProblem(prev => ({ ...prev, status: isSolved ? 'solved' : 'attempted', ai_analysis: fullText, user_code: code }));
-      toast(isSolved ? '✅ Solution looks correct!' : '⚠️ Analysis complete', isSolved ? 'success' : 'info');
+      setStreamingContent('');
     } catch (err) {
       console.error(err);
-      toast('Failed to analyze: ' + err.message, 'error');
+      toast('Failed to process: ' + err.message, 'error');
     }
     setAnalyzing(false);
   };
@@ -72,6 +112,14 @@ export default function CodingWorkspace() {
   };
 
   if (loading) return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
+
+  const renderActiveContent = () => {
+    if (analyzing) return streamingContent;
+    if (activeMode === 'analysis') return analysisContent;
+    if (activeMode === 'debug') return debugContent;
+    if (activeMode === 'review') return reviewContent;
+    return '';
+  };
 
   return (
     <div className="coding-workspace">
@@ -124,9 +172,26 @@ export default function CodingWorkspace() {
         {/* Right: Code editor */}
         <div className="workspace-right">
           <div className="glass-card code-panel">
-            <div className="code-editor-header">
+            <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>{problem.language}</span>
-              <span>{code.split('\n').length} lines</span>
+              <div className="tool-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  className={`btn btn-sm ${activeMode === 'debug' ? 'btn-primary' : 'btn-ghost'}`} 
+                  onClick={() => handleAction('debug')}
+                  disabled={analyzing}
+                  title="Visual Debugger (Simulated Trace)"
+                >
+                  <Bug size={14} /> Debug
+                </button>
+                <button 
+                  className={`btn btn-sm ${activeMode === 'review' ? 'btn-primary' : 'btn-ghost'}`} 
+                  onClick={() => handleAction('review')}
+                  disabled={analyzing}
+                  title="Senior Developer Code Review"
+                >
+                  <Search size={14} /> Review
+                </button>
+              </div>
             </div>
             <textarea
               className="code-textarea"
@@ -137,17 +202,28 @@ export default function CodingWorkspace() {
               spellCheck="false"
             />
             <div className="code-actions">
-              <button className="btn btn-primary" onClick={handleSubmit} disabled={analyzing || !code.trim()}>
-                {analyzing ? <><Loader size={16} className="spin-icon" /> Analyzing...</> : <><Play size={16} /> Submit for AI Analysis</>}
+              <button className={`btn ${activeMode === 'analysis' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => handleAction('analysis')} disabled={analyzing || !code.trim()}>
+                {analyzing && activeMode === 'analysis' ? <><Loader size={16} className="spin-icon" /> Analyzing...</> : <><Play size={16} /> Submit for Analysis</>}
               </button>
             </div>
           </div>
 
-          {/* Analysis */}
-          {(analyzing || analysis) && (
+          {/* Analysis / Output Panel */}
+          {(analyzing || analysisContent || debugContent || reviewContent) && (
             <div className="glass-card analysis-panel">
-              <div className="markdown-body">
-                <MarkdownRenderer remarkPlugins={[remarkGfm]}>{analyzing ? streamingAnalysis : analysis}</MarkdownRenderer>
+              <div className="analysis-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <span style={{ fontWeight: activeMode === 'analysis' ? 'bold' : 'normal', color: activeMode === 'analysis' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('analysis')}>
+                  Analysis Verdict
+                </span>
+                <span style={{ fontWeight: activeMode === 'debug' ? 'bold' : 'normal', color: activeMode === 'debug' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('debug')}>
+                  Debug Trace
+                </span>
+                <span style={{ fontWeight: activeMode === 'review' ? 'bold' : 'normal', color: activeMode === 'review' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('review')}>
+                  Code Review
+                </span>
+              </div>
+              <div className={`markdown-body ${activeMode === 'debug' ? 'debug-trace' : ''}`}>
+                <MarkdownRenderer remarkPlugins={[remarkGfm]}>{renderActiveContent() || 'No data yet for this mode. Run the tool above.'}</MarkdownRenderer>
                 {analyzing && <span className="cursor-blink">|</span>}
               </div>
             </div>

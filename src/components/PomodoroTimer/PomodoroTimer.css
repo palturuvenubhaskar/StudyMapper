@@ -1,0 +1,62 @@
+.pomodoro-timer {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pomodoro-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pomodoro-display {
+  font-size: 2.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.pomodoro-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pomodoro-btn:hover {
+  background: var(--hover-bg);
+  transform: scale(1.05);
+}
+
+.pomodoro-btn.play-pause {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.pomodoro-btn.play-pause:hover {
+  background: var(--primary-hover);
+}

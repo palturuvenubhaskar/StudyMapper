@@ -53,7 +53,7 @@ export default function CreateSubject() {
       setUnits(result.units.map((u, i) => ({
         id: uuidv4(),
         title: u.title || `Unit ${i + 1}`,
-        topics: (u.topics || []).map(t => ({ id: uuidv4(), title: t })),
+        topics: (u.topics || []).map(t => typeof t === 'string' ? { id: uuidv4(), title: t, prereq_titles: [] } : { id: uuidv4(), title: t.title || 'Untitled Topic', prereq_titles: t.prereq_titles || [] }),
       })));
       
       setStep('review');
@@ -95,7 +95,7 @@ export default function CreateSubject() {
   const addTopic = (unitId) => {
     setUnits(units.map(u => u.id === unitId ? {
       ...u,
-      topics: [...u.topics, { id: uuidv4(), title: '' }],
+      topics: [...u.topics, { id: uuidv4(), title: '', prereq_titles: [] }],
     } : u));
   };
 
@@ -169,8 +169,23 @@ export default function CreateSubject() {
           title: t.title.trim(),
           order_index: j,
           has_content: 0,
+          prereq_titles: t.prereq_titles || [],
         });
       });
+    });
+
+    // Post-Processing Linker: Resolve prereq_titles to actual topic IDs
+    dbTopics.forEach(topic => {
+      topic.prerequisite_topic_ids = [];
+      if (topic.prereq_titles && topic.prereq_titles.length > 0) {
+        topic.prereq_titles.forEach(prereqTitle => {
+          const match = dbTopics.find(t => t.title.toLowerCase().includes(prereqTitle.toLowerCase()) || prereqTitle.toLowerCase().includes(t.title.toLowerCase()));
+          if (match && match.id !== topic.id) {
+            topic.prerequisite_topic_ids.push(match.id);
+          }
+        });
+      }
+      delete topic.prereq_titles; // Cleanup temporary field
     });
 
     try {

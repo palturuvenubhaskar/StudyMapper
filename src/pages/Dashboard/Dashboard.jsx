@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSubjects, deleteSubject, getSubjectProgress, getUnitsForSubject, getAllQuestionBanks } from '../../data/repository';
-import { Search, Calendar, ChevronRight, MoreHorizontal, Play, BookOpen, FileText, BarChart2, Plus, Award } from 'lucide-react';
+import { db } from '../../data/db';
+import { Search, Calendar, ChevronRight, MoreHorizontal, Play, BookOpen, FileText, BarChart2, Plus, Award, Activity } from 'lucide-react';
 import StudyPlanner from '../StudyPlanner/StudyPlanner';
 import BookmarksPage from '../BookmarksPage/BookmarksPage';
+import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -11,6 +13,7 @@ export default function Dashboard() {
   const [qbanks, setQbanks] = useState([]);
   const [progress, setProgress] = useState({});
   const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0 });
+  const [analytics, setAnalytics] = useState({ weekData: [], mockAvg: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -46,6 +49,35 @@ export default function Dashboard() {
       avgProgress: subs.length > 0 ? Math.round(totalProgressSum / subs.length) : 0
     });
 
+    // Load Analytics Data
+    try {
+      const exams = await db.mock_exams.toArray();
+      const avgScore = exams.length > 0 
+        ? Math.round(exams.reduce((sum, e) => sum + (e.score || 0), 0) / exams.length)
+        : 0;
+      
+      const sessions = await db.study_sessions.toArray();
+      const last7Days = Array.from({length: 7}, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return {
+          dateStr: d.toISOString().split('T')[0],
+          dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          minutes: 0
+        };
+      });
+      
+      sessions.forEach(s => {
+        const dStr = new Date(s.created_at).toISOString().split('T')[0];
+        const day = last7Days.find(d => d.dateStr === dStr);
+        if (day) day.minutes += (s.duration_minutes || 0);
+      });
+
+      setAnalytics({ weekData: last7Days, mockAvg: avgScore });
+    } catch (err) {
+      console.error('Analytics load error:', err);
+    }
+
     setLoading(false);
   };
 
@@ -62,8 +94,12 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="loading-container" style={{ height: '50vh' }}>
-          <div className="spinner spinner-lg"></div>
+        <div className="dashboard-grid" style={{ padding: '2rem' }}>
+          <div className="skeleton" style={{ height: '140px', marginBottom: '24px' }}></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+             <div className="skeleton" style={{ height: '120px' }}></div>
+             <div className="skeleton" style={{ height: '120px' }}></div>
+          </div>
         </div>
       ) : (
         <div className="dashboard-grid">
@@ -114,7 +150,68 @@ export default function Dashboard() {
                    <div style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{stats.avgProgress}%</div>
                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: '500' }}>Avg Progress</div>
                 </div>
-              </div>
+             </div>
+             
+             {/* Gamification Dashboard */}
+             <div style={{ gridColumn: '1 / -1' }}>
+               <GamificationDashboard userId="guest" />
+             </div>
+
+             {/* Analytics Dashboard */}
+             <div className="surface-card analytics-panel" style={{ gridColumn: '1 / -1', padding: '24px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                 <Activity size={24} color="var(--accent-primary)" />
+                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Study Analytics</h2>
+               </div>
+               
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
+                 {/* 7-Day Study Time Chart */}
+                 <div>
+                   <h3 style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Study Time (Last 7 Days)</h3>
+                   <div style={{ display: 'flex', alignItems: 'flex-end', height: '150px', gap: '8px', paddingBottom: '24px', borderBottom: '1px solid var(--border-glass)', position: 'relative' }}>
+                     {analytics.weekData.map((day, idx) => {
+                       const maxMins = Math.max(...analytics.weekData.map(d => d.minutes), 60);
+                       const heightPct = Math.min((day.minutes / maxMins) * 100, 100);
+                       return (
+                         <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                           <div style={{ 
+                             width: '100%', 
+                             background: 'linear-gradient(to top, var(--accent-brand), var(--accent-primary))',
+                             height: `${heightPct}%`,
+                             minHeight: day.minutes > 0 ? '4px' : '0',
+                             borderRadius: '4px 4px 0 0',
+                             transition: 'height 0.3s ease'
+                           }}></div>
+                           <span style={{ position: 'absolute', bottom: '0', fontSize: '0.8rem', color: 'var(--text-muted)', paddingTop: '4px' }}>{day.dayName}</span>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+
+                 {/* Mock Exam Average */}
+                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Mock Exam Performance</h3>
+                    <div style={{ background: 'var(--bg-panel)', padding: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+                      <div style={{ 
+                        width: '80px', height: '80px', borderRadius: '50%', 
+                        background: `conic-gradient(var(--accent-primary) ${analytics.mockAvg * 3.6}deg, var(--bg-hover) 0deg)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'relative'
+                      }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--bg-panel)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{analytics.mockAvg}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Average Score</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Across all subjects</div>
+                      </div>
+                    </div>
+                 </div>
+               </div>
+             </div>
+
            </div>
 
 

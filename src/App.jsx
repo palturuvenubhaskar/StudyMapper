@@ -12,6 +12,9 @@ import SearchPage from './pages/SearchPage/SearchPage';
 import BookmarksPage from './pages/BookmarksPage/BookmarksPage';
 import CreateQuestionBank from './pages/CreateQuestionBank/CreateQuestionBank';
 import QuestionBankView from './pages/QuestionBankView/QuestionBankView';
+import MockExamSetup from './components/MockExamSimulator/MockExamSetup';
+import MockExamSession from './components/MockExamSimulator/MockExamSession';
+import MockExamResults from './components/MockExamSimulator/MockExamResults';
 import SkillRoadmap from './pages/SkillRoadmap/SkillRoadmap';
 import Placement from './pages/Placement/Placement';
 import AptitudePractice from './pages/Placement/AptitudePractice';
@@ -22,6 +25,7 @@ import CodingWorkspace from './pages/CodingPractice/CodingWorkspace';
 import LearningWorkspace from './pages/CodingPractice/LearningWorkspace';
 import StudyPlanner from './pages/StudyPlanner/StudyPlanner';
 import AIAssistant from './components/AIAssistant/AIAssistant';
+import AIStudyCoach from './components/AIStudyCoach/AIStudyCoach';
 import Sidebar from './components/Sidebar/Sidebar';
 import RightSidebar from './components/Sidebar/RightSidebar';
 import CommandPalette from './components/CommandPalette/CommandPalette';
@@ -55,6 +59,10 @@ function AppContent() {
             <Route path="/subject/:subjectId/qb/create" element={<CreateQuestionBank />} />
             <Route path="/qb/create" element={<CreateQuestionBank />} />
             <Route path="/qb/:bankId" element={<QuestionBankView />} />
+            {/* Mock Exam */}
+            <Route path="/mock-exam/setup/:bankId" element={<MockExamSetup />} />
+            <Route path="/mock-exam/session/:bankId" element={<MockExamSession />} />
+            <Route path="/mock-exam/results/:examId" element={<MockExamResults />} />
             {/* AI Career Features */}
             <Route path="/roadmap" element={<SkillRoadmap />} />
             <Route path="/roadmap/:roadmapId" element={<SkillRoadmap />} />
@@ -72,6 +80,7 @@ function AppContent() {
       </div>
       {!isLoginPage && <MobileNav />}
       {!isLoginPage && <AIAssistant />}
+      {!isLoginPage && <AIStudyCoach userId="guest" />}
       <CommandPalette isOpen={isSearchOpen} onClose={setIsSearchOpen} />
     </div>
   );

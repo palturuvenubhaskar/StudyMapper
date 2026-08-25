@@ -248,3 +248,43 @@
     font-size: 1.3rem;
   }
 }
+
+/* Phase 9 Additions */
+.podcast-panel, .quiz-panel, .concept-web-panel {
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.podcast-panel h2, .quiz-panel h2, .concept-web-panel h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.quiz-question p {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.quiz-question .btn {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.mindmap-container {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--bg-glass);
+  border-radius: 8px;
+}

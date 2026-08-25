@@ -6,6 +6,7 @@ import { db } from '../../data/db';
 import { deleteSubject, deleteQuestionBank } from '../../data/repository';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import PomodoroTimer from '../PomodoroTimer/PomodoroTimer';
 import './RightSidebar.css';
 
 export default function RightSidebar() {
@@ -54,6 +55,8 @@ export default function RightSidebar() {
           </div>
         </div>
       )}
+      
+      <PomodoroTimer />
 
       <div className="rs-section-header">
         <h3 className="rs-section-title">Your Subjects</h3>

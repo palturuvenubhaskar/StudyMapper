@@ -229,7 +229,12 @@ Return ONLY a valid JSON object matching this schema exactly:
   "units": [
     {
       "title": "Unit Title",
-      "topics": ["Topic 1", "Topic 2"]
+      "topics": [
+        {
+          "title": "Topic Name",
+          "prereq_titles": ["Prerequisite Topic Name (if any from this subject)"]
+        }
+      ]
     }
   ]
 }
@@ -245,13 +250,13 @@ ${ocrText}`
       const subject = subjectMatch ? subjectMatch[1] : 'Parsing Subject...';
       
       const units = [];
-      const unitMatches = [...text.matchAll(/\{\s*"title":\s*"([^"]+)",\s*"topics":\s*\[(.*?)\]?/gs)];
+      const unitMatches = [...text.matchAll(/\{\s*"title":\s*"([^"]+)",\s*"topics":\s*\[(.*?)\](?=\s*\}|\s*,)/gs)];
       
       for (const m of unitMatches) {
         const title = m[1];
         const topicsRaw = m[2];
-        const topicMatches = [...topicsRaw.matchAll(/"([^"]+)"/g)];
-        const topics = topicMatches.map(tm => tm[1]);
+        const topicMatches = [...topicsRaw.matchAll(/\{\s*"title":\s*"([^"]+)"/g)];
+        const topics = topicMatches.map(tm => ({ title: tm[1], prereq_titles: [] })); // Stream parser simplification
         units.push({ title, topics });
       }
       
@@ -260,8 +265,8 @@ ${ocrText}`
          const title = lastUnitTitleMatch[1];
          if (!units.find(u => u.title === title)) {
             const afterMatch = text.substring(lastUnitTitleMatch.index + lastUnitTitleMatch[0].length);
-            const topicMatches = [...afterMatch.matchAll(/"([^"]+)"/g)];
-            units.push({ title, topics: topicMatches.map(tm => tm[1]) });
+            const topicMatches = [...afterMatch.matchAll(/\{\s*"title":\s*"([^"]+)"/g)];
+            units.push({ title, topics: topicMatches.map(tm => ({ title: tm[1], prereq_titles: [] })) });
          }
       }
       return { subject, units };
@@ -296,7 +301,12 @@ Return ONLY a valid JSON object matching this schema exactly:
   "units": [
     {
       "title": "Unit Title",
-      "topics": ["Topic 1", "Topic 2"]
+      "topics": [
+        {
+          "title": "Topic Name",
+          "prereq_titles": ["Prerequisite Topic Name (if any from this subject)"]
+        }
+      ]
     }
   ]
 }`;
@@ -337,7 +347,7 @@ Return ONLY a valid JSON object matching this schema exactly. For any missing/in
   "introduction": "Simple explanation: What it is, why it is important, where it is used.",
   "core_concepts": "Markdown string: Break into logical sections with headings. Explain technical terms when they first appear.",
   "how_it_works": "Markdown string: Step-by-step process using numbered points. Skip if not applicable.",
-  "diagram": "Markdown string: ONLY IF HELPFUL, generate a Mermaid diagram (inside a markdown code block with 'mermaid' language). CRITICAL: Quote node labels containing special characters or spaces (e.g., id[\"Label (Extra Info)\"]). Skip if it doesn't add value.",
+  "diagram": "Markdown string: ALWAYS ATTEMPT to generate a Mermaid diagram if the topic has any visual architecture, workflow, hierarchy, or flowchart. MUST be inside a markdown code block with 'mermaid' language (e.g. \`\`\`mermaid\\ngraph TD\\n...\\n\`\`\`). CRITICAL: Quote node labels containing special characters or spaces (e.g., id[\"Label (Extra Info)\"]).",
   "real_life_analogy": "One simple everyday analogy.",
   "real_world_example": "One practical example in real life, industry, or technology.",
   "applications": ["Application 1: one-line explanation", "Application 2: one-line explanation"],
@@ -351,7 +361,8 @@ Return ONLY a valid JSON object matching this schema exactly. For any missing/in
     }
   ],
   "key_points": ["Important definition", "Keyword", "Exam-focused point"],
-  "summary": ["Bullet point 1", "Bullet point 2"]
+  "summary": ["Bullet point 1", "Bullet point 2"],
+  "video_queries": ["YouTube search term 1 (e.g. 'Binary Search Tree visualization')", "YouTube search term 2", "YouTube search term 3"]
 }`
   }
 ];
@@ -723,6 +734,31 @@ If there's a significantly better algorithm, explain it with pseudocode.
 Be thorough but encouraging.` }
 ];
 
+export const generateVisualDebugPrompt = (problem, code, language) => [
+  { role: 'system', content: `You are a visual debugger. Trace the execution of the user's code step-by-step using the sample input. Output a markdown table with headers: | Step | Line | Variables | Explanation |.` },
+  { role: 'user', content: `Problem: ${problem.title}\nSample Input: ${problem.sample_input}\n\nUser Code:\n\`\`\`${language}\n${code}\n\`\`\`\n\nGenerate the execution trace.` }
+];
+
+export const generateCodeReviewPrompt = (problem, code, language) => [
+  { role: 'system', content: `You are a Senior Staff Engineer reviewing a Pull Request. Provide a professional code review. Analyze Big-O Time & Space Complexity, discuss edge cases, naming conventions, and provide actionable optimization tips.` },
+  { role: 'user', content: `Problem: ${problem.title}\n\nUser Code:\n\`\`\`${language}\n${code}\n\`\`\`\n\nPlease review this code.` }
+];
+
+export const generatePodcastScriptPrompt = (topicTitle, contentString) => [
+  { role: 'system', content: `You are an AI podcast generator. Create an engaging 2-minute conversation between 'Host' and 'Expert' that explains the core concepts.` },
+  { role: 'user', content: `Topic: ${topicTitle}\n\nContent:\n${contentString}\n\nGenerate a transcript. Use format:\n**Host**: ...\n**Expert**: ...` }
+];
+
+export const generateQuickQuizPrompt = (topicTitle, contentString) => [
+  { role: 'system', content: `You are an AI quiz generator. Create exactly 3 multiple-choice questions based on the content. Output ONLY a valid JSON array of objects with keys: "question", "options" (array of 4 strings), "answer" (string matching one option exactly), "explanation" (string).` },
+  { role: 'user', content: `Topic: ${topicTitle}\n\nContent:\n${contentString}\n\nGenerate the JSON.` }
+];
+
+export const generateConceptWebPrompt = (topicTitle, contentString) => [
+  { role: 'system', content: `You are an AI mindmap generator. Generate a valid Mermaid.js mindmap summarizing the content. Start with "mindmap\\n  root(Topic)" and use proper indentation and parentheses/brackets.` },
+  { role: 'user', content: `Topic: ${topicTitle}\n\nContent:\n${contentString}\n\nGenerate the Mermaid mindmap block only (wrapped in \`\`\`mermaid\n...\n\`\`\`).` }
+];
+
 export const generateSimilarProblemsPrompt = (problemTitle, topic) => [
   { role: "system", content: "You are an expert DSA instructor. Generate similar practice problems. Return ONLY valid JSON, no markdown." },
   { role: "user", content: `Based on the problem "${problemTitle}" in the topic "${topic}", suggest 5 similar problems for further practice.
@@ -853,4 +889,50 @@ Return ONLY a JSON object exactly matching this schema:
   "priority_topics": ["Topic 1 from timetable", "Topic 2 from timetable"],
   "revision_tasks": ["Revision Task 1", "Revision Task 2"]
 }`;
+};
+
+// ========== MOCK EXAM PROMPTS ==========
+export const generateQuestionVariant = async (questionText, marks) => {
+  const messages = [
+    {
+      role: "system",
+      content: "You are an expert exam setter. Generate a similar question testing the same concept but with different numbers, scenarios, or phrasing. Return ONLY valid JSON."
+    },
+    {
+      role: "user",
+      content: `Given this question:\n"${questionText}"\n(Marks: ${marks})\n\nGenerate a variant of this question.\nReturn ONLY a JSON object matching this schema:\n{\n  "title": "Short title/concept",\n  "text": "The new question text",\n  "marks": ${marks}\n}`
+    }
+  ];
+  const response = await callOpenRouter(messages);
+  return extractJson(response);
+};
+
+export const analyzeMockExamPerformance = async (questions, userAnswers) => {
+  const messages = [
+    {
+      role: "system",
+      content: "You are an expert examiner. Analyze the student's mock exam performance and provide a detailed markdown report."
+    },
+    {
+      role: "user",
+      content: `Here is a mock exam submission.\nQuestions:\n${JSON.stringify(questions.map(q => ({ id: q.id, text: q.text, marks: q.marks })))}\n\nStudent's Answers:\n${JSON.stringify(userAnswers)}\n\nPlease provide a Markdown report that includes:\n1. Overall Score estimation (out of total marks)\n2. Breakdown of Strengths\n3. Breakdown of Weaknesses\n4. Recommended Revision Strategy`
+    }
+  ];
+  return await callOpenRouter(messages);
+};
+
+export const analyzeWrongAnswer = async (questionText, wrongAnswer) => {
+  const prompt = [
+    { role: 'system', content: 'You are an expert tutor. A student got a question wrong. Explain clearly why they are wrong, what they likely confused, and the correct concept. Keep it concise.' },
+    { role: 'user', content: `Question: ${questionText}\n\nStudent's Wrong Answer: ${wrongAnswer}\n\nExplain the error and the correct concept.` }
+  ];
+  return callOpenRouter(prompt);
+};
+
+export const generateFlashcardMnemonic = async (front, back) => {
+  const prompt = [
+    { role: 'system', content: 'You are a creative learning assistant. Create a weird, absurd, and memorable mnemonic or short story to help remember a flashcard. Keep it under 3 sentences.' },
+    { role: 'user', content: `Flashcard Front: ${front}\nFlashcard Back: ${back}\n\nGenerate a memory hook.` }
+  ];
+  return callOpenRouter(prompt);
 };

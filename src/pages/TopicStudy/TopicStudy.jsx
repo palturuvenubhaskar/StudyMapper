@@ -2,11 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../data/db';
 import { getLatestTopicContent, saveTopicContent, recordTopicOpened, isTopicBookmarked, addBookmark, deleteBookmark, getBookmarksForTopic, getNotesForTopic, addNote, updateNote, deleteNote } from '../../data/repository';
-import { callOpenRouterStream, getTopicNotesPrompt, extractJson } from '../../core/api/aiService';
+import { callOpenRouterStream, getTopicNotesPrompt, extractJson, generatePodcastScriptPrompt, generateQuickQuizPrompt, generateConceptWebPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download, Star, Volume2, Mic, CheckSquare, GitBranch, Pause, Square, Play, X } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
+import YouTubeLinker from '../../components/YouTubeLinker/YouTubeLinker';
+import { awardXP } from '../../core/gamification/xpEngine';
+import { updateQuestProgress } from '../../core/gamification/dailyQuests';
+import { checkAchievements } from '../../core/gamification/achievementChecker';
+import { updateStreak } from '../../core/gamification/streakTracker';
+import { logEvent } from '../../core/analytics/tracker';
 import './TopicStudy.css';
 
 const SECTION_MAP = [
@@ -97,6 +103,7 @@ export default function TopicStudy() {
 
   const [topic, setTopic] = useState(null);
   const [subject, setSubject] = useState(null);
+  const [prerequisites, setPrerequisites] = useState([]);
   const [content, setContent] = useState(null);
   const [parsedContent, setParsedContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +125,25 @@ export default function TopicStudy() {
   const [collapsedSections, setCollapsedSections] = useState(new Set());
   const [readingProgress, setReadingProgress] = useState(0);
 
+  // Phase 9 Features
+  const [isTTSPlaying, setIsTTSPlaying] = useState(false);
+  const [isTTSPaused, setIsTTSPaused] = useState(false);
+  
+  const [podcastScript, setPodcastScript] = useState('');
+  const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
+  const [showPodcast, setShowPodcast] = useState(false);
+  
+  const [quickQuiz, setQuickQuiz] = useState(null);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [showQuizResult, setShowQuizResult] = useState(false);
+
+  const [conceptWeb, setConceptWeb] = useState('');
+  const [isGeneratingConceptWeb, setIsGeneratingConceptWeb] = useState(false);
+  const [showConceptWeb, setShowConceptWeb] = useState(false);
+
+  const studyStartTime = useRef(Date.now());
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollTotal = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -127,8 +153,15 @@ export default function TopicStudy() {
       }
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      // Log duration when leaving the page
+      if (topicId) {
+        const durationSeconds = Math.floor((Date.now() - studyStartTime.current) / 1000);
+        logEvent('guest', topicId, 'topic_study', durationSeconds, null).catch(console.error);
+      }
+    };
+  }, [topicId]);
 
   const loadTopicData = async () => {
     setLoading(true);
@@ -140,6 +173,13 @@ export default function TopicStudy() {
     if (unit) {
       const sub = await db.subjects.get(unit.subject_id);
       setSubject(sub);
+    }
+
+    if (topicData.prerequisite_topic_ids && topicData.prerequisite_topic_ids.length > 0) {
+      const prereqs = await db.topics.where('id').anyOf(topicData.prerequisite_topic_ids).toArray();
+      setPrerequisites(prereqs);
+    } else {
+      setPrerequisites([]);
     }
 
     await recordTopicOpened(topicId);
@@ -155,6 +195,19 @@ export default function TopicStudy() {
   };
 
   useEffect(() => { loadTopicData(); }, [topicId]);
+
+  const handleRateDifficulty = async (rating) => {
+    if (!topic) return;
+    try {
+      const updated = { ...topic, difficulty_rating: rating };
+      await db.topics.put(updated);
+      setTopic(updated);
+      toast(`Difficulty rated ${rating} stars`, 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to save rating', 'error');
+    }
+  };
 
   const handleGenerate = async (regenerate = false) => {
     if (!subject || !topic) return;
@@ -195,6 +248,15 @@ export default function TopicStudy() {
         setContent(saved);
         setParsedContent(parsed);
         setStreamParsed(null);
+        
+        if (!regenerate) {
+          await awardXP('guest', 50, 'generate_notes', topicId);
+          await updateQuestProgress('guest', 'generate_notes', 1);
+          await updateStreak('guest');
+          await checkAchievements('guest');
+          await logEvent('guest', topicId, 'generate_notes', 0, null);
+        }
+
         toast(regenerate ? 'Topic regenerated!' : 'Notes generated!', 'success');
       } else {
         toast('AI response could not be parsed. Try regenerating.', 'error');
@@ -248,6 +310,112 @@ export default function TopicStudy() {
       else next.add(key);
       return next;
     });
+  };
+
+  // Phase 9 Handlers
+  const handleTTSPlay = () => {
+    if (!parsedContent) return;
+    if (isTTSPaused) {
+      window.speechSynthesis.resume();
+      setIsTTSPaused(false);
+      setIsTTSPlaying(true);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    
+    // Build text to read
+    let textToRead = `${parsedContent.topic_header?.topic_name || topic?.title}. `;
+    SECTION_MAP.forEach(([key, title]) => {
+      if (parsedContent[key]) {
+        textToRead += `${title}. `;
+        if (Array.isArray(parsedContent[key])) {
+          textToRead += parsedContent[key].map(item => typeof item === 'string' ? item : item.term).join('. ') + '. ';
+        } else {
+          textToRead += `${parsedContent[key]}. `;
+        }
+      }
+    });
+
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.onend = () => { setIsTTSPlaying(false); setIsTTSPaused(false); };
+    window.speechSynthesis.speak(utterance);
+    setIsTTSPlaying(true);
+    setIsTTSPaused(false);
+  };
+
+  const handleTTSPause = () => {
+    window.speechSynthesis.pause();
+    setIsTTSPaused(true);
+    setIsTTSPlaying(false);
+  };
+
+  const handleTTSStop = () => {
+    window.speechSynthesis.cancel();
+    setIsTTSPlaying(false);
+    setIsTTSPaused(false);
+  };
+
+  const handleGeneratePodcast = async () => {
+    if (!content) return;
+    setShowPodcast(true);
+    setIsGeneratingPodcast(true);
+    setPodcastScript('');
+    try {
+      const prompt = generatePodcastScriptPrompt(topic?.title, content);
+      await callOpenRouterStream(prompt, setPodcastScript);
+    } catch (err) {
+      toast('Podcast generation failed.', 'error');
+    }
+    setIsGeneratingPodcast(false);
+  };
+
+  const handleGenerateQuickQuiz = async () => {
+    if (!content) return;
+    setShowQuizResult(false);
+    setQuizAnswers({});
+    setQuickQuiz(null);
+    setIsGeneratingQuiz(true);
+    try {
+      const prompt = generateQuickQuizPrompt(topic?.title, content);
+      let jsonString = '';
+      await callOpenRouterStream(prompt, (t) => { jsonString = t; });
+      const parsed = extractJson(jsonString);
+      if (Array.isArray(parsed)) {
+        setQuickQuiz(parsed);
+      } else {
+        toast('Quiz format invalid.', 'error');
+      }
+    } catch (err) {
+      toast('Quiz generation failed.', 'error');
+    }
+    setIsGeneratingQuiz(false);
+  };
+
+  const handleQuizSelect = (qIndex, option) => {
+    setQuizAnswers(prev => ({ ...prev, [qIndex]: option }));
+  };
+
+  const handleQuizSubmit = () => {
+    setShowQuizResult(true);
+  };
+
+  const handleGenerateConceptWeb = async () => {
+    if (!content) return;
+    setShowConceptWeb(true);
+    setIsGeneratingConceptWeb(true);
+    setConceptWeb('');
+    try {
+      const prompt = generateConceptWebPrompt(topic?.title, content);
+      let mmText = '';
+      await callOpenRouterStream(prompt, (t) => {
+        mmText = t;
+        const cleaned = t.replace(/```mermaid\n?/g, '').replace(/```/g, '');
+        setConceptWeb(cleaned);
+      });
+    } catch (err) {
+      toast('Concept Web generation failed.', 'error');
+    }
+    setIsGeneratingConceptWeb(false);
   };
 
   const handleCopyContent = () => {
@@ -367,7 +535,19 @@ export default function TopicStudy() {
   };
 
   if (loading) {
-    return <div className="loading-container"><div className="spinner spinner-lg"></div><p>Loading topic...</p></div>;
+    return (
+      <div className="topic-study" style={{ padding: '2rem' }}>
+        <div className="skeleton skeleton-title"></div>
+        <div className="skeleton skeleton-text"></div>
+        <div className="skeleton skeleton-text"></div>
+        <div className="skeleton skeleton-text short"></div>
+        <div style={{ marginTop: '2rem' }}>
+          <div className="skeleton skeleton-title" style={{ width: '40%' }}></div>
+          <div className="skeleton skeleton-text"></div>
+          <div className="skeleton skeleton-text"></div>
+        </div>
+      </div>
+    );
   }
 
   // No content, not streaming
@@ -396,18 +576,78 @@ export default function TopicStudy() {
       <div className="reading-progress-bar" style={{ width: `${readingProgress}%` }}></div>
       <div className="topic-top-bar">
         <button className="btn btn-ghost" onClick={() => navigate(-1)}><ArrowLeft size={18} /> Back</button>
+          <div className="topic-header-main">
+            <h1 className="topic-title">{topic.title}</h1>
+            <div className="topic-actions">
+              <button className="btn-icon" onClick={toggleBookmark} title="Bookmark Topic">
+                {bookmarked ? <BookmarkCheck size={22} fill="#10b981" color="#10b981" /> : <Bookmark size={22} />}
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', padding: '6px 12px', borderRadius: '8px', display: 'inline-flex' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Difficulty:</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button 
+                    key={star} 
+                    onClick={() => handleRateDifficulty(star)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    <Star 
+                      size={14} 
+                      fill={(topic.difficulty_rating || 0) >= star ? "#f59e0b" : "transparent"} 
+                      color={(topic.difficulty_rating || 0) >= star ? "#f59e0b" : "var(--border-color)"}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {prerequisites.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Prerequisites:</span>
+                {prerequisites.map(pr => (
+                  <button 
+                    key={pr.id} 
+                    className="btn btn-ghost btn-sm" 
+                    style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '2px 8px', fontSize: '0.8rem', borderRadius: '4px' }}
+                    onClick={() => navigate(`/topic/${pr.id}`)}
+                  >
+                    {pr.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         <div className="topic-top-actions">
           {!streaming && (
             <>
-              <button className="btn btn-ghost btn-icon" onClick={toggleBookmark} title={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
-                {bookmarked ? <BookmarkCheck size={20} color="var(--accent-brand)" /> : <Bookmark size={20} />}
-              </button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowNotes(!showNotes)}>
                 <StickyNote size={14} /> Notes ({notes.length})
               </button>
               <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/topic/${topicId}/flashcards`)}>
                 <Layers size={14} /> Flashcards
               </button>
+              {isTTSPlaying ? (
+                <button className="btn btn-primary btn-sm" onClick={handleTTSPause}>
+                  <Pause size={14} /> Pause Listen
+                </button>
+              ) : isTTSPaused ? (
+                <button className="btn btn-primary btn-sm" onClick={handleTTSPlay}>
+                  <Play size={14} /> Resume Listen
+                </button>
+              ) : (
+                <button className="btn btn-secondary btn-sm" onClick={handleTTSPlay}>
+                  <Volume2 size={14} /> Listen
+                </button>
+              )}
+              {isTTSPlaying || isTTSPaused ? (
+                <button className="btn btn-ghost btn-icon" onClick={handleTTSStop} title="Stop Listen">
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : null}
               <button className="btn btn-ghost btn-icon" onClick={handleCopyContent} title="Copy Notes">
                 <Copy size={20} />
               </button>
@@ -465,6 +705,117 @@ export default function TopicStudy() {
           renderSection(key, title, displayData[key])
         )}
       </div>
+
+      {!streaming && displayData && (
+        <div className="phase9-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" onClick={handleGenerateConceptWeb} disabled={isGeneratingConceptWeb}>
+            {isGeneratingConceptWeb ? <Loader size={16} className="spin-icon"/> : <GitBranch size={16} />} 
+            Generate Concept Web
+          </button>
+          <button className="btn btn-secondary" onClick={handleGeneratePodcast} disabled={isGeneratingPodcast}>
+            {isGeneratingPodcast ? <Loader size={16} className="spin-icon"/> : <Mic size={16} />} 
+            Generate Podcast Script
+          </button>
+          <button className="btn btn-primary" onClick={handleGenerateQuickQuiz} disabled={isGeneratingQuiz}>
+            {isGeneratingQuiz ? <Loader size={16} className="spin-icon"/> : <CheckSquare size={16} />} 
+            Take Quick Quiz
+          </button>
+        </div>
+      )}
+
+      {/* Podcast Panel */}
+      {showPodcast && (
+        <div className="glass-card podcast-panel" style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>🎙️ Podcast Script</h2>
+            <button className="btn btn-ghost btn-icon" onClick={() => setShowPodcast(false)}><X size={16}/></button>
+          </div>
+          {isGeneratingPodcast && !podcastScript && (
+            <div className="loading-container"><Loader className="spin-icon" /> Generating script...</div>
+          )}
+          <div className="markdown-body">
+            <MarkdownRenderer>{podcastScript}</MarkdownRenderer>
+          </div>
+        </div>
+      )}
+
+      {/* Concept Web Panel */}
+      {showConceptWeb && (
+        <div className="glass-card concept-web-panel" style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>🕸️ Concept Web</h2>
+            <button className="btn btn-ghost btn-icon" onClick={() => setShowConceptWeb(false)}><X size={16}/></button>
+          </div>
+          {isGeneratingConceptWeb && !conceptWeb && (
+            <div className="loading-container"><Loader className="spin-icon" /> Generating mindmap...</div>
+          )}
+          {conceptWeb && (
+            <div className="mindmap-container">
+              <MermaidRenderer chart={conceptWeb} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick Quiz Panel */}
+      {quickQuiz && (
+        <div className="glass-card quiz-panel" style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>🧠 Quick Quiz</h2>
+            <button className="btn btn-ghost btn-icon" onClick={() => setQuickQuiz(null)}><X size={16}/></button>
+          </div>
+          <div className="quiz-questions">
+            {quickQuiz.map((q, i) => (
+              <div key={i} className="quiz-question" style={{ marginBottom: '1.5rem' }}>
+                <p style={{ fontWeight: 'bold' }}>{i + 1}. {q.question}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {q.options.map((opt, j) => {
+                    const isSelected = quizAnswers[i] === opt;
+                    const isCorrect = opt === q.answer;
+                    const showStatus = showQuizResult;
+                    
+                    let btnClass = "btn btn-outline";
+                    if (isSelected && !showStatus) btnClass = "btn btn-primary";
+                    if (showStatus) {
+                      if (isCorrect) btnClass = "btn btn-success";
+                      else if (isSelected && !isCorrect) btnClass = "btn btn-danger";
+                    }
+
+                    return (
+                      <button 
+                        key={j} 
+                        className={btnClass}
+                        style={{ textAlign: 'left', justifyContent: 'flex-start', height: 'auto', padding: '0.75rem' }}
+                        onClick={() => !showQuizResult && handleQuizSelect(i, opt)}
+                        disabled={showQuizResult}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                {showQuizResult && (
+                  <div className="quiz-explanation" style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <strong>Explanation:</strong> {q.explanation}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {!showQuizResult && Object.keys(quizAnswers).length === quickQuiz.length && (
+            <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1rem' }} onClick={handleQuizSubmit}>Submit Answers</button>
+          )}
+          {showQuizResult && (
+            <div style={{ marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>
+              You scored {quickQuiz.filter((q, i) => quizAnswers[i] === q.answer).length} / {quickQuiz.length}!
+            </div>
+          )}
+        </div>
+      )}
+
+      {displayData?.video_queries && displayData.video_queries.length > 0 && (
+        <YouTubeLinker queries={displayData.video_queries} />
+      )}
 
     </div>
   );

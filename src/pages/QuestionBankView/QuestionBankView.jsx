@@ -8,6 +8,7 @@ import { ArrowLeft, Play, Loader, FileText, CheckCircle2, Edit2, Check, X, Downl
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
+import QuestionVariantGenerator from '../../components/MockExamSimulator/QuestionVariantGenerator';
 import './QuestionBankView.css';
 
 export default function QuestionBankView() {
@@ -137,8 +138,17 @@ export default function QuestionBankView() {
             </h1>
           )}
         </div>
-        <div className="badge badge-accent">{questions.length} Questions</div>
-
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="badge badge-accent">{questions.length} Questions</div>
+          {questions.length > 0 && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => navigate(`/mock-exam/setup/${bankId}`)}
+            >
+              <Play size={16} /> Take Mock Exam
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="qb-split-layout">
@@ -194,6 +204,14 @@ export default function QuestionBankView() {
                       <button className="btn btn-secondary btn-sm" onClick={() => generateAnswer(selectedQuestion, selectedQuestion.detailPreference || 'simple')}>
                         {selectedQuestion.answer ? <RefreshCwIcon /> : <Play size={14} />} {selectedQuestion.answer ? 'Regenerate' : 'Generate Answer'}
                       </button>
+                      <QuestionVariantGenerator 
+                        originalQuestion={selectedQuestion} 
+                        onVariantGenerated={(variant) => {
+                          setQuestions(prev => [...prev, variant]);
+                          setSelectedQId(variant.id);
+                          toast("Variant generated and saved successfully", "success");
+                        }} 
+                      />
                     </div>
                   )}
                   {isActive && <div className="spinner"></div>}

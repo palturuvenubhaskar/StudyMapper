@@ -11,9 +11,10 @@ import {
 } from '../../data/repository';
 import { callOpenRouter, generateFlashcardsPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, ArrowRight, RotateCcw, Loader, Copy, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCcw, Loader, Copy, Trash2, Play, BrainCircuit } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
+import ReviewSession from '../../components/FlashcardsStudy/ReviewSession';
 import './FlashcardsStudy.css';
 
 export default function FlashcardsStudy() {
@@ -25,10 +26,10 @@ export default function FlashcardsStudy() {
   const [deck, setDeck] = useState(null);
   const [flashcards, setFlashcards] = useState([]);
   
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  const [isReviewing, setIsReviewing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -75,12 +76,20 @@ export default function FlashcardsStudy() {
           }
           
           const newDeck = await createFlashcardDeck(topicId, `${topic.title} Flashcards`);
-          const savedCards = await saveFlashcards(newDeck.id, cardsArray);
+          
+          // Initial SRS fields
+          const cardsWithSRS = cardsArray.map(card => ({
+            ...card,
+            interval: 0,
+            repetitions: 0,
+            easiness_factor: 2.5,
+            next_review_date: new Date().toISOString().split('T')[0] // due today
+          }));
+
+          const savedCards = await saveFlashcards(newDeck.id, cardsWithSRS);
           
           setDeck(newDeck);
           setFlashcards(savedCards);
-          setCurrentIndex(0);
-          setIsFlipped(false);
           toast("Flashcards generated successfully!", "success");
         } else {
           throw new Error("No flashcards returned.");
@@ -95,23 +104,32 @@ export default function FlashcardsStudy() {
     setIsGenerating(false);
   };
 
-  const handleNext = () => {
-    if (currentIndex < flashcards.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(prev => prev + 1), 150); // slight delay for unflip
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(prev => prev - 1), 150);
-    }
-  };
-
   if (loading) {
     return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
   }
+
+  if (isReviewing && deck) {
+    return (
+      <div className="flashcards-container" style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '2rem' }}>
+        <ReviewSession 
+          deckId={deck.id} 
+          onFinish={() => {
+            setIsReviewing(false);
+            loadData(); // reload stats
+          }} 
+        />
+      </div>
+    );
+  }
+
+  // Calculate deck stats
+  const today = new Date().toISOString().split('T')[0];
+  const dueCards = flashcards.filter(c => !c.next_review_date || c.next_review_date <= today);
+  const masteredCards = flashcards.filter(c => c.interval >= 21); // consider mastered if interval >= 21 days
+  const learningCards = flashcards.filter(c => c.interval > 0 && c.interval < 21);
+  const newCards = flashcards.filter(c => c.interval === 0);
+
+  const masteryPercentage = flashcards.length > 0 ? Math.round((masteredCards.length / flashcards.length) * 100) : 0;
 
   return (
     <div className="flashcards-container">
@@ -125,9 +143,13 @@ export default function FlashcardsStudy() {
         </div>
         <div>
           {deck && (
-            <button className="btn btn-secondary btn-sm" onClick={handleGenerate} disabled={isGenerating}>
+            <button className="btn btn-secondary btn-sm" onClick={() => {
+              if (window.confirm('Regenerating will lose all your learning progress for this topic. Are you sure?')) {
+                handleGenerate();
+              }
+            }} disabled={isGenerating}>
               {isGenerating ? <Loader size={14} className="spin-icon" /> : <RotateCcw size={14} />}
-              Regenerate
+              Regenerate All
             </button>
           )}
         </div>
@@ -153,54 +175,58 @@ export default function FlashcardsStudy() {
       )}
 
       {deck && flashcards.length > 0 && !isGenerating && (
-        <>
-          <div className="card-viewport" onClick={() => setIsFlipped(!isFlipped)}>
-            <div className={`flashcard ${isFlipped ? 'flipped' : ''}`}>
-              {/* Front */}
-              <div className="card-face front">
-                {flashcards[currentIndex].tag && (
-                  <div className="card-tag">{flashcards[currentIndex].tag}</div>
-                )}
-                <div className="card-content">
-                  <MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{flashcards[currentIndex].front}</MarkdownRenderer>
-                </div>
-                <div className="card-hint">
-                  <RotateCcw size={14} /> Click to flip
-                </div>
-              </div>
+        <div className="deck-overview">
+          <div className="glass-card overview-card">
+            <BrainCircuit size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{deck.title}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Spaced Repetition Active Recall</p>
 
-              {/* Back */}
-              <div className="card-face back">
-                {flashcards[currentIndex].tag && (
-                  <div className="card-tag">{flashcards[currentIndex].tag}</div>
-                )}
-                <div className="card-content">
-                  <MarkdownRenderer remarkPlugins={[remarkGfm]} components={{ p: 'span' }}>{flashcards[currentIndex].back}</MarkdownRenderer>
-                </div>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem', textAlign: 'center' }}>
+              <div className="stat-box" style={{ padding: '1rem', background: 'var(--bg-hover)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text)' }}>{flashcards.length}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Cards</div>
+              </div>
+              <div className="stat-box" style={{ padding: '1rem', background: '#e0e7ff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4f46e5' }}>{dueCards.length}</div>
+                <div style={{ fontSize: '0.8rem', color: '#4338ca' }}>Due Today</div>
+              </div>
+              <div className="stat-box" style={{ padding: '1rem', background: '#dcfce7', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#16a34a' }}>{masteryPercentage}%</div>
+                <div style={{ fontSize: '0.8rem', color: '#15803d' }}>Mastery</div>
+              </div>
+              <div className="stat-box" style={{ padding: '1rem', background: '#fef3c7', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#d97706' }}>{learningCards.length}</div>
+                <div style={{ fontSize: '0.8rem', color: '#b45309' }}>Learning</div>
               </div>
             </div>
-          </div>
 
-          <div className="flashcards-controls">
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <span>Deck Mastery</span>
+                <span>{masteryPercentage}%</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--bg-hover)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                <div style={{ width: `${masteryPercentage}%`, background: '#22c55e' }}></div>
+                <div style={{ width: `${(learningCards.length / flashcards.length) * 100}%`, background: '#f59e0b' }}></div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%' }}></span> Mastered</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', background: '#f59e0b', borderRadius: '50%' }}></span> Learning</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', background: 'var(--bg-hover)', borderRadius: '50%' }}></span> New</div>
+              </div>
+            </div>
+
             <button 
-              className="btn btn-secondary btn-lg btn-icon" 
-              onClick={handlePrev} 
-              disabled={currentIndex === 0}
+              className="btn btn-primary btn-lg" 
+              style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}
+              onClick={() => setIsReviewing(true)}
+              disabled={dueCards.length === 0}
             >
-              <ArrowLeft size={24} />
-            </button>
-            <span className="progress-text">
-              {currentIndex + 1} / {flashcards.length}
-            </span>
-            <button 
-              className="btn btn-secondary btn-lg btn-icon" 
-              onClick={handleNext} 
-              disabled={currentIndex === flashcards.length - 1}
-            >
-              <ArrowRight size={24} />
+              <Play size={20} /> 
+              {dueCards.length > 0 ? `Study ${dueCards.length} Cards` : 'No Cards Due Today'}
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

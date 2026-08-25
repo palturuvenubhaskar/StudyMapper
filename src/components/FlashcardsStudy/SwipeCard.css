@@ -1,0 +1,112 @@
+.swipe-card-container {
+  width: 100%;
+  max-width: 400px;
+  height: 500px;
+  perspective: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.swipe-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  z-index: 10;
+}
+
+.swipe-card.dragging {
+  cursor: grabbing;
+}
+
+.swipe-card.flipped .swipe-card-inner {
+  transform: rotateY(180deg);
+}
+
+.swipe-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  border-radius: 20px;
+}
+
+.swipe-card-front, .swipe-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  background-color: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+}
+
+.swipe-card-back {
+  transform: rotateY(180deg);
+  background-color: #f8fafc;
+}
+
+.card-tag {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+}
+
+.card-content {
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: #1e293b;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.card-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  animation: pulse 2s infinite;
+}
+
+.swipe-overlay {
+  position: absolute;
+  top: 2rem;
+  padding: 0.5rem 1rem;
+  border: 3px solid;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.5rem;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.right-overlay {
+  left: 2rem;
+  color: #22c55e;
+  border-color: #22c55e;
+  transform: rotate(-15deg);
+}
+
+.left-overlay {
+  right: 2rem;
+  color: #ef4444;
+  border-color: #ef4444;
+  transform: rotate(15deg);
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

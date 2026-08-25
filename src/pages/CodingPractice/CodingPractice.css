@@ -662,3 +662,46 @@
   .coding-tabs-container { flex-direction: column; width: 100%; }
   .premium-tab { justify-content: center; width: 100%; }
 }
+
+/* Add styles for debug trace table */
+.debug-trace table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+}
+
+.debug-trace th {
+  background-color: var(--bg-hover);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--primary);
+}
+
+.debug-trace td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+
+.debug-trace td:nth-child(3) {
+  /* Variables column */
+  color: #10b981;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.analysis-tabs span {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.analysis-tabs span:hover {
+  background-color: var(--bg-hover);
+}
+
+.analysis-tabs span[style*="bold"] {
+  background-color: rgba(79, 70, 229, 0.1); /* Primary soft */
+}

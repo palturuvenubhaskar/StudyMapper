@@ -1,3 +1,4 @@
+export { db } from './db';
 import { db } from './db';
 import { v4 as uuidv4 } from 'uuid';
 

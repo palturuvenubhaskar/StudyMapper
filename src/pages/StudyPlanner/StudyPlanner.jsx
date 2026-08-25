@@ -1,110 +1,90 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  getStudentProfile, 
-  getAllSubjects, 
-  getStudyPlan, 
-  saveStudyPlan,
-  getAllQuestionBanks
-} from '../../data/repository';
-import { db } from '../../data/db';
-import { callOpenRouter, callOpenRouterVision, generateStudyPlanPrompt, generatePlanFromTimetablePrompt, extractJson } from '../../core/api/aiService';
-import { Calendar, RefreshCw, Loader, CheckCircle, Target, BookOpen, Upload, FileImage } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { getStudentProfile, getAllSubjects, getStudyPlan } from '../../data/repository';
+import { generateAdaptivePlan, triggerPanicMode } from '../../core/planner/adaptivePlanner';
+import { downloadIcsFile } from '../../core/planner/icalExport';
+import { Calendar, RefreshCw, Loader, AlertTriangle, Download, BookOpen } from 'lucide-react';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import './StudyPlanner.css';
 
 export default function StudyPlanner() {
   const [profile, setProfile] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [schedule, setSchedule] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [examDate, setExamDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState('internal'); // 'internal' | 'timetable'
-  const fileInputRef = useRef(null);
-  const [selectedImage, setSelectedImage] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
-    loadProfileAndPlan();
+    loadProfileAndData();
   }, []);
 
-  const loadProfileAndPlan = async () => {
+  const loadProfileAndData = async () => {
     const prof = await getStudentProfile();
     setProfile(prof);
+    const subs = await getAllSubjects();
+    setSubjects(subs);
     if (prof) {
       const existingPlan = await getStudyPlan(prof.id);
-      if (existingPlan && existingPlan.plan_data) {
-        setPlan(existingPlan.plan_data);
+      if (existingPlan && existingPlan.plan_json) {
+        setPlan(existingPlan);
+        setSchedule(JSON.parse(existingPlan.plan_json));
+        setExamDate(existingPlan.exam_date || '');
       }
     }
+  };
+
+  const handleSubjectToggle = (id) => {
+    setSelectedSubjects(prev => 
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
   };
 
   const generatePlan = async () => {
-    if (!profile) {
-      toast("Please complete your profile first by generating a Custom AI Roadmap in the Skill Roadmap section.", "error");
+    if (!examDate) {
+      toast("Please select an exam date", "error");
+      return;
+    }
+    if (selectedSubjects.length === 0) {
+      toast("Please select at least one subject", "error");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const subjects = await getAllSubjects();
-      const topics = await db.topics.toArray();
-      const stats = await db.study_stats.toArray();
-      const questionBanks = await getAllQuestionBanks();
-
-      const messages = generateStudyPlanPrompt(profile, subjects, topics, stats, questionBanks);
-      
-      const responseText = await callOpenRouter(messages);
-      const planData = extractJson(responseText);
-      
-      if (planData && planData.weekly_schedule) {
-        await saveStudyPlan(profile.id, planData);
-        setPlan(planData);
-        toast("Study plan updated successfully!", "success");
-      } else {
-        throw new Error("Invalid response format from AI.");
-      }
+      const newPlan = await generateAdaptivePlan(profile.id, examDate, selectedSubjects);
+      setPlan(newPlan);
+      setSchedule(JSON.parse(newPlan.plan_json));
+      toast("Adaptive study plan generated successfully!", "success");
     } catch (err) {
       console.error(err);
-      toast("Failed to generate study plan. Please try again.", "error");
+      toast("Failed to generate plan: " + err.message, "error");
     }
     setIsGenerating(false);
   };
 
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setSelectedImage(ev.target.result);
-      };
-      reader.readAsDataURL(file);
+  const handlePanicMode = async () => {
+    if (!plan) return;
+    if (window.confirm("Panic Mode will forcefully compress your remaining tasks into the days left, potentially dropping low-priority tasks. Continue?")) {
+      setIsGenerating(true);
+      try {
+        const updatedPlan = await triggerPanicMode(plan.id, []); // pass completed topic IDs here if we were tracking them in state
+        setPlan(updatedPlan);
+        setSchedule(JSON.parse(updatedPlan.plan_json));
+        toast("Panic mode activated. Schedule compressed.", "warning");
+      } catch (err) {
+        console.error(err);
+        toast("Failed to activate panic mode.", "error");
+      }
+      setIsGenerating(false);
     }
-    e.target.value = null;
   };
 
-  const generatePlanFromTimetable = async () => {
-    if (!selectedImage) {
-      toast("Please select an image first.", "error");
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const prompt = generatePlanFromTimetablePrompt();
-      const responseText = await callOpenRouterVision(selectedImage, prompt);
-      const planData = extractJson(responseText);
-      
-      if (planData && planData.weekly_schedule) {
-        await saveStudyPlan(profile.id, planData);
-        setPlan(planData);
-        toast("Study plan generated from timetable!", "success");
-        setSelectedImage(null);
-        setActiveTab('internal'); // Switch back to view the plan
-      } else {
-        throw new Error("Invalid response format from AI.");
-      }
-    } catch (err) {
-      console.error(err);
-      toast("Failed to parse timetable. Try a clearer image.", "error");
-    }
-    setIsGenerating(false);
+  const handleExport = () => {
+    if (!schedule) return;
+    downloadIcsFile(schedule);
+    toast("Calendar file downloaded!", "success");
   };
 
   if (!profile) {
@@ -112,7 +92,7 @@ export default function StudyPlanner() {
       <div className="empty-state" style={{ background: 'transparent', border: 'none', height: '100%', flex: 1, marginTop: 0 }}>
         <BookOpen size={48} className="empty-icon" />
         <h3>Profile Required</h3>
-        <p>Please complete your profile by generating a Custom AI Roadmap in the <strong>Skill Roadmap</strong> section to use the Study Planner.</p>
+        <p>Please complete your profile first.</p>
       </div>
     );
   }
@@ -122,138 +102,104 @@ export default function StudyPlanner() {
       <div className="planner-hero">
         <div className="hero-glow-planner"></div>
         <div className="planner-hero-content">
-          <h1 className="planner-title">AI <span>Study Planner</span></h1>
-          <p className="subtitle" style={{ color: 'var(--text-secondary)' }}>Optimize your learning schedule based on your performance.</p>
-        </div>
-        <div className="planner-controls">
-          <div className="premium-tabs">
-            <button 
-              className={`premium-tab ${activeTab === 'internal' ? 'active' : ''}`}
-              onClick={() => setActiveTab('internal')}
-            >
-              My Data Plan
-            </button>
-            <button 
-              className={`premium-tab ${activeTab === 'timetable' ? 'active' : ''}`}
-              onClick={() => setActiveTab('timetable')}
-            >
-              Upload Timetable
-            </button>
-          </div>
+          <h1 className="planner-title">Smart <span>Planner 2.0</span></h1>
+          <p className="subtitle" style={{ color: 'var(--text-secondary)' }}>Adaptive schedule based on topic difficulty and exam date.</p>
         </div>
       </div>
 
-      {isGenerating && (
-        <div className="empty-state" style={{ marginTop: '40px' }}>
-          <Loader size={48} className="spin-icon empty-icon" />
-          <h3>Generating your personalized plan...</h3>
-          <p>This may take a few seconds as the AI analyzes your data.</p>
-        </div>
-      )}
+      <div className="planner-content">
+        <div className="planner-sidebar" style={{ minWidth: '300px' }}>
+          <div className="premium-planner-card">
+            <h2 className="card-title-premium"><Calendar size={20} color="#10b981" /> Configuration</h2>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Target Exam Date</label>
+              <input 
+                type="date" 
+                className="input-field w-full" 
+                value={examDate}
+                onChange={(e) => setExamDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
 
-      {!isGenerating && activeTab === 'timetable' && (
-        <div className="timetable-upload-section">
-          <FileImage size={48} color="#10b981" style={{ marginBottom: '16px' }} />
-          <h3 style={{ color: 'var(--text-primary)', fontSize: '1.4rem', marginBottom: '8px' }}>Generate Plan from Timetable</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', maxWidth: '500px', margin: '0 auto 32px' }}>
-            Upload a clear image of your college timetable, exam schedule, or syllabus outline. The AI will extract it and build a structured study plan for you.
-          </p>
-          
-          <input 
-            type="file" 
-            accept="image/*" 
-            style={{ display: 'none' }} 
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-          />
-          
-          {selectedImage ? (
-            <div style={{ marginBottom: '24px' }}>
-              <img src={selectedImage} alt="Timetable Preview" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', objectFit: 'contain' }} />
-              <div style={{ marginTop: '24px', display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                <button className="btn-premium-secondary" onClick={() => setSelectedImage(null)}>Clear</button>
-                <button className="btn-premium-primary" onClick={generatePlanFromTimetable}>
-                  <Upload size={18} /> Generate Plan
-                </button>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Target Subjects</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {subjects.map(s => (
+                  <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedSubjects.includes(s.id)}
+                      onChange={() => handleSubjectToggle(s.id)}
+                    />
+                    {s.title}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              className="btn-premium-primary w-full" 
+              onClick={generatePlan}
+              disabled={isGenerating}
+              style={{ marginTop: '16px', justifyContent: 'center' }}
+            >
+              {isGenerating ? <Loader className="spin-icon" size={18} /> : <RefreshCw size={18} />}
+              {plan ? 'Regenerate Plan' : 'Generate Adaptive Plan'}
+            </button>
+          </div>
+
+          {plan && (
+            <div className="premium-planner-card" style={{ marginTop: '16px' }}>
+              <h2 className="card-title-premium">Actions</h2>
+              <button className="btn-premium-secondary w-full" onClick={handleExport} style={{ marginBottom: '12px', justifyContent: 'center' }}>
+                <Download size={18} /> Export to Calendar
+              </button>
+              <button className="btn w-full" onClick={handlePanicMode} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', justifyContent: 'center' }}>
+                <AlertTriangle size={18} /> PANIC MODE
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="planner-main">
+          {isGenerating ? (
+             <div className="empty-state" style={{ marginTop: '40px' }}>
+                <Loader size={48} className="spin-icon empty-icon" />
+                <h3>Generating your adaptive plan...</h3>
+             </div>
+          ) : schedule ? (
+            <div className="premium-planner-card">
+              <h2 className="card-title-premium">Day-by-Day Schedule</h2>
+              <div className="weekly-schedule">
+                {Object.entries(schedule).map(([dayIdx, tasks]) => (
+                  <div key={dayIdx} className="premium-day-card" style={{ marginBottom: '16px' }}>
+                    <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '8px' }}>Day {parseInt(dayIdx) + 1}</h3>
+                    {tasks.length === 0 ? (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Rest day / No tasks scheduled</p>
+                    ) : (
+                      <ul className="day-tasks" style={{ paddingLeft: '20px', margin: 0 }}>
+                        {tasks.map((task, i) => (
+                          <li key={i} style={{ padding: '4px 0' }}>
+                            <strong>{task.title}</strong> <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>({task.durationMinutes}m)</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
-            <button className="btn-premium-primary" style={{ margin: '0 auto' }} onClick={() => fileInputRef.current.click()}>
-              <FileImage size={18} /> Select Image
-            </button>
+            <div className="empty-state" style={{ marginTop: '40px' }}>
+              <Calendar size={48} className="empty-icon" />
+              <h3>No Adaptive Plan Yet</h3>
+              <p>Select your exam date and subjects on the left to generate an intelligent study schedule.</p>
+            </div>
           )}
         </div>
-      )}
-
-      {!isGenerating && activeTab === 'internal' && !plan && (
-        <div className="empty-state" style={{ marginTop: '40px' }}>
-          <Calendar size={48} className="empty-icon" />
-          <h3>No Study Plan Yet</h3>
-          <p>Click below to let the AI create a personalized schedule based on your subjects, topics, and question banks.</p>
-          <button className="btn-premium-primary" onClick={generatePlan} style={{ marginTop: '24px' }}>
-            <RefreshCw size={18} /> Generate Plan from My Data
-          </button>
-        </div>
-      )}
-
-      {!isGenerating && activeTab === 'internal' && plan && (
-        <div style={{ marginTop: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-            <button className="btn-premium-secondary" onClick={generatePlan}>
-              <RefreshCw size={16} /> Update Plan
-            </button>
-          </div>
-          <div className="planner-content">
-            <div className="planner-main">
-              <div className="premium-planner-card">
-                <h2 className="card-title-premium"><Calendar size={24} color="#10b981" /> Weekly Schedule</h2>
-                <div className="weekly-schedule">
-                  {plan.weekly_schedule?.map((day, idx) => (
-                    <div key={idx} className="premium-day-card">
-                      <h3>{day.day}</h3>
-                      <div className="day-focus">Focus: {day.focus}</div>
-                      <ul className="day-tasks">
-                        {day.tasks.map((task, i) => (
-                          <li key={i}>{task}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="planner-sidebar">
-              <div className="premium-planner-card">
-                <h2 className="card-title-premium"><Target size={24} color="#3b82f6" /> Daily Tasks</h2>
-                <ul className="premium-list">
-                  {plan.daily_plan?.map((task, i) => (
-                    <li key={i}><CheckCircle size={18} color="#10b981" style={{ flexShrink: 0 }} /> <span>{task}</span></li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="premium-planner-card">
-                <h2 className="card-title-premium"><BookOpen size={24} color="#f59e0b" /> Priority Topics</h2>
-                <ul className="premium-list">
-                  {plan.priority_topics?.map((topic, i) => (
-                    <li key={i}><span>{topic}</span></li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="premium-planner-card">
-                <h2 className="card-title-premium"><RefreshCw size={24} color="#8b5cf6" /> Revision Tasks</h2>
-                <ul className="premium-list">
-                  {plan.revision_tasks?.map((task, i) => (
-                    <li key={i}><span>{task}</span></li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
