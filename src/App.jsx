@@ -25,7 +25,7 @@ import CodingWorkspace from './pages/CodingPractice/CodingWorkspace';
 import LearningWorkspace from './pages/CodingPractice/LearningWorkspace';
 import StudyPlanner from './pages/StudyPlanner/StudyPlanner';
 import AIAssistant from './components/AIAssistant/AIAssistant';
-import AIStudyCoach from './components/AIStudyCoach/AIStudyCoach';
+
 import Sidebar from './components/Sidebar/Sidebar';
 import RightSidebar from './components/Sidebar/RightSidebar';
 import CommandPalette from './components/CommandPalette/CommandPalette';
@@ -80,7 +80,7 @@ function AppContent() {
       </div>
       {!isLoginPage && <MobileNav />}
       {!isLoginPage && <AIAssistant />}
-      {!isLoginPage && <AIStudyCoach userId="guest" />}
+
       <CommandPalette isOpen={isSearchOpen} onClose={setIsSearchOpen} />
     </div>
   );

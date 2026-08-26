@@ -298,22 +298,7 @@
   line-height: 1.5;
 }
 
-.card-footer {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  color: var(--card-color);
-  font-weight: 600;
-  font-size: 0.95rem;
-  gap: 4px;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
 
-.premium-placement-card:hover .card-footer {
-  opacity: 1;
-}
 
 
 /* Shared styles for practice pages */

@@ -37,22 +37,30 @@
 }
 
 .ai-fab {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
   right: 24px;
   width: 56px;
   height: 56px;
   border-radius: var(--radius-full);
-  background: var(--color-snow-white);
-  color: var(--color-graphite);
-  border: 1px solid var(--color-snow-white);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(129, 140, 248, 0.7));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   pointer-events: auto;
-  transition: all var(--transition-fast);
+  transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast);
   z-index: 10000;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+}
+
+.ai-fab:hover {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, var(--accent-primary), #818cf8);
 }
 
 /* Side panel layout by default */
@@ -444,4 +452,58 @@
   .ai-sidebar {
     height: 100vh !important;
   }
+}
+/* --- Study Coach Dashboard Styles --- */
+.coach-message {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding: 24px;
+}
+
+.coach-greeting {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.coach-alert {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+}
+
+.coach-alert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ef4444;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.coach-alert ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.coach-quests {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-light);
+}
+
+.text-warning {
+  color: #f59e0b;
+}
+
+.coach-dashboard-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

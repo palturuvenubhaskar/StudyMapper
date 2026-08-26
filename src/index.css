@@ -4,7 +4,7 @@
 
 :root {
   /* Core Colors */
-  --bg-root: radial-gradient(at 0% 0%, #aee6ff 0px, transparent 50%), radial-gradient(at 100% 0%, #f8bbd0 0px, transparent 50%), radial-gradient(at 100% 100%, #ffe0b2 0px, transparent 50%), radial-gradient(at 0% 100%, #d1c4e9 0px, transparent 50%), #eef2ff;
+  --bg-root: radial-gradient(at 0% 0%, rgba(174, 230, 255, 0.5) 0px, transparent 60%), radial-gradient(at 100% 0%, rgba(248, 187, 208, 0.5) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(255, 224, 178, 0.5) 0px, transparent 60%), radial-gradient(at 0% 100%, rgba(209, 196, 233, 0.5) 0px, transparent 60%), #ffffff;
   --bg-app: transparent;
   --bg-panel: rgba(255, 255, 255, 0.2);
   --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
@@ -63,7 +63,7 @@
 }
 
 [data-theme='light'] {
-  --bg-root: radial-gradient(at 0% 0%, #7dd3fc 0px, transparent 50%), radial-gradient(at 100% 0%, #f9a8d4 0px, transparent 50%), radial-gradient(at 100% 100%, #fcd34d 0px, transparent 50%), radial-gradient(at 0% 100%, #c4b5fd 0px, transparent 50%), #e0e7ff;
+  --bg-root: radial-gradient(at 0% 0%, rgba(125, 211, 252, 0.5) 0px, transparent 60%), radial-gradient(at 100% 0%, rgba(249, 168, 212, 0.5) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(252, 211, 77, 0.5) 0px, transparent 60%), radial-gradient(at 0% 100%, rgba(196, 181, 253, 0.5) 0px, transparent 60%), #ffffff;
   --bg-app: transparent;
   --bg-panel: rgba(255, 255, 255, 0.2);
   --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);

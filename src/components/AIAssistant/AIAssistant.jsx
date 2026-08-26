@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { 
-  getAISessions, 
-  createAISession, 
-  getAIMessages, 
-  deleteAISession, 
-  updateAISession 
-} from '../../data/repository';
-import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, Maximize2, Minimize2 } from 'lucide-react';
+import { getAISessions, createAISession, getAIMessages, deleteAISession, updateAISession } from '../../data/repository';
+import { generateMorningDigest } from '../../core/analytics/morningDigest';
+import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, Maximize2, Minimize2, GraduationCap, AlertCircle, Sparkles } from 'lucide-react';
 import AIChatPanel from './AIChatPanel';
 import './AIAssistant.css';
 
-export default function AIAssistant() {
+export default function AIAssistant({ userId = 'guest' }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isCoding = location.pathname.startsWith('/coding');
@@ -24,11 +19,28 @@ export default function AIAssistant() {
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   
+  const [digest, setDigest] = useState(null);
+
   // Resizing state
   const [panelWidth, setPanelWidth] = useState(() => {
     return parseInt(localStorage.getItem('studymapper_ai_width')) || 450;
   });
   const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const morningData = await generateMorningDigest(userId);
+      if (morningData) {
+        setDigest(morningData);
+      }
+    })();
+  }, [userId]);
+
+  useEffect(() => {
+    const handleToggle = () => setIsOpen(prev => !prev);
+    window.addEventListener('toggle-ai-coach', handleToggle);
+    return () => window.removeEventListener('toggle-ai-coach', handleToggle);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -192,8 +204,10 @@ export default function AIAssistant() {
         className="ai-fab" 
         onClick={handleToggleOpen}
         style={{ display: isOpen ? 'none' : 'flex' }}
+        title="AI Assistant & Study Coach"
       >
         <Bot size={28} />
+        {digest && !isOpen && <span className="coach-notification-dot" style={{ position: 'absolute', top: '4px', right: '4px', width: '12px', height: '12px', background: '#ef4444', border: '2px solid white', borderRadius: '50%' }}></span>}
       </button>
 
       {/* Inner Panel */}
@@ -206,10 +220,22 @@ export default function AIAssistant() {
             {/* Mobile close history button could go here */}
           </div>
           
-          <button className="new-chat-btn" onClick={createNewSession}>
-            <Plus size={18} />
-            New Chat
-          </button>
+          <div style={{ display: 'flex', gap: '8px', padding: '0 12px', marginBottom: '12px' }}>
+            <button 
+              className={`history-item ${activeSessionId === null ? 'active' : ''}`} 
+              style={{ flex: 1, justifyContent: 'center', background: activeSessionId === null ? 'var(--bg-surface-active)' : 'var(--bg-surface-hover)', margin: 0, border: '1px solid var(--border-light)' }} 
+              onClick={() => setActiveSessionId(null)}
+            >
+              <GraduationCap size={16} /> Coach
+            </button>
+            <button 
+              className="new-chat-btn" 
+              style={{ flex: 1, margin: 0 }} 
+              onClick={() => setActiveSessionId('new')}
+            >
+              <Plus size={16} /> Chat
+            </button>
+          </div>
           
           <div className="history-list">
             {groupSessionsByTime(sessions).map(group => (
@@ -295,13 +321,83 @@ export default function AIAssistant() {
             </div>
           </div>
 
-          <AIChatPanel 
-            sessionId={activeSessionId} 
-            setSessionId={setActiveSessionId}
-            onSessionUpdated={loadSessions}
-            messages={messages} 
-            setMessages={setMessages} 
-          />
+          {activeSessionId ? (
+            <AIChatPanel 
+              sessionId={activeSessionId} 
+              setSessionId={setActiveSessionId}
+              onSessionUpdated={loadSessions}
+              messages={messages} 
+              setMessages={setMessages} 
+            />
+          ) : (
+            <div className="coach-dashboard-scrollable" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ flex: 1 }}>
+                <p className="coach-greeting">Good Morning! <Sparkles size={24} style={{ display: 'inline', color: '#f59e0b', verticalAlign: 'text-bottom' }} /></p>
+                {digest ? (
+                  <>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1.1rem' }}>
+                      You are on a <strong style={{ color: 'var(--text-primary)' }}>{digest.streakDays}-day streak!</strong> Let's keep it going.
+                    </p>
+                    
+                    {digest.weakTopics && digest.weakTopics.length > 0 && (
+                      <div className="coach-alert">
+                        <div className="coach-alert-header">
+                          <AlertCircle size={18} />
+                          <span>Focus Areas</span>
+                        </div>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Based on your recent analytics, you seem to be struggling with:</p>
+                        <ul>
+                          {digest.weakTopics.map((t, idx) => <li key={idx}>{t}</li>)}
+                        </ul>
+                      </div>
+                    )}
+
+                    {digest.recommendedQuests && digest.recommendedQuests.length > 0 && (
+                      <div className="coach-quests">
+                        <h4 style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>Recommended Quests</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {digest.recommendedQuests.map((q, idx) => (
+                            <div key={idx} style={{ 
+                              padding: '16px', 
+                              background: 'var(--bg-glass)', 
+                              border: '1px solid var(--border-light)', 
+                              borderRadius: '12px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}>
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{q.title}</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{q.type}</div>
+                              </div>
+                              <button className="btn btn-primary btn-sm" onClick={() => window.location.href = q.path}>Start</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', opacity: 0.7 }}>
+                    <GraduationCap size={48} style={{ marginBottom: '16px', color: 'var(--text-muted)' }} />
+                    <p>Generating your personalized morning digest...</p>
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid var(--border-light)' }}>
+                <p style={{ marginBottom: '16px', color: 'var(--text-secondary)', textAlign: 'center' }}>Need help with something else?</p>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '16px', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  onClick={() => setActiveSessionId('new')}
+                >
+                  <MessageSquare size={20} />
+                  Start a New Chat
+                </button>
+              </div>
+            </div>
+          )}
           
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, BookOpen, Search, Plus, FileText, ChevronDown, ChevronRight, Book, Moon, Sun, Settings, User } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, BookOpen, Search, Plus, FileText, ChevronDown, ChevronRight, Book, Moon, Sun, Settings, User, Bot } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../data/db';
 import { useAuth } from '../../context/AuthContext';
@@ -56,8 +56,14 @@ export default function Sidebar() {
                 {navItems.map((item) => (
                   <button
                     key={item.path}
-                    className={`nav-item ${isActive(item.path, location.pathname) ? 'active' : ''}`}
-                    onClick={() => navigate(item.path)}
+                    className={`nav-item ${!item.isAction && isActive(item.path, location.pathname) ? 'active' : ''}`}
+                    onClick={() => {
+                      if (item.isAction) {
+                        window.dispatchEvent(new CustomEvent('toggle-ai-coach'));
+                      } else {
+                        navigate(item.path);
+                      }
+                    }}
                   >
                     <item.icon size={18} />
                     <span>{item.name}</span>
