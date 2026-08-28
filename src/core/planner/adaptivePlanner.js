@@ -49,6 +49,17 @@ export const generateAdaptivePlan = async (userId, examDateString, subjectIds) =
     if (difficulty >= 3 && difficulty <= 4) blocks = 2;
     if (difficulty === 5) blocks = 3;
 
+    // Determine dynamic study duration based on topic difficulty
+    let dynamicDuration = 25;
+    switch(difficulty) {
+      case 1: dynamicDuration = 15; break; // Quick review
+      case 2: dynamicDuration = 25; break; // Standard pomodoro
+      case 3: dynamicDuration = 45; break; // Deep work
+      case 4: dynamicDuration = 60; break; // Complex topic
+      case 5: dynamicDuration = 90; break; // Very hard topic
+      default: dynamicDuration = 25;
+    }
+
     for (let b = 0; b < blocks; b++) {
       // Space them out by 2 days if multiple blocks, unless we run out of days
       let targetDay = currentDay + (b * 2); 
@@ -57,7 +68,7 @@ export const generateAdaptivePlan = async (userId, examDateString, subjectIds) =
       schedule[targetDay].push({
         topic_id: topic.id,
         title: topic.title,
-        durationMinutes: 25 // standard pomodoro
+        durationMinutes: dynamicDuration
       });
     }
 

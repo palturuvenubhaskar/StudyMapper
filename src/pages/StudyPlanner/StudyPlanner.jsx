@@ -102,38 +102,40 @@ export default function StudyPlanner() {
       <div className="planner-hero">
         <div className="hero-glow-planner"></div>
         <div className="planner-hero-content">
-          <h1 className="planner-title">Smart <span>Planner 2.0</span></h1>
+          <h1 className="planner-title">Study <span>Planner</span></h1>
           <p className="subtitle" style={{ color: 'var(--text-secondary)' }}>Adaptive schedule based on topic difficulty and exam date.</p>
         </div>
       </div>
 
       <div className="planner-content">
-        <div className="planner-sidebar" style={{ minWidth: '300px' }}>
-          <div className="premium-planner-card">
-            <h2 className="card-title-premium"><Calendar size={20} color="#10b981" /> Configuration</h2>
+        <div className="planner-top-row">
+          <div className="premium-planner-card config-card">
+            <h2 className="card-title-premium"><Calendar size={20} color="#6366f1" /> Configuration</h2>
             
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Target Exam Date</label>
+            <div className="form-group-premium">
+              <label>Target Exam Date</label>
               <input 
                 type="date" 
-                className="input-field w-full" 
+                className="premium-date-input w-full" 
                 value={examDate}
                 onChange={(e) => setExamDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
               />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Target Subjects</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="form-group-premium">
+              <label>Target Subjects</label>
+              <div className="premium-checkbox-group">
                 {subjects.map(s => (
-                  <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <label key={s.id} className="premium-checkbox-label">
                     <input 
                       type="checkbox" 
+                      className="premium-checkbox"
                       checked={selectedSubjects.includes(s.id)}
                       onChange={() => handleSubjectToggle(s.id)}
                     />
-                    {s.title}
+                    <span className="checkbox-custom"></span>
+                    <span className="checkbox-text">{s.title}</span>
                   </label>
                 ))}
               </div>
@@ -151,7 +153,7 @@ export default function StudyPlanner() {
           </div>
 
           {plan && (
-            <div className="premium-planner-card" style={{ marginTop: '16px' }}>
+            <div className="premium-planner-card actions-card">
               <h2 className="card-title-premium">Actions</h2>
               <button className="btn-premium-secondary w-full" onClick={handleExport} style={{ marginBottom: '12px', justifyContent: 'center' }}>
                 <Download size={18} /> Export to Calendar

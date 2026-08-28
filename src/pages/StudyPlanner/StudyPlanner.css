@@ -29,7 +29,7 @@
   right: -10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -48,7 +48,7 @@
 }
 
 .planner-title span {
-  background: linear-gradient(135deg, #34d399, #10b981);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -97,7 +97,7 @@
   gap: 8px;
   padding: 12px 20px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
   border: none;
   font-weight: 500;
@@ -107,7 +107,7 @@
 
 .btn-premium-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
 }
 
 .btn-premium-secondary {
@@ -130,21 +130,26 @@
 }
 
 .planner-content {
-  display: grid;
-  grid-template-columns: 1fr 350px;
+  display: flex;
+  flex-direction: column;
   gap: 32px;
+}
+
+.planner-top-row {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.config-card, .actions-card {
+  flex: 1;
 }
 
 .planner-main {
   display: flex;
   flex-direction: column;
   gap: 32px;
-}
-
-.planner-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  width: 100%;
 }
 
 .premium-planner-card {
@@ -158,7 +163,7 @@
 }
 
 .premium-planner-card:hover {
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(99, 102, 241, 0.2);
   box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
 }
@@ -195,7 +200,7 @@
 
 .premium-day-card h3 {
   margin: 0 0 12px 0;
-  color: #34d399;
+  color: #818cf8;
   font-size: 1.2rem;
   font-weight: 600;
 }
@@ -229,7 +234,7 @@
 
 .day-tasks li::before {
   content: "→";
-  color: #34d399;
+  color: #818cf8;
   font-weight: bold;
 }
 
@@ -272,8 +277,8 @@
 }
 
 .timetable-upload-section:hover {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.02);
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.02);
 }
 
 .study-planner-container .empty-state {
@@ -298,7 +303,7 @@
 
 .spin-icon {
   animation: spin 2s linear infinite;
-  color: #10b981;
+  color: #6366f1;
 }
 
 @keyframes spin {
@@ -322,4 +327,124 @@
   .calendar-day { padding: 4px !important; min-height: 60px !important; }
   .kanban-board { flex-direction: column !important; }
   .kanban-column { width: 100% !important; }
+}
+
+/* Premium Form Elements */
+.form-group-premium {
+  margin-bottom: 24px;
+}
+
+.form-group-premium > label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.premium-date-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.premium-date-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.premium-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
+}
+
+.premium-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.premium-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-glass);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.premium-checkbox-label:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-glass);
+}
+
+.premium-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.checkbox-custom {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  height: 22px;
+  width: 22px;
+  background-color: var(--bg-secondary, #f3f4f6);
+  border: 2px solid var(--border-strong, #d1d5db);
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin-right: 12px;
+  margin-top: -1px; /* tiny visual adjustment to match font baseline */
+}
+
+.premium-checkbox-label:hover input ~ .checkbox-custom {
+  border-color: #6366f1;
+}
+
+.premium-checkbox:checked ~ .checkbox-custom {
+  background-color: #6366f1;
+  border-color: #6366f1;
+}
+
+.checkbox-custom:after {
+  content: "";
+  position: absolute;
+  display: none;
+  width: 6px;
+  height: 11px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.premium-checkbox:checked ~ .checkbox-custom:after {
+  display: block;
+}
+
+.checkbox-text {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.2;
 }
