@@ -1,0 +1,72 @@
+[
+  {
+    "id": "getting-started-1",
+    "category": "getting-started",
+    "title": "How to create your first subject",
+    "excerpt": "Learn how to set up a new subject and organize your study materials.",
+    "content": "To create your first subject..."
+  },
+  {
+    "id": "getting-started-2",
+    "category": "getting-started",
+    "title": "Understanding the offline-first approach",
+    "excerpt": "How StudyMapper keeps your data safe and accessible without internet.",
+    "content": "StudyMapper is built as an offline-first application..."
+  },
+  {
+    "id": "ai-features-1",
+    "category": "ai-features",
+    "title": "How AI note generation works",
+    "excerpt": "Understanding the AI-powered note generation and streaming.",
+    "content": "StudyMapper uses OpenRouter to stream AI-generated notes..."
+  },
+  {
+    "id": "ai-features-2",
+    "category": "ai-features",
+    "title": "Model fallback system",
+    "excerpt": "What happens when an AI model fails or times out.",
+    "content": "When a primary model fails..."
+  },
+  {
+    "id": "study-tools-1",
+    "category": "study-tools",
+    "title": "Using the Pomodoro Timer",
+    "excerpt": "Maximize focus with built-in Pomodoro technique.",
+    "content": "The Pomodoro Timer..."
+  },
+  {
+    "id": "study-tools-2",
+    "category": "study-tools",
+    "title": "Creating effective flashcards",
+    "excerpt": "Tips for generating and using flashcards with spaced repetition.",
+    "content": "Flashcards are a powerful tool..."
+  },
+  {
+    "id": "coding-1",
+    "category": "coding",
+    "title": "How code evaluation works",
+    "excerpt": "Understanding AI-based code evaluation without a backend server.",
+    "content": "Since StudyMapper is client-side only..."
+  },
+  {
+    "id": "account-1",
+    "category": "account",
+    "title": "Exporting your data",
+    "excerpt": "How to download all your study data for backup or portability.",
+    "content": "You can export your data from Account Settings..."
+  },
+  {
+    "id": "troubleshooting-1",
+    "category": "troubleshooting",
+    "title": "Fixing IndexedDB issues",
+    "excerpt": "What to do when local storage fails or data disappears.",
+    "content": "If you encounter IndexedDB issues..."
+  },
+  {
+    "id": "troubleshooting-2",
+    "category": "troubleshooting",
+    "title": "AI generation errors",
+    "excerpt": "Common AI errors and how to resolve them.",
+    "content": "If AI generation fails..."
+  }
+]
