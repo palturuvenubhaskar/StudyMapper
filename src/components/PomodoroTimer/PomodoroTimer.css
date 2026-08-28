@@ -1,13 +1,16 @@
 .pomodoro-timer {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-md);
+  border-radius: 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .pomodoro-header {
@@ -52,11 +55,12 @@
 }
 
 .pomodoro-btn.play-pause {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
   color: white;
   border: none;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 
 .pomodoro-btn.play-pause:hover {
-  background: var(--primary-hover);
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
 }

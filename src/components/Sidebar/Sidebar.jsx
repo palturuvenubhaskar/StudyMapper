@@ -25,7 +25,6 @@ export default function Sidebar() {
     <aside className="app-sidebar">
       <div className="sidebar-header">
         <div className="brand-wordmark" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <img src="/STUDYMAPPER%20LOGO.png" alt="StudyMapper" className="brand-s-logo" />
           <span className="brand-name">StudyMapper</span>
         </div>
       </div>

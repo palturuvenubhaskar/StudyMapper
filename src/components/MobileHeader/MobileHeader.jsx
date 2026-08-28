@@ -10,7 +10,6 @@ export default function MobileHeader({ onSearchClick }) {
   return (
     <header className="mobile-header">
       <div className="mobile-brand" onClick={() => navigate('/')}>
-        <img src="/STUDYMAPPER%20LOGO.png" alt="StudyMapper" className="mobile-brand-logo" />
         <span className="mobile-brand-name">StudyMapper</span>
       </div>
       <div className="mobile-header-actions">

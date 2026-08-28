@@ -32,8 +32,10 @@
 
   .mobile-brand-name {
     font-weight: 800;
-    font-size: 1.1rem;
-    color: var(--text-primary);
+    font-size: 1.4rem;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .mobile-header-actions {

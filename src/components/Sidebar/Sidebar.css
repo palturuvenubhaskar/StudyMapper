@@ -45,11 +45,14 @@
 
 .brand-name {
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   letter-spacing: -0.03em;
-  color: var(--text-primary);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   transition: opacity 0.2s ease, width 0.2s ease;
   white-space: nowrap;
+  width: 100%;
 }
 
 .sidebar-toggle-btn {
