@@ -52,9 +52,9 @@ export function NotificationsTab() {
                 <span className="toggle-description">{description}</span>
               </div>
             </div>
-            <label className="cookie-toggle">
+            <label className="settings-toggle">
               <input type="checkbox" checked={settings[key]} onChange={() => handleToggle(key)} />
-              <span className="cookie-toggle-slider" />
+              <span className="settings-toggle-slider" />
             </label>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import '../../styles/settings.css';
 import { SettingsLayout } from './SettingsLayout';
 import { ProfileTab } from './tabs/ProfileTab';
 import { SecurityTab } from './tabs/SecurityTab';
