@@ -20,6 +20,8 @@ import Placement from './pages/Placement/Placement';
 import AptitudePractice from './pages/Placement/AptitudePractice';
 import TechnicalInterview from './pages/Placement/TechnicalInterview';
 import HRInterview from './pages/Placement/HRInterview';
+import LearnMode from './pages/Placement/LearnMode';
+import { TopicDetail } from './pages/Placement/TopicDetail';
 import CodingPractice from './pages/CodingPractice/CodingPractice';
 import CodingWorkspace from './pages/CodingPractice/CodingWorkspace';
 import LearningWorkspace from './pages/CodingPractice/LearningWorkspace';
@@ -112,9 +114,14 @@ function AppContent() {
               <Route path="/roadmap" element={<SkillRoadmap />} />
               <Route path="/roadmap/:roadmapId" element={<SkillRoadmap />} />
               <Route path="/placement" element={<Placement />} />
+              <Route path="/placement/:categoryId/learn" element={<LearnMode />} />
+              <Route path="/placement/:categoryId/learn/:topicId" element={<TopicDetail />} />
               <Route path="/placement/aptitude" element={<AptitudePractice />} />
+              <Route path="/placement/aptitude/test" element={<AptitudePractice />} />
               <Route path="/placement/technical" element={<TechnicalInterview />} />
+              <Route path="/placement/technical/test" element={<TechnicalInterview />} />
               <Route path="/placement/hr" element={<HRInterview />} />
+              <Route path="/placement/hr/test" element={<HRInterview />} />
               <Route path="/coding" element={<CodingPractice />} />
               <Route path="/coding/workspace/:problemId" element={<CodingWorkspace />} />
               <Route path="/coding/learning/:lessonId" element={<LearningWorkspace />} />

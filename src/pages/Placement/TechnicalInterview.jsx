@@ -5,7 +5,7 @@ import { generateTechnicalInterviewPrompt, extractJson, callOpenRouter } from '.
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, Loader, RefreshCw, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader, RefreshCw, Eye, EyeOff, CheckCircle2, BookOpen, Target, Sparkles } from 'lucide-react';
 import './Placement.css';
 
 
@@ -21,6 +21,11 @@ export default function TechnicalInterview() {
   const [generating, setGenerating] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [visibleAnswers, setVisibleAnswers] = useState({});
+
+  // New scope selector state
+  const [testScope, setTestScope] = useState('all');
+  const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
+  const [weakTopicsCount, setWeakTopicsCount] = useState(0);
 
   useEffect(() => {
     (async () => { const p = await getStudentProfile(); setProfile(p); })();
@@ -79,6 +84,62 @@ export default function TechnicalInterview() {
           <option>Medium</option>
           <option>Hard</option>
         </select>
+      </div>
+
+      <div className="test-scope-selector">
+        <label className="scope-option">
+          <input 
+            type="radio" 
+            name="scope" 
+            value="learned" 
+            checked={testScope === 'learned'}
+            onChange={(e) => setTestScope(e.target.value)}
+          />
+          <div className="scope-card">
+            <BookOpen size={20} />
+            <div>
+              <strong>Learned Topics Only</strong>
+              <span>Test yourself on {learnedTopicsCount} topics you've studied</span>
+            </div>
+          </div>
+        </label>
+        
+        <label className="scope-option">
+          <input 
+            type="radio" 
+            name="scope" 
+            value="weak" 
+            checked={testScope === 'weak'}
+            onChange={(e) => setTestScope(e.target.value)}
+          />
+          <div className="scope-card">
+            <Target size={20} />
+            <div>
+              <strong>Weak Areas</strong>
+              <span>Focus on {weakTopicsCount} topics you struggled with</span>
+            </div>
+          </div>
+        </label>
+        
+        <label className="scope-option">
+          <input 
+            type="radio" 
+            name="scope" 
+            value="all" 
+            checked={testScope === 'all'}
+            onChange={(e) => setTestScope(e.target.value)}
+          />
+          <div className="scope-card">
+            <Sparkles size={20} />
+            <div>
+              <strong>Full Test</strong>
+              <span>All topics mixed together</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div className="practice-controls" style={{ marginTop: '16px' }}>
         <button className="btn btn-primary" onClick={generateQuestions} disabled={generating}>
           {generating ? <><Loader size={16} className="spin-icon" /> Generating...</> : <><RefreshCw size={16} /> Generate 5 Questions</>}
         </button>

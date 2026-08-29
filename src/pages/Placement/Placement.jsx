@@ -1,166 +1,189 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getStudentProfile, getPlacementStats, saveStudentProfile } from '../../data/repository';
-import { ArrowLeft, Brain, Code2, Users, TrendingUp, ChevronRight, Target, Briefcase, Award, Edit2, Check, X } from 'lucide-react';
+import { useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { Brain, Code, Users, BookOpen, Target, TrendingUp, Clock, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { db } from '../../data/db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { ProgressOverview } from './ProgressOverview';
 import './Placement.css';
 
+const CATEGORIES = [
+  {
+    id: 'aptitude',
+    name: 'Aptitude Practice',
+    icon: Brain,
+    color: '#6366f1', // Indigo
+    gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+    description: 'Master Quantitative, Logical Reasoning, and Verbal Ability',
+    learnPath: '/placement/aptitude/learn',
+    testPath: '/placement/aptitude/test',
+    subcategories: ['Quantitative Aptitude', 'Logical Reasoning', 'Verbal Ability', 'Data Interpretation'],
+  },
+  {
+    id: 'technical',
+    name: 'Technical Interview',
+    icon: Code,
+    color: '#10b981', // Emerald
+    gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+    description: 'DSA, OS, DBMS, Networking, System Design',
+    learnPath: '/placement/technical/learn',
+    testPath: '/placement/technical/test',
+    subcategories: ['Data Structures', 'Algorithms', 'Operating Systems', 'DBMS', 'Computer Networks', 'System Design', 'OOP'],
+  },
+  {
+    id: 'hr',
+    name: 'HR & Behavioral',
+    icon: Users,
+    color: '#f59e0b', // Amber
+    gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+    description: 'STAR method, leadership stories, cultural fit',
+    learnPath: '/placement/hr/learn',
+    testPath: '/placement/hr/test',
+    subcategories: ['STAR Method', 'Leadership', 'Teamwork', 'Conflict Resolution', 'Self Introduction', 'Company Research'],
+  },
+];
+
 export default function Placement() {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditingRole, setIsEditingRole] = useState(false);
-  const [tempRole, setTempRole] = useState('');
+  useDocumentTitle('Placement Prep');
+  const [activeTab, setActiveTab] = useState('overview'); // overview | progress
 
-  useEffect(() => {
-    (async () => {
-      const p = await getStudentProfile();
-      setProfile(p);
-      if (p) {
-        setTempRole(p.career_goal || '');
-        const s = await getPlacementStats(p.id);
-        setStats(s);
-      }
-      setLoading(false);
-    })();
+  // Fetch aggregated stats from IndexedDB
+  const stats = useLiveQuery(async () => {
+    const learnProgress = await db.placement_learning_progress.toArray();
+    const testResults = await db.placement_test_results.toArray();
+    
+    return {
+      topicsLearned: learnProgress.filter(p => p.status === 'completed').length,
+      totalTopics: await db.placement_topics.count(),
+      testsTaken: testResults.length,
+      avgScore: testResults.length 
+        ? Math.round(testResults.reduce((a, r) => a + (r.score / r.total_questions * 100), 0) / testResults.length)
+        : 0,
+      totalInteractions: testResults.length * 5 + learnProgress.length, // approximate
+    };
   }, []);
-
-  const saveRole = async () => {
-    if (tempRole.trim() && profile) {
-      const updated = { ...profile, career_goal: tempRole.trim() };
-      await saveStudentProfile(updated);
-      setProfile(updated);
-    }
-    setIsEditingRole(false);
-  };
-
-  if (loading) return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
-
-  const sections = [
-    {
-      title: 'Aptitude Practice',
-      description: 'Master Quantitative, Logical Reasoning, and Verbal Ability. Sharpen your problem-solving skills under pressure.',
-      icon: <Brain size={28} />,
-      color: '#818cf8', // Indigo
-      bgGlow: 'rgba(129, 140, 248, 0.15)',
-      path: '/placement/aptitude',
-      statText: stats ? `${stats.aptitude.correct}/${stats.aptitude.total} Correct` : '0 attempted',
-      progress: stats ? (stats.aptitude.total === 0 ? 0 : (stats.aptitude.correct / stats.aptitude.total) * 100) : 0
-    },
-    {
-      title: 'Technical Interview',
-      description: 'Tackle real-world DSA, OS, and System Design problems. Compare your logic with ideal answers.',
-      icon: <Code2 size={28} />,
-      color: '#34d399', // Emerald
-      bgGlow: 'rgba(52, 211, 153, 0.15)',
-      path: '/placement/technical',
-      statText: stats ? `${stats.technical.practiced}/${stats.technical.total} Practiced` : '0 attempted',
-      progress: stats ? (stats.technical.total === 0 ? 0 : (stats.technical.practiced / stats.technical.total) * 100) : 0
-    },
-    {
-      title: 'HR & Behavioral',
-      description: 'Nail the cultural fit. Get AI-powered feedback on your communication and leadership stories.',
-      icon: <Users size={28} />,
-      color: '#fbbf24', // Amber
-      bgGlow: 'rgba(251, 191, 36, 0.15)',
-      path: '/placement/hr',
-      statText: stats ? `${stats.hr.answered}/${stats.hr.total} Answered` : '0 attempted',
-      progress: stats ? (stats.hr.total === 0 ? 0 : (stats.hr.answered / stats.hr.total) * 100) : 0
-    }
-  ];
 
   return (
     <div className="placement-hub">
-
-
-      <div className="placement-hero">
-        <div className="hero-glow"></div>
-        <div className="hero-content">
-          <div className="hero-badge"><Briefcase size={16}/> Career Prep Mode</div>
-          <h1 className="hero-title">Placement <span>Prep</span></h1>
-          {profile ? (
-            <div className="hero-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              Targeting: 
-              {isEditingRole ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <input 
-                    type="text" 
-                    className="input" 
-                    style={{ padding: '4px 8px', width: '200px', fontSize: '0.95rem', margin: 0 }} 
-                    value={tempRole} 
-                    onChange={e => setTempRole(e.target.value)} 
-                    autoFocus 
-                    onKeyDown={e => e.key === 'Enter' && saveRole()}
-                  />
-                  <button className="btn btn-icon btn-primary" onClick={saveRole}><Check size={16} /></button>
-                  <button className="btn btn-icon btn-ghost" onClick={() => { setIsEditingRole(false); setTempRole(profile.career_goal); }}><X size={16} /></button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong className="highlight-goal">{profile.career_goal}</strong>
-                  <button className="btn btn-icon btn-ghost" onClick={() => setIsEditingRole(true)} title="Change Role">
-                    <Edit2 size={14} />
-                  </button>
-                </div>
-              )}
+      {/* Header Section */}
+      <div className="placement-header">
+        <div className="placement-header-content">
+          <span className="placement-badge">
+            <Target size={14} />
+            Career Prep Mode
+          </span>
+          <h1>Placement <span className="text-accent">Prep</span></h1>
+          <p className="placement-subtitle">
+            Master concepts before you test. Structured learning paths for every interview stage.
+          </p>
+          
+          {/* Quick Stats */}
+          <div className="placement-quick-stats">
+            <div className="quick-stat">
+              <BookOpen size={18} />
+              <span>{stats?.topicsLearned || 0} Topics Learned</span>
             </div>
-          ) : (
-            <p className="hero-subtitle warning">
-              ⚠️ Set up your profile in the Skill Roadmap first.
-            </p>
-          )}
-        </div>
-        
-        {stats && profile && (
-          <div className="hero-stats-overview">
-            <div className="stat-pill">
-              <Award size={18} color="#818cf8"/>
-              <span>{stats.aptitude.total + stats.technical.total + stats.hr.total}</span> Total Interactions
+            <div className="quick-stat">
+              <Award size={18} />
+              <span>{stats?.avgScore || 0}% Avg Score</span>
             </div>
-            <div className="stat-pill">
-              <Target size={18} color="#34d399"/>
-              <span>{profile.career_goal}</span>
+            <div className="quick-stat">
+              <TrendingUp size={18} />
+              <span>{stats?.testsTaken || 0} Tests Taken</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="placement-cards-container">
-        {sections.map((sec, idx) => (
-          <div 
-            key={idx} 
-            className="premium-placement-card" 
-            onClick={() => navigate(sec.path)} 
-            style={{ '--card-color': sec.color, '--card-glow': sec.bgGlow }}
-          >
-            <div className="card-bg-gradient"></div>
-            <div className="card-content">
-              <div className="card-header">
-                <div className="card-icon-wrapper">
-                  {sec.icon}
-                </div>
-                <div className="card-action">
-                  <ChevronRight size={20} />
-                </div>
-              </div>
-              
-              <div className="card-body">
-                <h2>{sec.title}</h2>
-                <p>{sec.description}</p>
-              </div>
-
-              <div className="card-footer">
-                <div className="progress-info">
-                  <span className="stat-label">Progress</span>
-                  <span className="stat-value" style={{ color: 'var(--text-primary)' }}>{sec.statText}</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill" style={{ width: `${sec.progress}%`, backgroundColor: sec.color }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Category Cards - Redesigned with Learn + Test CTAs */}
+      <div className="placement-categories">
+        {CATEGORIES.map((cat) => (
+          <CategoryCard key={cat.id} category={cat} stats={stats} />
         ))}
+      </div>
+
+      {/* Recent Activity / Progress Section */}
+      <div className="placement-activity">
+        <h2>Your Progress</h2>
+        <ProgressOverview />
+      </div>
+    </div>
+  );
+}
+
+function CategoryCard({ category, stats }) {
+  const Icon = category.icon;
+  
+  // Calculate category-specific progress
+  const progress = useLiveQuery(async () => {
+    const topics = await db.placement_topics.where('category').equals(category.id).toArray();
+    const topicIds = topics.map(t => t.id);
+    const learned = await db.placement_learning_progress.where('topic_id').anyOf(topicIds).and(p => p.status === 'completed').count();
+    const tested = await db.placement_test_results.where('category').equals(category.id).count();
+    
+    return {
+      totalTopics: topics.length,
+      learned,
+      tested,
+      percentComplete: topics.length ? Math.round((learned / topics.length) * 100) : 0,
+    };
+  }, [category.id]);
+
+  return (
+    <div className="category-card" style={{ '--cat-color': category.color }}>
+      <div className="category-card-header" style={{ background: category.gradient }}>
+        <div className="category-icon-wrapper">
+          <Icon size={28} style={{ color: category.color }} />
+        </div>
+        <div className="category-progress-ring">
+          <svg viewBox="0 0 36 36">
+            <path
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="3"
+            />
+            <path
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke={category.color}
+              strokeWidth="3"
+              strokeDasharray={`${progress?.percentComplete || 0}, 100`}
+            />
+          </svg>
+          <span>{progress?.percentComplete || 0}%</span>
+        </div>
+      </div>
+      
+      <div className="category-card-body">
+        <h3>{category.name}</h3>
+        <p>{category.description}</p>
+        
+        <div className="category-topics-preview">
+          {category.subcategories.slice(0, 3).map(sub => (
+            <span key={sub} className="topic-tag">{sub}</span>
+          ))}
+          {category.subcategories.length > 3 && (
+            <span className="topic-tag more">+{category.subcategories.length - 3}</span>
+          )}
+        </div>
+
+        <div className="category-card-actions">
+          <Link to={category.learnPath} className="btn-learn">
+            <BookOpen size={16} />
+            Learn
+            {progress && progress.learned > 0 && (
+              <span className="action-badge">{progress.learned}/{progress.totalTopics}</span>
+            )}
+          </Link>
+          <Link to={category.testPath} className="btn-test">
+            <Target size={16} />
+            Test
+            {progress && progress.tested > 0 && (
+              <span className="action-badge">{progress.tested}</span>
+            )}
+          </Link>
+        </div>
       </div>
     </div>
   );

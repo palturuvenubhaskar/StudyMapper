@@ -1,15 +1,29 @@
 .error-page {
   min-height: 100vh;
+  width: 100%;
+  flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 .error-container {
   max-width: 560px;
   text-align: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 48px 40px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme='dark'] .error-container {
+  background: rgba(30, 30, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .error-icon {
@@ -74,13 +88,13 @@
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: #6366f1;
   color: white;
-  border-color: var(--accent);
+  border-color: #6366f1;
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: #4f46e5;
 }
 
 .btn-secondary {

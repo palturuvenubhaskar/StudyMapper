@@ -1,6 +1,7 @@
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { ServerCrash, RotateCcw, Home, Bug } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import '../../styles/errors.css';
 
 export function InternalError({ error, errorInfo, onReset }) {
   useDocumentTitle('Something Went Wrong');
