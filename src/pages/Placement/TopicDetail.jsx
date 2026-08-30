@@ -13,6 +13,7 @@ import './LearnMode.css';
 export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
   const [content, setContent] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeSection, setActiveSection] = useState('explanation');
   const [timeSpent, setTimeSpent] = useState(0);
@@ -33,43 +34,74 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
   };
 
   const loadTopicContent = async () => {
-    const existing = await db.placement_topic_content.where('topic_id').equals(fullTopicId).first();
-    if (existing) {
-      setContent(existing);
-    } else {
-      generateContent();
-    }
-    
-    const bookmark = await db.placement_bookmarks.where({ topic_id: fullTopicId }).first();
-    setIsBookmarked(!!bookmark);
-    
-    const progress = await db.placement_learning_progress.where({ topic_id: fullTopicId }).first();
-    if (!progress) {
-      await db.placement_learning_progress.put({
-        id: fullTopicId,
-        topic_id: fullTopicId,
-        status: 'in_progress',
-        completion_percentage: 0,
-        time_spent_minutes: 0,
-        last_studied_at: new Date().toISOString(),
-      });
+    try {
+      const existing = await db.placement_topic_content.where('topic_id').equals(fullTopicId).first();
+      if (existing) {
+        setContent(existing);
+      } else {
+        generateContent();
+      }
+      
+      const bookmark = await db.placement_bookmarks.where({ topic_id: fullTopicId }).first();
+      setIsBookmarked(!!bookmark);
+      
+      const progress = await db.placement_learning_progress.where({ topic_id: fullTopicId }).first();
+      if (!progress) {
+        await db.placement_learning_progress.put({
+          id: fullTopicId,
+          topic_id: fullTopicId,
+          status: 'in_progress',
+          completion_percentage: 0,
+          time_spent_minutes: 0,
+          last_studied_at: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load topic content: ' + err.message);
     }
   };
 
   const generateContent = async () => {
+    if (isGenerating) return;
     setIsGenerating(true);
+    setError(null);
     
-    const prompt = buildTopicPrompt(categoryId, topic);
-    let generatedText = '';
+    // Set empty skeleton to render UI immediately
+    setContent({
+      id: fullTopicId,
+      topic_id: fullTopicId,
+      content_markdown: '',
+      formulas_json: '[]',
+      examples_json: '[]',
+      tips_json: '[]',
+      is_ai_generated: true,
+      created_at: new Date().toISOString(),
+    });
+    
+    const promptStr = buildTopicPrompt(categoryId, topic);
+    const messages = [
+      { role: 'system', content: 'You are an expert AI tutor. Generate ONLY valid JSON matching the exact requested structure, with no markdown fences around the JSON.' },
+      { role: 'user', content: promptStr }
+    ];
     
     try {
-      await callOpenRouterStream(prompt, (chunk) => {
-        generatedText += chunk;
+      const finalGeneratedText = await callOpenRouterStream(messages, (fullTextSoFar) => {
+        const parsed = parseStreamingJSON(fullTextSoFar);
+        setContent(prev => ({
+          ...prev,
+          content_markdown: parsed.explanation,
+          formulas_json: parsed.formulas,
+          examples_json: parsed.examples,
+          tips_json: parsed.tips,
+        }));
       });
       
-      // Parse the generated content
-      const parsed = parseGeneratedContent(generatedText);
+      if (!finalGeneratedText) {
+        throw new Error("AI returned empty response");
+      }
       
+      const parsed = parseStreamingJSON(finalGeneratedText);
       const contentRecord = {
         id: fullTopicId,
         topic_id: fullTopicId,
@@ -85,6 +117,7 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
       setContent(contentRecord);
     } catch (err) {
       console.error('Failed to generate content:', err);
+      setError(err.message || 'Unknown error during generation');
     } finally {
       setIsGenerating(false);
     }
@@ -126,15 +159,18 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
     { id: 'tips', label: 'Tips', icon: Sparkles },
   ];
 
-  if (isGenerating) {
+  if (error) {
     return (
       <div className="topic-detail">
-        <div className="generating-state">
-          <Sparkles size={48} className="generating-icon" />
-          <h2>Generating Your Study Guide</h2>
-          <p>Our AI is crafting a personalized explanation for {topic.title}...</p>
-          <div className="generating-progress">
-            <div className="generating-bar" />
+        <div className="topic-detail-header">
+          <button onClick={onBack} className="back-btn"><ArrowLeft size={18} /> Back</button>
+        </div>
+        <div className="topic-content-area" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-error)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <Sparkles size={48} />
+            <h2>Generation Failed</h2>
+            <p>{error}</p>
+            <button onClick={generateContent} className="btn btn-primary">Try Again</button>
           </div>
         </div>
       </div>
@@ -161,7 +197,13 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
         <div className="topic-detail-meta">
           <span className="difficulty-badge">{topic.difficulty}</span>
           <span><Clock size={14} /> {topic.estimated} min read</span>
-          <span><BookOpen size={14} /> AI Generated</span>
+          {isGenerating ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)' }}>
+              <Sparkles size={14} className="spin" /> Generating...
+            </span>
+          ) : (
+            <span><BookOpen size={14} /> AI Generated</span>
+          )}
         </div>
       </div>
 
@@ -181,9 +223,9 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
 
       {/* Content Area */}
       <div className="topic-content-area">
-        {activeSection === 'explanation' && content?.content_markdown && (
+        {activeSection === 'explanation' && content && (
           <div className="content-section">
-            <MarkdownRenderer content={content.content_markdown} />
+            <MarkdownRenderer>{content.content_markdown || (isGenerating ? 'Thinking...' : '')}</MarkdownRenderer>
           </div>
         )}
         
@@ -207,7 +249,7 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
                 <div className="example-question">{ex.question}</div>
                 <div className="example-solution">
                   <strong>Solution:</strong>
-                  <MarkdownRenderer content={ex.solution} />
+                  <MarkdownRenderer>{ex.solution}</MarkdownRenderer>
                 </div>
               </div>
             ))}
@@ -233,9 +275,9 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
           <span>Time spent: {timeSpent} min</span>
         </div>
         <div className="footer-actions">
-          <button onClick={generateContent} className="btn btn-secondary">
+          <button onClick={generateContent} className="btn btn-secondary" disabled={isGenerating}>
             <Sparkles size={16} />
-            Regenerate
+            {isGenerating ? 'Generating...' : 'Regenerate'}
           </button>
           <Link to={`/placement/${categoryId}/test?topic=${topic.id}`} className="btn btn-primary">
             <Play size={16} />
@@ -288,26 +330,86 @@ Include sample answers that sound natural, not robotic. Focus on authenticity.`
   return categoryPrompts[categoryId] || categoryPrompts.aptitude;
 }
 
-function parseGeneratedContent(text) {
+function parseStreamingJSON(text) {
+  let cleanText = text.replace(/```json\n?/g, '').replace(/```/g, '').trim();
+  if (!cleanText) return { explanation: '', formulas: '[]', examples: '[]', tips: '[]' };
+  
   try {
-    // Extract JSON from markdown code blocks or raw JSON
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/({[\s\S]*})/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : text;
-    const parsed = JSON.parse(jsonStr);
-    
+    const parsed = JSON.parse(cleanText);
     return {
       explanation: parsed.explanation || '',
       formulas: JSON.stringify(parsed.formulas || []),
       examples: JSON.stringify(parsed.examples || []),
-      tips: JSON.stringify(parsed.tips || []),
+      tips: JSON.stringify(parsed.tips || [])
     };
   } catch (e) {
-    // Fallback: treat entire text as explanation
+    let explanation = '';
+    const expRegex = /"explanation"\s*:\s*"([\s\S]*?)(?="\s*,\s*"(?:formulas|examples|tips)"|$)/;
+    const expMatch = cleanText.match(expRegex);
+    
+    if (expMatch) {
+        let rawExp = expMatch[1];
+        if (rawExp.endsWith('"')) rawExp = rawExp.slice(0, -1);
+        explanation = rawExp.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    } else {
+        const startMatch = cleanText.match(/"explanation"\s*:\s*"([\s\S]*)/);
+        if (startMatch) {
+            let rawExp = startMatch[1];
+            explanation = rawExp.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        } else if (!cleanText.includes('{"')) {
+            explanation = cleanText;
+        }
+    }
+
+    const extractPartialArray = (key) => {
+        const regex = new RegExp(`"${key}"\\s*:\\s*(\\[[\\s\\S]*)`);
+        const match = cleanText.match(regex);
+        if (match) {
+            let arrStr = match[1];
+            const nextKeyRegex = /,\s*"(?:formulas|examples|tips)"\s*:/;
+            const nextKeyMatch = arrStr.match(nextKeyRegex);
+            if (nextKeyMatch) {
+                arrStr = arrStr.substring(0, nextKeyMatch.index);
+            }
+            
+            let inString = false;
+            let escape = false;
+            let openBraces = 0;
+            let openBrackets = 0;
+            
+            for (let i = 0; i < arrStr.length; i++) {
+                const char = arrStr[i];
+                if (escape) { escape = false; continue; }
+                if (char === '\\') { escape = true; continue; }
+                if (char === '"') { inString = !inString; continue; }
+                if (!inString) {
+                    if (char === '{') openBraces++;
+                    if (char === '}') openBraces--;
+                    if (char === '[') openBrackets++;
+                    if (char === ']') openBrackets--;
+                }
+            }
+            
+            let fixed = arrStr;
+            if (inString) fixed += '"';
+            while (openBraces > 0) { fixed += '}'; openBraces--; }
+            while (openBrackets > 0) { fixed += ']'; openBrackets--; }
+            
+            try {
+                JSON.parse(fixed);
+                return fixed;
+            } catch (err) {
+                return '[]';
+            }
+        }
+        return '[]';
+    };
+
     return {
-      explanation: text,
-      formulas: '[]',
-      examples: '[]',
-      tips: '[]',
+      explanation: explanation,
+      formulas: extractPartialArray('formulas'),
+      examples: extractPartialArray('examples'),
+      tips: extractPartialArray('tips')
     };
   }
 }
