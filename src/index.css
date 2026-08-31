@@ -324,6 +324,16 @@ p {
   background: var(--accent-primary-hover);
 }
 
+.btn-gradient {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #ffffff;
+  border: none;
+}
+.btn-gradient:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
 .btn-secondary {
   background: var(--bg-surface);
   color: var(--text-primary);

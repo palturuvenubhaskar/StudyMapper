@@ -64,19 +64,18 @@ export default function GamificationDashboard({ userId = 'guest' }) {
 
   return (
     <div className="gamification-dashboard">
-      <div className="gamification-header">
-        <LevelBadge level={profile.current_level} percentage={progress.percentage} />
-        <div className="xp-details">
-          <div className="xp-bar-container">
-            <div className="xp-bar-fill" style={{ width: `${progress.percentage}%` }}></div>
+      <div className="gamification-header premium-card">
+        <div className="gamification-header-content">
+          <div className="gamification-level-section">
+            <LevelBadge level={profile.current_level} percentage={progress.percentage} progress={progress} />
           </div>
-          <span className="xp-text">{progress.xpIntoCurrentLevel} / {progress.xpNeeded} XP to next level</span>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <StreakFlame streakDays={profile.streak_days} longestStreak={profile.longest_streak} />
-          <button className="btn btn-ghost btn-icon" onClick={handleShare} title="Share My Progress" style={{ color: 'var(--accent-primary)' }}>
-            <Share2 size={24} />
-          </button>
+          
+          <div className="gamification-streak-section">
+            <StreakFlame streakDays={profile.streak_days} longestStreak={profile.longest_streak} />
+            <button className="btn btn-ghost btn-icon share-btn" onClick={handleShare} title="Share My Progress">
+              <Share2 size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -86,16 +85,18 @@ export default function GamificationDashboard({ userId = 'guest' }) {
           <h3><Target size={18} /> Daily Quests</h3>
           <div className="quests-list">
             {quests.map((q, idx) => (
-              <div key={idx} className={`quest-item ${q.completed ? 'completed' : ''}`}>
-                <div className="quest-icon">
-                  {q.completed ? <CheckCircle2 size={20} className="text-success" /> : <Circle size={20} />}
-                </div>
-                <div className="quest-info">
-                  <span className="quest-title">{q.title}</span>
-                  <div className="quest-progress-bar">
-                    <div className="quest-progress-fill" style={{ width: `${(q.progress / q.target) * 100}%` }}></div>
+              <div key={idx} className={`premium-quest-card ${q.completed ? 'completed' : ''}`}>
+                <div className="quest-header">
+                  <div className="quest-icon-wrapper">
+                    {q.completed ? <CheckCircle2 size={20} className="quest-icon completed-icon" /> : <Circle size={20} className="quest-icon pending-icon" />}
                   </div>
-                  <span className="quest-progress-text">{q.progress} / {q.target}</span>
+                  <div className="quest-header-text">
+                    <span className="quest-title">{q.title}</span>
+                    <span className="quest-progress-text">{q.progress} / {q.target}</span>
+                  </div>
+                </div>
+                <div className="quest-progress-container">
+                  <div className="quest-progress-fill" style={{ width: `${(q.progress / q.target) * 100}%` }}></div>
                 </div>
               </div>
             ))}

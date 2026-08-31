@@ -116,7 +116,7 @@ export default function Dashboard() {
               <button className="btn btn-secondary" onClick={() => navigate('/qb/create')} style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <FileText size={18} /> Upload Bank
               </button>
-              <button className="btn btn-primary" onClick={() => navigate('/create')} style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <button className="btn btn-gradient" onClick={() => navigate('/create')} style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <Plus size={18} /> New Subject
               </button>
             </div>
@@ -124,31 +124,51 @@ export default function Dashboard() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
              {/* Jump Back In */}
-             <div className="surface-card" style={{ padding: '32px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                   <div style={{ background: 'var(--bg-surface-active)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
-                      <Play size={28} color="var(--accent-primary)" style={{ marginLeft: '4px' }} />
+             <div className="surface-card premium-card jump-card" onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}>
+                <div className="hover-glow"></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
+                   <div className="jump-icon-box">
+                      <Play size={28} style={{ marginLeft: '4px' }} fill="currentColor" />
                    </div>
                    <div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Jump Back In</div>
-                      <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-primary)', margin: '0' }}>{subjects.length > 0 ? subjects[0].title : 'Create a Subject'}</h2>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--accent-brand)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Jump Back In</div>
+                      <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', margin: '0', lineHeight: '1.2' }}>{subjects.length > 0 ? subjects[0].title : 'Create a Subject'}</h2>
                    </div>
                 </div>
-                <ChevronRight size={24} color="var(--text-secondary)" />
+                <ChevronRight size={24} className="jump-chevron" style={{ position: 'relative', zIndex: 1 }} />
              </div>
              
-             {/* Stats Card */}
-             <div className="surface-card" style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-                <div style={{ textAlign: 'center', minWidth: '100px' }}>
-                   <BookOpen size={24} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-                   <div style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{stats.totalUnits}</div>
-                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: '500' }}>Subjects</div>
+             {/* Stats Cards */}
+             <div className="stats-grid">
+                <div className="surface-card premium-card stat-card">
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Total Subjects</div>
+                         <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>
+                            {stats.totalUnits}
+                         </div>
+                      </div>
+                      <div className="stat-icon-box" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
+                         <BookOpen size={24} />
+                      </div>
+                   </div>
                 </div>
-                <div style={{ width: '1px', height: '60px', background: 'var(--border-strong)', display: 'none' }}></div>
-                <div style={{ textAlign: 'center', minWidth: '100px' }}>
-                   <Award size={24} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-                   <div style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{stats.avgProgress}%</div>
-                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: '500' }}>Avg Progress</div>
+                
+                <div className="surface-card premium-card stat-card">
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Avg Progress</div>
+                         <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>
+                            {stats.avgProgress}%
+                         </div>
+                      </div>
+                      <div className="stat-icon-box" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
+                         <Award size={24} />
+                      </div>
+                   </div>
+                   <div className="stat-progress-track" style={{ marginTop: '16px' }}>
+                      <div className="stat-progress-bar" style={{ width: `${stats.avgProgress}%`, background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }}></div>
+                   </div>
                 </div>
              </div>
              
@@ -158,31 +178,31 @@ export default function Dashboard() {
              </div>
 
              {/* Analytics Dashboard */}
-             <div className="surface-card analytics-panel" style={{ gridColumn: '1 / -1', padding: '24px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                 <Activity size={24} color="var(--accent-primary)" />
-                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Study Analytics</h2>
+             <div className="surface-card premium-card analytics-panel">
+               <div className="analytics-header">
+                 <Activity size={24} className="analytics-icon" />
+                 <h2>Study Analytics</h2>
                </div>
                
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
+               <div className="analytics-grid">
                  {/* 7-Day Study Time Chart */}
-                 <div>
-                   <h3 style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Study Time (Last 7 Days)</h3>
-                   <div style={{ display: 'flex', alignItems: 'flex-end', height: '150px', gap: '8px', paddingBottom: '24px', borderBottom: '1px solid var(--border-glass)', position: 'relative' }}>
+                 <div className="analytics-chart-container">
+                   <h3>Study Time (Last 7 Days)</h3>
+                   <div className="bar-chart-wrapper">
                      {analytics.weekData.map((day, idx) => {
                        const maxMins = Math.max(...analytics.weekData.map(d => d.minutes), 60);
                        const heightPct = Math.min((day.minutes / maxMins) * 100, 100);
                        return (
-                         <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                           <div style={{ 
-                             width: '100%', 
-                             background: 'linear-gradient(to top, var(--accent-brand), var(--accent-primary))',
-                             height: `${heightPct}%`,
-                             minHeight: day.minutes > 0 ? '4px' : '0',
-                             borderRadius: '4px 4px 0 0',
-                             transition: 'height 0.3s ease'
-                           }}></div>
-                           <span style={{ position: 'absolute', bottom: '0', fontSize: '0.8rem', color: 'var(--text-muted)', paddingTop: '4px' }}>{day.dayName}</span>
+                         <div key={idx} className="bar-column">
+                           <div className="bar-fill-wrapper">
+                             <div 
+                               className="bar-fill" 
+                               style={{ height: `${heightPct}%`, minHeight: day.minutes > 0 ? '4px' : '0' }}
+                             >
+                                <span className="bar-tooltip">{day.minutes}m</span>
+                             </div>
+                           </div>
+                           <span className="bar-label">{day.dayName}</span>
                          </div>
                        );
                      })}
@@ -190,22 +210,17 @@ export default function Dashboard() {
                  </div>
 
                  {/* Mock Exam Average */}
-                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Mock Exam Performance</h3>
-                    <div style={{ background: 'var(--bg-panel)', padding: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-                      <div style={{ 
-                        width: '80px', height: '80px', borderRadius: '50%', 
-                        background: `conic-gradient(var(--accent-primary) ${analytics.mockAvg * 3.6}deg, var(--bg-hover) 0deg)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        position: 'relative'
-                      }}>
-                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--bg-panel)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{analytics.mockAvg}%</span>
+                 <div className="analytics-performance-container">
+                    <h3>Mock Exam Performance</h3>
+                    <div className="performance-card">
+                      <div className="radial-progress-wrapper" style={{ background: `conic-gradient(var(--accent-primary) ${analytics.mockAvg * 3.6}deg, var(--bg-hover) 0deg)` }}>
+                        <div className="radial-progress-inner">
+                          <span>{analytics.mockAvg}%</span>
                         </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Average Score</div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Across all subjects</div>
+                      <div className="performance-info">
+                        <div className="performance-title">Average Score</div>
+                        <div className="performance-subtitle">Across all subjects</div>
                       </div>
                     </div>
                  </div>

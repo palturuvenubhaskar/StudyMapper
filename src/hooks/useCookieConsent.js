@@ -39,6 +39,7 @@ export function useCookieConsent() {
 
   const updateConsent = useCallback(async (newConsent) => {
     const record = {
+      id: 'current_consent',
       ...newConsent,
       consent_date: new Date().toISOString(),
       updated_at: new Date().toISOString(),

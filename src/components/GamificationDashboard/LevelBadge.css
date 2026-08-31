@@ -1,60 +1,101 @@
-.level-badge {
+.level-badge-premium {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
-.level-ring {
+.level-orb {
   position: relative;
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bg-surface-active), var(--bg-panel));
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.level-ring svg {
-  width: 100%;
-  height: 100%;
+.level-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   transform: rotate(-90deg);
 }
 
-.ring-bg {
+.orb-bg {
   fill: none;
-  stroke: var(--border-color);
-  stroke-width: 8;
+  stroke: var(--border-light);
+  stroke-width: 4;
 }
 
-.ring-progress {
+.orb-progress {
   fill: none;
-  stroke: var(--accent-primary);
-  stroke-width: 8;
+  stroke-width: 6;
   stroke-linecap: round;
   transition: stroke-dasharray 1s ease-out;
+  filter: drop-shadow(0 0 4px rgba(129, 140, 248, 0.4));
 }
 
-.level-number {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.level-number-display {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.level-info-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-label-text {
+  font-size: 0.85rem;
+  color: var(--accent-brand);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.level-title-text {
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
-.level-info {
+.gamification-xp-inline {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 250px;
 }
 
-.level-label {
-  font-size: 0.9rem;
+.xp-bar-container-inline {
+  height: 8px;
+  background: var(--bg-surface-active);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  width: 100%;
+}
+
+.xp-bar-fill-inline {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.xp-text-inline {
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.level-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-weight: 600;
 }

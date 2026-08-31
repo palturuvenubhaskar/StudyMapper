@@ -7,13 +7,13 @@ export default function StreakFlame({ streakDays, longestStreak }) {
   const isHot = streakDays >= 3;
   
   return (
-    <div className={`streak-flame-container ${isActive ? 'active' : ''} ${isHot ? 'hot' : ''}`}>
-      <div className="streak-icon-wrapper">
-        <Flame size={32} className="streak-icon" />
+    <div className={`streak-flame-premium ${isActive ? 'active' : ''} ${isHot ? 'hot' : ''}`}>
+      <div className="streak-flame-icon-box">
+        <Flame size={28} className="flame-svg" fill={isActive ? 'currentColor' : 'none'} />
       </div>
-      <div className="streak-stats">
-        <span className="streak-count">{streakDays} Day Streak</span>
-        <span className="longest-streak">Best: {longestStreak} Days</span>
+      <div className="streak-flame-text-box">
+        <span className="streak-flame-count">{streakDays} Day Streak</span>
+        <span className="streak-flame-best">Best: {longestStreak} Days</span>
       </div>
     </div>
   );
