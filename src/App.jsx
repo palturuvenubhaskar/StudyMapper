@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/ToastProvider/ToastProvider';
 import { ThemeProvider } from './context/ThemeProvider';
+import { PlacementStateProvider } from './context/PlacementStateContext';
 import { AuthProvider } from './context/AuthContext';
 import Dashboard from './pages/Dashboard/Dashboard';
 import CreateSubject from './pages/CreateSubject/CreateSubject';
@@ -185,7 +186,9 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
-            <AppContent />
+            <PlacementStateProvider>
+              <AppContent />
+            </PlacementStateProvider>
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>

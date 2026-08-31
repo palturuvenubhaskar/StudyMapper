@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { 
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../data/db';
 import { TopicDetail } from './TopicDetail';
+import { usePlacementState } from '../../context/PlacementStateContext';
 import './LearnMode.css';
 
 const CATEGORY_CONFIG = {
@@ -71,12 +72,26 @@ export default function LearnMode() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const config = CATEGORY_CONFIG[categoryId];
+  const { saveState, loadState } = usePlacementState(`learn-${categoryId}`);
   
   useDocumentTitle(`Learn — ${config?.name || 'Placement Prep'}`);
   
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  // Restore saved state on mount
+  const savedState = loadState();
+  const [selectedTopic, setSelectedTopic] = useState(savedState?.selectedTopic || null);
   const [topicsProgress, setTopicsProgress] = useState({});
-  const [filter, setFilter] = useState('all'); // all | easy | medium | hard | completed | pending
+  const [filter, setFilter] = useState(savedState?.filter || 'all'); // all | easy | medium | hard | completed | pending
+
+  // Keep a ref of current state for the cleanup function
+  const stateRef = useRef({ selectedTopic, filter });
+  useEffect(() => {
+    stateRef.current = { selectedTopic, filter };
+  }, [selectedTopic, filter]);
+
+  // Save state on unmount
+  useEffect(() => {
+    return () => saveState(stateRef.current);
+  }, [saveState]);
 
   useEffect(() => {
     if (config) {
@@ -125,7 +140,7 @@ export default function LearnMode() {
       <div className="learn-header">
         <button onClick={() => navigate('/placement')} className="back-btn">
           <ArrowLeft size={18} />
-          Back to Placement Hub
+          Back to Placement Prep
         </button>
         <h1>{config.name}</h1>
         <p>Master these topics before taking the test. AI-generated explanations tailored for placement prep.</p>

@@ -355,6 +355,93 @@
   color: var(--text-secondary);
 }
 
+/* Resume Banner */
+.placement-resume-banner {
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.resume-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(236, 72, 153, 0.08) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.resume-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resume-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6366f1;
+  letter-spacing: 0.5px;
+}
+
+.resume-banner-text p {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.resume-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-resume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-resume:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-dismiss-resume {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-dismiss-resume:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
 @media (max-width: 768px) {
   .placement-hub {
     padding: 16px;
@@ -374,5 +461,15 @@
   
   .category-card-actions {
     grid-template-columns: 1fr;
+  }
+
+  .resume-banner-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .resume-banner-actions {
+    justify-content: flex-end;
   }
 }

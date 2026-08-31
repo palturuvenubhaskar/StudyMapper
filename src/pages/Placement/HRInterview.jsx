@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateHRInterviewPrompt, evaluateHRAnswerPrompt, callOpenRouterStream, callOpenRouter, extractJson } from '../../core/api/aiService';
@@ -7,24 +7,40 @@ import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Send, MessageSquare, BookOpen, Target, Sparkles } from 'lucide-react';
 import './Placement.css';
+import { usePlacementState } from '../../context/PlacementStateContext';
 
 
 export default function HRInterview() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { saveState, loadState } = usePlacementState('hr-interview');
+
+  // Restore saved state on mount
+  const saved = loadState();
 
   const [profile, setProfile] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [feedback, setFeedback] = useState({});
+  const [questions, setQuestions] = useState(saved?.questions || []);
+  const [answers, setAnswers] = useState(saved?.answers || {});
+  const [feedback, setFeedback] = useState(saved?.feedback || {});
   const [streamingId, setStreamingId] = useState(null);
   const [streamingText, setStreamingText] = useState('');
 
   // New scope selector state
-  const [testScope, setTestScope] = useState('all');
+  const [testScope, setTestScope] = useState(saved?.testScope || 'all');
   const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
   const [weakTopicsCount, setWeakTopicsCount] = useState(0);
+
+  // Keep a ref of current state for cleanup
+  const stateRef = useRef({});
+  useEffect(() => {
+    stateRef.current = { questions, answers, feedback, testScope };
+  }, [questions, answers, feedback, testScope]);
+
+  // Save state on unmount
+  useEffect(() => {
+    return () => saveState(stateRef.current);
+  }, [saveState]);
 
   useEffect(() => {
     (async () => { const p = await getStudentProfile(); setProfile(p); })();
@@ -80,7 +96,7 @@ export default function HRInterview() {
   return (
     <div className="practice-page">
       <button className="btn btn-ghost back-btn" onClick={() => navigate('/placement')}>
-        <ArrowLeft size={18} /> Back to Placement Hub
+        <ArrowLeft size={18} /> Back to Placement Prep
       </button>
 
       <h1 style={{ marginBottom: '24px' }}>HR Interview Practice</h1>

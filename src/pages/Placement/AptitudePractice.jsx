@@ -3,32 +3,49 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle, BookOpen, Target, Sparkles } from 'lucide-react';
+import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import './Placement.css';
+import './AptitudePractice.css';
+import { usePlacementState } from '../../context/PlacementStateContext';
 
 export default function AptitudePractice() {
   const navigate = useNavigate();
   const toast = useToast();
   const timerRef = useRef(null);
+  const { saveState, loadState } = usePlacementState('aptitude-practice');
+
+  // Restore saved state on mount
+  const saved = loadState();
 
   const [profile, setProfile] = useState(null);
-  const [subcategory, setSubcategory] = useState('Quantitative Aptitude');
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [subcategory, setSubcategory] = useState(saved?.subcategory || 'Quantitative Aptitude');
+  const [difficulty, setDifficulty] = useState(saved?.difficulty || 'Medium');
   const [generating, setGenerating] = useState(false);
 
   // Quiz state
-  const [questions, setQuestions] = useState([]);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [quizDone, setQuizDone] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [questions, setQuestions] = useState(saved?.questions || []);
+  const [currentIdx, setCurrentIdx] = useState(saved?.currentIdx || 0);
+  const [selectedAnswer, setSelectedAnswer] = useState(saved?.selectedAnswer ?? null);
+  const [showExplanation, setShowExplanation] = useState(saved?.showExplanation || false);
+  const [timer, setTimer] = useState(saved?.timer || 0);
+  const [quizDone, setQuizDone] = useState(saved?.quizDone || false);
+  const [sessionId, setSessionId] = useState(saved?.sessionId || null);
 
   // New scope selector state
-  const [testScope, setTestScope] = useState('all');
+  const [testScope, setTestScope] = useState(saved?.testScope || 'all');
   const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
   const [weakTopicsCount, setWeakTopicsCount] = useState(0);
+
+  // Keep a ref of current state for cleanup
+  const stateRef = useRef({});
+  useEffect(() => {
+    stateRef.current = { subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope };
+  }, [subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope]);
+
+  // Save state on unmount
+  useEffect(() => {
+    return () => saveState(stateRef.current);
+  }, [saveState]);
 
   useEffect(() => {
     (async () => { const p = await getStudentProfile(); setProfile(p); })();
@@ -102,18 +119,18 @@ export default function AptitudePractice() {
   return (
     <div className="practice-page">
       <button className="btn btn-ghost back-btn" onClick={() => navigate('/placement')}>
-        <ArrowLeft size={18} /> Back to Placement Hub
+        <ArrowLeft size={18} /> Back to Placement Prep
       </button>
 
-      <h1 style={{ marginBottom: '24px' }}>Aptitude Practice</h1>
+      <h1 className="page-title">Aptitude Practice</h1>
 
-      <div className="practice-controls">
-        <select className="input" value={subcategory} onChange={e => setSubcategory(e.target.value)}>
+      <div className="controls-section">
+        <select className="modern-select" value={subcategory} onChange={e => setSubcategory(e.target.value)}>
           <option>Quantitative Aptitude</option>
           <option>Logical Reasoning</option>
           <option>Verbal Ability</option>
         </select>
-        <select className="input" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+        <select className="modern-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
           <option>Easy</option>
           <option>Medium</option>
           <option>Hard</option>
@@ -130,8 +147,7 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <BookOpen size={20} />
-            <div>
+            <div className="scope-text">
               <strong>Learned Topics Only</strong>
               <span>Test yourself on {learnedTopicsCount} topics you've studied</span>
             </div>
@@ -147,8 +163,7 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <Target size={20} />
-            <div>
+            <div className="scope-text">
               <strong>Weak Areas</strong>
               <span>Focus on {weakTopicsCount} topics you struggled with</span>
             </div>
@@ -164,8 +179,7 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <Sparkles size={20} />
-            <div>
+            <div className="scope-text">
               <strong>Full Test</strong>
               <span>All topics mixed together</span>
             </div>
@@ -173,9 +187,9 @@ export default function AptitudePractice() {
         </label>
       </div>
 
-      <div className="practice-controls" style={{ marginTop: '16px' }}>
-        <button className="btn btn-primary" onClick={generateQuestions} disabled={generating}>
-          {generating ? <><Loader size={16} className="spin-icon" /> Generating...</> : <><RefreshCw size={16} /> Generate 5 Questions</>}
+      <div className="generate-action">
+        <button className="btn-generate" onClick={generateQuestions} disabled={generating}>
+          {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate 5 Questions</>}
         </button>
       </div>
 
@@ -238,7 +252,7 @@ export default function AptitudePractice() {
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={generateQuestions}>Generate More Questions</button>
-              <button className="btn btn-secondary" onClick={() => navigate('/placement')}>Back to Hub</button>
+              <button className="btn btn-secondary" onClick={() => navigate('/placement')}>Back to Prep</button>
             </div>
           </div>
         </div>

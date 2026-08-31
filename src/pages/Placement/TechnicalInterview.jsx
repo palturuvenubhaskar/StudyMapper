@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateTechnicalInterviewPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
@@ -7,6 +7,7 @@ import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Eye, EyeOff, CheckCircle2, BookOpen, Target, Sparkles } from 'lucide-react';
 import './Placement.css';
+import { usePlacementState } from '../../context/PlacementStateContext';
 
 
 const TOPICS = ['Data Structures', 'Algorithms', 'Operating Systems', 'DBMS', 'Computer Networks', 'OOP', 'C/C++', 'Java', 'Python', 'JavaScript'];
@@ -14,18 +15,33 @@ const TOPICS = ['Data Structures', 'Algorithms', 'Operating Systems', 'DBMS', 'C
 export default function TechnicalInterview() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { saveState, loadState } = usePlacementState('technical-interview');
+
+  // Restore saved state on mount
+  const saved = loadState();
 
   const [profile, setProfile] = useState(null);
-  const [topic, setTopic] = useState('Data Structures');
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [topic, setTopic] = useState(saved?.topic || 'Data Structures');
+  const [difficulty, setDifficulty] = useState(saved?.difficulty || 'Medium');
   const [generating, setGenerating] = useState(false);
-  const [questions, setQuestions] = useState([]);
-  const [visibleAnswers, setVisibleAnswers] = useState({});
+  const [questions, setQuestions] = useState(saved?.questions || []);
+  const [visibleAnswers, setVisibleAnswers] = useState(saved?.visibleAnswers || {});
 
   // New scope selector state
-  const [testScope, setTestScope] = useState('all');
+  const [testScope, setTestScope] = useState(saved?.testScope || 'all');
   const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
   const [weakTopicsCount, setWeakTopicsCount] = useState(0);
+
+  // Keep a ref of current state for cleanup
+  const stateRef = useRef({});
+  useEffect(() => {
+    stateRef.current = { topic, difficulty, questions, visibleAnswers, testScope };
+  }, [topic, difficulty, questions, visibleAnswers, testScope]);
+
+  // Save state on unmount
+  useEffect(() => {
+    return () => saveState(stateRef.current);
+  }, [saveState]);
 
   useEffect(() => {
     (async () => { const p = await getStudentProfile(); setProfile(p); })();
@@ -70,7 +86,7 @@ export default function TechnicalInterview() {
   return (
     <div className="practice-page">
       <button className="btn btn-ghost back-btn" onClick={() => navigate('/placement')}>
-        <ArrowLeft size={18} /> Back to Placement Hub
+        <ArrowLeft size={18} /> Back to Placement Prep
       </button>
 
       <h1 style={{ marginBottom: '24px' }}>Technical Interview Practice</h1>

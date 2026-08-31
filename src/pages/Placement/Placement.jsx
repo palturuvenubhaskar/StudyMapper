@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Brain, Code, Users, BookOpen, Target, TrendingUp, Clock, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../../data/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ProgressOverview } from './ProgressOverview';
 import './Placement.css';
+
 
 const CATEGORIES = [
   {
@@ -45,7 +46,7 @@ const CATEGORIES = [
 
 export default function Placement() {
   useDocumentTitle('Placement Prep');
-  const [activeTab, setActiveTab] = useState('overview'); // overview | progress
+  const navigate = useNavigate();
 
   // Fetch aggregated stats from IndexedDB
   const stats = useLiveQuery(async () => {
