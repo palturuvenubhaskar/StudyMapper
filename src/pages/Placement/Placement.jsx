@@ -132,7 +132,7 @@ function CategoryCard({ category, stats }) {
 
   return (
     <div className="category-card" style={{ '--cat-color': category.color }}>
-      <div className="category-card-header" style={{ background: category.gradient }}>
+      <div className="category-card-header">
         <div className="category-icon-wrapper">
           <Icon size={28} style={{ color: category.color }} />
         </div>
@@ -141,7 +141,7 @@ function CategoryCard({ category, stats }) {
             <path
               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               fill="none"
-              stroke="#e5e7eb"
+              stroke="var(--border-strong)"
               strokeWidth="3"
             />
             <path
