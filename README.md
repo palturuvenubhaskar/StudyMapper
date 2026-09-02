@@ -2,6 +2,8 @@
 
 > An AI-powered, intelligent learning companion and study planner designed to supercharge your education.
 
+**Live Demo:** [https://study-mapper.vercel.app/](https://study-mapper.vercel.app/)
+
 StudyMapper transforms static notes into interactive, adaptive learning experiences. From automatically parsing syllabuses to generating technical interview prep, flashcards, and personalized study plans, StudyMapper is the ultimate all-in-one educational platform.
 
 ## Features
