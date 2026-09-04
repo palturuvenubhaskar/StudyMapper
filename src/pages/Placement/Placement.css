@@ -178,7 +178,7 @@
 }
 
 .topic-tag.more {
-  background: var(--cat-color, var(--accent));
+  background: var(--cat-color, var(--accent-brand));
   color: white;
 }
 

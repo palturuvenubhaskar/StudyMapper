@@ -47,7 +47,7 @@
   background: var(--bg-card);
   padding: 0.25rem 0.5rem;
   border-radius: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
 }
 
 .export-options-label {
@@ -100,7 +100,7 @@
 }
 
 .unit-topics-list {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
   padding: 8px 0;
 }
 
@@ -155,7 +155,7 @@
   margin-top: 40px;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .section-divider h2 {
@@ -264,7 +264,7 @@
 }
 .delete-modal {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-2xl);
   padding: 32px;
   max-width: 420px;

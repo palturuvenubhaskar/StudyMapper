@@ -223,7 +223,7 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-secondary);
+  background: var(--bg-panel);
   border-radius: 12px;
 }
 

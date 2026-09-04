@@ -35,7 +35,7 @@
 
 /* No Search Results specific */
 .no-search-results .search-suggestions {
-  background: var(--surface);
+  background: var(--bg-surface);
   border-radius: 8px;
   padding: 16px 20px;
   margin-bottom: 20px;

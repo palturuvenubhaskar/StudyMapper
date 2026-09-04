@@ -7,7 +7,7 @@
 }
 
 .skeleton {
-  background: var(--skeleton-base, var(--bg-secondary));
+  background: var(--skeleton-base, var(--bg-panel));
   border-radius: 4px;
   position: relative;
   overflow: hidden;
@@ -80,8 +80,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   margin: 16px 0;
 }
@@ -93,7 +93,7 @@
 }
 
 .ai-loader-icon {
-  color: var(--accent);
+  color: var(--accent-brand);
   animation: pulse 2s infinite;
 }
 

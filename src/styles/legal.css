@@ -47,14 +47,14 @@
 }
 
 .legal-toc a:hover {
-  background: var(--surface);
+  background: var(--bg-surface);
   color: var(--text-primary);
 }
 
 .legal-toc a.active {
-  background: var(--surface);
-  color: var(--accent);
-  border-left-color: var(--accent);
+  background: var(--bg-surface);
+  color: var(--accent-brand);
+  border-left-color: var(--accent-brand);
   font-weight: 500;
 }
 
@@ -72,7 +72,7 @@
 
 .legal-badge {
   padding: 4px 10px;
-  background: var(--accent);
+  background: var(--accent-brand);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
@@ -89,7 +89,7 @@
 .legal-print {
   margin-left: auto;
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   color: var(--text-secondary);
   padding: 6px 10px;
   border-radius: 6px;
@@ -102,7 +102,7 @@
 }
 
 .legal-print:hover {
-  background: var(--surface);
+  background: var(--bg-surface);
   color: var(--text-primary);
 }
 
@@ -120,7 +120,7 @@
   margin: 40px 0 16px;
   color: var(--text-primary);
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .legal-content h3 {
@@ -151,7 +151,7 @@
 }
 
 .legal-content a {
-  color: var(--accent);
+  color: var(--accent-brand);
   text-decoration: underline;
 }
 
@@ -161,8 +161,8 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 0.875rem;
@@ -198,12 +198,12 @@
 
   .legal-toc a {
     border-left: none;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     padding: 6px 12px;
   }
 
   .legal-toc a.active {
-    border-color: var(--accent);
+    border-color: var(--accent-brand);
   }
 }
 

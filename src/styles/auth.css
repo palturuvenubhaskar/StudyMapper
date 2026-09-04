@@ -10,8 +10,8 @@
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 40px 32px;
   display: flex;
@@ -48,7 +48,7 @@
 .form-group input {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.9375rem;
@@ -57,7 +57,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-brand);
 }
 
 .password-input-wrapper {
@@ -119,7 +119,7 @@
 }
 
 .auth-back-link:hover {
-  color: var(--accent);
+  color: var(--accent-brand);
 }
 
 .spin {
