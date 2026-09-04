@@ -456,6 +456,9 @@
     height: 100vh !important;
     border-radius: 0;
   }
+  .ai-fullscreen-btn {
+    display: none !important;
+  }
 }
 /* --- Study Coach Dashboard Styles --- */
 .coach-message {

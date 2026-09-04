@@ -309,7 +309,7 @@ export default function AIAssistant({ userId = 'guest' }) {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button className="ai-btn-ghost" onClick={() => setIsFullScreen(!isFullScreen)}>
+              <button className="ai-btn-ghost ai-fullscreen-btn" onClick={() => setIsFullScreen(!isFullScreen)}>
                 {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
               <button className="ai-btn-ghost">
