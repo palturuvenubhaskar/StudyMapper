@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Palette, Moon, Sun, Eye, Type } from 'lucide-react';
+import { Palette, Moon, Sun, Monitor, Type } from 'lucide-react';
 import { db } from '../../../data/db';
+import { useTheme } from '../../../context/ThemeProvider';
 
 const themes = [
-  { id: 'midnight', name: 'Midnight Coding', description: 'Deep blue tones for late night sessions', icon: Moon },
-  { id: 'focus', name: 'Focus Mode', description: 'High contrast black and white', icon: Eye },
-  { id: 'eyecare', name: 'Eye Care', description: 'Warm sepia tones to reduce eye strain', icon: Sun },
-  { id: 'solarized', name: 'Solarized', description: 'Classic developer favorite', icon: Palette },
-  { id: 'forest', name: 'Forest', description: 'Green-tinted dark theme', icon: Palette },
+  { id: 'light', name: 'Light', description: 'Clean and bright', icon: Sun },
+  { id: 'dark', name: 'Dark', description: 'Easy on the eyes', icon: Moon },
+  { id: 'system', name: 'System', description: 'Follows system preferences', icon: Monitor },
 ];
 
 const fontSizes = [
@@ -17,7 +16,7 @@ const fontSizes = [
 ];
 
 export function AppearanceTab() {
-  const [activeTheme, setActiveTheme] = useState('midnight');
+  const { theme, setTheme } = useTheme();
   const [fontSize, setFontSize] = useState('medium');
   const [density, setDensity] = useState('comfortable');
 
@@ -28,15 +27,13 @@ export function AppearanceTab() {
   const loadSettings = async () => {
     const stored = await db.user_settings.toCollection().last();
     if (stored) {
-      setActiveTheme(stored.theme || 'midnight');
       setFontSize(stored.font_size || 'medium');
       setDensity(stored.density || 'comfortable');
     }
   };
 
   const applyTheme = async (themeId) => {
-    setActiveTheme(themeId);
-    document.documentElement.setAttribute('data-theme', themeId);
+    setTheme(themeId);
     await db.user_settings.update(1, { theme: themeId, updated_at: new Date().toISOString() });
   };
 
@@ -57,7 +54,7 @@ export function AppearanceTab() {
             <button
               key={id}
               onClick={() => applyTheme(id)}
-              className={`theme-card ${activeTheme === id ? 'active' : ''}`}
+              className={`theme-card ${theme === id ? 'active' : ''}`}
             >
               <Icon size={24} />
               <div>
