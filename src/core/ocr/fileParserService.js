@@ -1,9 +1,10 @@
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
 import { extractTextFromImage } from './ocrService';
 
 // Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export const extractTextFromFile = async (file) => {
   const type = file.type;
