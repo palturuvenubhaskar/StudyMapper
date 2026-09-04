@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MapPin, Code2, Briefcase, Settings } from 'lucide-react';
+import { LayoutDashboard, MapPin, Code2, TrendingUp, Settings } from 'lucide-react';
 import './MobileNav.css';
 
 export default function MobileNav() {
@@ -9,7 +9,7 @@ export default function MobileNav() {
   const navItems = [
     { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Roadmap', path: '/roadmap', icon: MapPin },
-    { name: 'Placement', path: '/placement', icon: Briefcase },
+    { name: 'Placement', path: '/placement', icon: TrendingUp },
     { name: 'Practice', path: '/coding', icon: Code2 },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
