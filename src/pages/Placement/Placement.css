@@ -448,22 +448,49 @@
 @media (max-width: 768px) {
   .placement-hub {
     padding: 16px;
+    padding-bottom: 90px;
   }
   
   .placement-header {
-    padding: 24px;
+    padding: 20px;
   }
   
   .placement-header h1 {
     font-size: 1.75rem;
   }
   
+  .placement-quick-stats {
+    gap: 12px;
+  }
+  
+  .quick-stat {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    flex: 1 1 calc(50% - 12px);
+    justify-content: center;
+  }
+  
   .placement-categories {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   
   .category-card-actions {
     grid-template-columns: 1fr;
+  }
+  
+  .category-topics-preview {
+    gap: 8px;
+  }
+
+  .topic-tag {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .progress-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .resume-banner-content {
