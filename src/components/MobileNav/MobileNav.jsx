@@ -10,7 +10,7 @@ export default function MobileNav() {
     { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Roadmap', path: '/roadmap', icon: MapPin },
     { name: 'Placement', path: '/placement', icon: TrendingUp },
-    { name: 'Practice', path: '/coding', icon: Code2 },
+    { name: 'Coding', path: '/coding', icon: Code2 },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 

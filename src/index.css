@@ -639,7 +639,7 @@ p {
   .content-container {
     border-radius: 0;
     flex-direction: column;
-    margin-bottom: 70px; /* Space for Mobile Nav */
+    margin-bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -649,6 +649,7 @@ p {
     overflow-y: visible; /* Let the content container scroll on mobile */
     height: auto;
     flex: none;
+    padding-bottom: 100px; /* Space for floating Mobile Nav dock */
   }
 
   /* Prevent flex-height collapse for all page containers on mobile */
