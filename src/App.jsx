@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { ToastProvider } from './components/ToastProvider/ToastProvider';
 import { ThemeProvider } from './context/ThemeProvider';
 import { PlacementStateProvider } from './context/PlacementStateContext';
@@ -67,6 +67,7 @@ import { Offline } from './pages/Errors/Offline';
 function AppContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login' || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
   const isDashboard = location.pathname === '/';
 
@@ -86,6 +87,16 @@ function AppContent() {
     window.addEventListener('openCookiePrefs', handler);
     return () => window.removeEventListener('openCookiePrefs', handler);
   }, []);
+
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      localStorage.setItem('hasVisited', 'true');
+      if (location.pathname !== '/login') {
+        navigate('/login');
+      }
+    }
+  }, [navigate, location.pathname]);
 
   return (
     <ErrorBoundary>
