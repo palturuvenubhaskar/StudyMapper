@@ -6,6 +6,7 @@ import { Search, Calendar, ChevronRight, MoreHorizontal, Play, BookOpen, FileTex
 import StudyPlanner from '../StudyPlanner/StudyPlanner';
 import BookmarksPage from '../BookmarksPage/BookmarksPage';
 import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
+import PomodoroTimer from '../../components/PomodoroTimer/PomodoroTimer';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -122,6 +123,46 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Mobile Subjects & Question Banks */}
+          {isMobile && (
+            <div className="mobile-only-section" style={{ marginBottom: '32px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <PomodoroTimer />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Your Subjects</h3>
+                <button className="btn-ghost btn-sm" onClick={() => navigate('/create')} style={{ color: 'var(--accent)', fontWeight: '600', padding: '4px 8px', borderRadius: '6px' }}>More</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                {subjects.slice(0, 4).map(sub => (
+                  <div key={sub.id} className="surface-card premium-card" style={{ padding: '20px 16px', cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onClick={() => navigate(`/subject/${sub.id}`)}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-surface-active)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <BookOpen size={24} style={{ color: 'var(--accent-primary)' }} />
+                    </div>
+                    <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.title}</div>
+                  </div>
+                ))}
+                {subjects.length === 0 && <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>No subjects yet.</div>}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Question Banks</h3>
+                <button className="btn-ghost btn-sm" onClick={() => navigate('/qb/create')} style={{ color: 'var(--accent)', fontWeight: '600', padding: '4px 8px', borderRadius: '6px' }}>More</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
+                {qbanks.slice(0, 4).map(qb => (
+                  <div key={qb.id} className="surface-card premium-card" style={{ padding: '20px 16px', cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onClick={() => navigate(`/qb/${qb.id}`)}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-surface-active)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <FileText size={24} style={{ color: 'var(--accent-brand)' }} />
+                    </div>
+                    <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{qb.title}</div>
+                  </div>
+                ))}
+                {qbanks.length === 0 && <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>No question banks yet.</div>}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
              {/* Jump Back In */}
              <div className="surface-card premium-card jump-card" onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}>
@@ -227,19 +268,6 @@ export default function Dashboard() {
                </div>
              </div>
 
-           </div>
-
-
-         </div>
-       )}
-
-       {isMobile && !loading && (
-         <div className="mobile-dashboard-extensions">
-           <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-glass)' }}>
-             <StudyPlanner />
-           </div>
-           <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-glass)' }}>
-             <BookmarksPage />
            </div>
          </div>
        )}
