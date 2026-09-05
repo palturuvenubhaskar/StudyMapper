@@ -4,8 +4,8 @@
   justify-content: center;
   height: 100vh;
   width: 100%;
-  padding: 16px;
-  background: transparent;
+  padding: 24px;
+  background: var(--bg-root);
   overflow: hidden;
 }
 
@@ -13,20 +13,21 @@
   display: flex;
   width: 100%;
   max-width: 1000px;
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
+  height: 600px;
+  max-height: calc(100vh - 48px);
   background: var(--bg-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-glass);
   border: 1px solid var(--border-glass);
+  overflow: hidden;
 }
 
 .login-illustration {
   flex: 1;
   display: none;
-  background: linear-gradient(135deg, var(--accent-brand-soft), rgba(255,255,255,0.1));
+  background: linear-gradient(135deg, var(--accent-brand-soft), rgba(255,255,255,0.05));
   align-items: center;
   justify-content: center;
   position: relative;
@@ -43,12 +44,12 @@
 .illustration-content {
   text-align: center;
   max-width: 400px;
-  padding: 24px;
+  padding: 32px;
   z-index: 10;
 }
 
 .illustration-content h1 {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   font-weight: 800;
   margin-bottom: 16px;
   background: linear-gradient(135deg, var(--text-primary), var(--accent-brand));
@@ -58,21 +59,27 @@
 }
 
 .illustration-content p {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   line-height: 1.6;
   color: var(--text-secondary);
 }
 
 .illustration-bg-shape {
   position: absolute;
-  width: 500px;
-  height: 500px;
+  width: 600px;
+  height: 600px;
   background: var(--accent-brand);
-  filter: blur(120px);
+  filter: blur(140px);
   opacity: 0.15;
   border-radius: 50%;
-  top: -50px;
-  left: -50px;
+  top: -100px;
+  left: -100px;
+  animation: pulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.15; }
+  100% { transform: scale(1.1); opacity: 0.25; }
 }
 
 .login-form-section {
@@ -80,35 +87,37 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.4);
+  padding: 40px;
+  background: var(--bg-panel);
 }
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .login-header h2 {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   letter-spacing: -0.5px;
 }
 
 .login-header p {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .social-login {
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .social-btn {
@@ -117,29 +126,28 @@
   justify-content: center;
   gap: 12px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s;
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
   box-shadow: var(--shadow-sm);
 }
 
 .social-btn:hover {
-  background: #f8fafc;
+  background: var(--bg-surface-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
 }
 
 .login-divider {
   position: relative;
   text-align: center;
-  margin: 12px 0;
+  margin: 20px 0;
 }
 
 .login-divider::before {
@@ -155,51 +163,63 @@
 
 .login-divider span {
   position: relative;
-  background: var(--bg-surface-active);
-  padding: 4px 16px;
-  border-radius: 20px;
+  background: var(--bg-panel);
+  padding: 0 16px;
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
   z-index: 2;
-  border: 1px solid var(--border-light);
 }
 
 .login-tabs {
-  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  gap: 4px;
+  background: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
-  padding: 6px;
+  padding: 4px;
+  margin-bottom: 24px;
 }
 
 .tab-btn {
-  border: none !important;
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .tab-btn.active {
-  background: #ffffff !important;
-  color: var(--text-primary) !important;
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
   box-shadow: var(--shadow-sm);
+  font-weight: 600;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 
 .form-group label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-left: 4px;
+  color: var(--text-secondary);
+  margin-left: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .input-with-icon {
@@ -210,7 +230,7 @@
 
 .input-with-icon > svg {
   position: absolute;
-  left: 16px;
+  left: 14px;
   color: var(--text-muted);
   z-index: 10;
   transition: color 0.2s;
@@ -222,10 +242,10 @@
 
 .input-with-icon input {
   width: 100%;
-  padding: 10px 12px 10px 42px;
+  padding: 12px 14px 12px 42px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-surface);
   color: var(--text-primary);
   font-size: 15px;
   transition: all 0.2s;
@@ -234,8 +254,8 @@
 .input-with-icon input:focus {
   outline: none;
   border-color: var(--accent-brand);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px var(--accent-brand-soft);
+  background: var(--bg-surface-active);
+  box-shadow: 0 0 0 3px var(--accent-brand-soft);
 }
 
 .input-with-icon input::placeholder {
@@ -244,7 +264,7 @@
 
 .password-toggle-btn {
   position: absolute;
-  right: 16px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -269,32 +289,32 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: var(--radius-md);
-  background: var(--accent-brand);
-  color: white;
+  background: var(--accent-primary);
+  color: var(--accent-primary-fg);
   font-weight: 600;
   font-size: 15px;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 4px;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  margin-top: 8px;
+  box-shadow: var(--shadow-md);
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 
-.submit-btn:active {
+.submit-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .submit-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .toggle-mode-btn {
@@ -303,14 +323,16 @@
   color: var(--text-secondary);
   font-weight: 500;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
   font-size: 14px;
   transition: color 0.2s;
+  margin-top: 8px;
+  width: 100%;
+  text-align: center;
 }
 
 .toggle-mode-btn:hover {
   color: var(--accent-brand);
-  text-decoration: none;
 }
 
 .phone-input-group {
@@ -319,11 +341,11 @@
 }
 
 .country-code-select {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
-  border-right: 1px solid var(--border-light);
-  padding: 12px 12px 12px 42px;
+  border-right: none;
+  padding: 12px 8px 12px 36px;
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   font-size: 15px;
   outline: none;
@@ -331,21 +353,22 @@
   appearance: none;
   transition: all 0.2s;
   font-weight: 500;
+  min-width: 90px;
 }
 
 .country-code-select:focus {
   border-color: var(--accent-brand);
-  background: #ffffff;
+  background: var(--bg-surface-active);
   z-index: 2;
 }
 
 .phone-input-group input {
   border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
-  padding-left: 16px !important;
+  padding-left: 12px !important;
   flex: 1;
 }
 
 .phone-input-group > svg {
-  left: 16px;
+  left: 12px;
   z-index: 10;
 }

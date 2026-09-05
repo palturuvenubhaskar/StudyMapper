@@ -155,18 +155,16 @@ export default function Login() {
             <span>or continue with</span>
           </div>
 
-          <div className="login-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+          <div className="login-tabs">
             <button 
               className={`tab-btn ${activeTab === 'email' ? 'active' : ''}`}
               onClick={() => setActiveTab('email')}
-              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: activeTab === 'email' ? 'var(--bg-card)' : 'transparent', color: activeTab === 'email' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', fontWeight: activeTab === 'email' ? '600' : '400' }}
             >
               Email
             </button>
             <button 
               className={`tab-btn ${activeTab === 'mobile' ? 'active' : ''}`}
               onClick={() => setActiveTab('mobile')}
-              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: activeTab === 'mobile' ? 'var(--bg-card)' : 'transparent', color: activeTab === 'mobile' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', fontWeight: activeTab === 'mobile' ? '600' : '400' }}
             >
               Mobile Number
             </button>
@@ -220,7 +218,6 @@ export default function Login() {
                 type="button" 
                 className="toggle-mode-btn" 
                 onClick={() => setIsRegistering(!isRegistering)}
-                style={{ marginTop: '16px', display: 'block', width: '100%', textAlign: 'center', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
                 disabled={isLoading}
               >
                 {isRegistering ? 'Already have an account? Sign in' : 'Need an account? Create one'}
@@ -287,7 +284,6 @@ export default function Login() {
                 type="button" 
                 className="toggle-mode-btn" 
                 onClick={() => setShowOtp(false)}
-                style={{ marginTop: '16px', display: 'block', width: '100%', textAlign: 'center', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
                 disabled={isLoading}
               >
                 Change Phone Number
