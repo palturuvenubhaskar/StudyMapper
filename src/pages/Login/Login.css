@@ -231,6 +231,8 @@
 .input-with-icon > svg {
   position: absolute;
   left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-muted);
   z-index: 10;
   transition: color 0.2s;
@@ -242,7 +244,8 @@
 
 .input-with-icon input {
   width: 100%;
-  padding: 12px 14px 12px 42px;
+  padding: 12px 14px;
+  padding-left: 42px !important;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
   background: var(--bg-surface);
