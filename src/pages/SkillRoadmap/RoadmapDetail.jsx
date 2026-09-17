@@ -184,10 +184,12 @@ export default function RoadmapDetail({ roadmapId, onBack, onSelectRoadmap }) {
       </div>
 
       {/* Node Detail Panel (Right Side) */}
-      {selectedNode && (
+      {selectedNode && (() => {
+        const nodeTitle = selectedNode.title || selectedNode.label || 'this topic';
+        return (
         <div className="rd-node-panel">
           <div className="rd-panel-header">
-            <h3>{selectedNode.label}</h3>
+            <h3>{nodeTitle}</h3>
             <button className="rd-panel-close" onClick={() => setSelectedNode(null)}>
               <X size={18} />
             </button>
@@ -231,26 +233,18 @@ export default function RoadmapDetail({ roadmapId, onBack, onSelectRoadmap }) {
             </div>
 
             <div className="rd-panel-info">
-              <h4>About {selectedNode.label}</h4>
+              <h4>About {nodeTitle}</h4>
               <p>
                 {selectedNode.type === NODE_TYPES.TOPIC || selectedNode.type === NODE_TYPES.SUBTOPIC
-                  ? `Learn ${selectedNode.label} as part of your ${roadmap.title} journey. This is a key skill that will build your foundation.`
+                  ? `Learn ${nodeTitle} as part of your ${roadmap.title} journey. This is a key skill that will build your foundation.`
                   : `Complete this checkpoint by building a project that demonstrates your understanding of the concepts covered so far.`
                 }
               </p>
             </div>
-
-            <div className="rd-panel-actions">
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => toggleNodeStatus(selectedNode.id)}
-              >
-                Toggle Status
-              </button>
-            </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

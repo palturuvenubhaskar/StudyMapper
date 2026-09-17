@@ -93,7 +93,7 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
         </div>
         
         <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: '220px' }}>
+          <div style={{ width: '220px', position: 'relative', zIndex: 10 }}>
             <PremiumSelect 
               value={currentActiveDisplay}
               onChange={handleCategoryChange}
@@ -112,7 +112,7 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
               />
           </div>
           
-          <button className="btn btn-primary" onClick={onGenerateCustom} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+          <button className="btn btn-blue-gradient" onClick={onGenerateCustom} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
             <Sparkles size={18} /> Create Custom Roadmap
           </button>
         </div>
@@ -131,16 +131,6 @@ export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
                   onClick={() => onSelectRoadmap(roadmap.id)}
                 >
                   <span className="rb-card-title">{roadmap.title}</span>
-                  <button
-                    className="rb-card-bookmark"
-                    onClick={(e) => handleBookmark(e, roadmap.id)}
-                    title={bookmarks.includes(roadmap.id) ? 'Remove bookmark' : 'Bookmark'}
-                  >
-                    {bookmarks.includes(roadmap.id)
-                      ? <BookmarkCheck size={20} />
-                      : <Bookmark size={20} />
-                    }
-                  </button>
                 </div>
               ))}
             </div>

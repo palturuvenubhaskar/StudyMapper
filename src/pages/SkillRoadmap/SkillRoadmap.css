@@ -5,12 +5,16 @@
    ============================ */
 
 .skill-roadmap-page {
-  padding: 24px 32px 64px 32px;
-  max-width: 1280px;
-  margin: 0 auto;
   height: 100%;
   overflow-y: auto;
   border-radius: var(--radius-2xl);
+  width: 100%;
+}
+
+.skill-roadmap-content {
+  padding: 24px 32px 64px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
 .back-btn {
@@ -36,6 +40,7 @@
 
 .rb-hero-card {
   position: relative;
+  z-index: 10;
   padding: 48px 40px;
   border-radius: 24px;
   background: var(--bg-surface);
@@ -44,7 +49,7 @@
   border: 1px solid var(--border-glass);
   box-shadow: var(--shadow-glass);
   margin-bottom: 40px;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -134,9 +139,23 @@
 }
 
 .rb-search-input:focus {
-  border-color: #3b82f6;
-  background: var(--bg-glass);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-brand);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--accent-brand-soft);
+}
+
+.btn-blue-gradient {
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-blue-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  color: white;
 }
 
 .rb-search-input::placeholder {
@@ -225,6 +244,9 @@
   font-weight: 600;
   color: var(--text-primary);
   z-index: 1;
+  flex: 1;
+  padding-right: 12px;
+  word-break: break-word;
 }
 
 .rb-card-bookmark {
@@ -239,6 +261,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .rb-card-bookmark:hover {
@@ -1248,7 +1271,20 @@
   }
 
   .rd-node-panel {
-    width: 100%;
+    position: fixed;
+    bottom: 90px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    z-index: 1000;
+    border-radius: var(--radius-2xl);
+    max-height: 70vh;
+    box-shadow: var(--shadow-glass);
+    top: auto;
+    border-bottom: 1px solid var(--border-strong);
+    background: var(--bg-glass-container);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
   }
 }
 
@@ -1277,10 +1313,24 @@
 }
 
 @media (max-width: 768px) {
-  .skill-roadmap-page { padding: 16px; }
+  .skill-roadmap-page { padding: 12px 8px; }
+  .skill-roadmap-content { padding: 16px 0 64px 0; }
   .rb-top-header { padding: 24px 16px; }
   .rb-hero-card { flex-direction: column; padding: 24px; align-items: flex-start; }
-  .roadmaps-grid { grid-template-columns: 1fr !important; }
+  .rb-grid { 
+    grid-template-columns: repeat(2, 1fr) !important; 
+    gap: 12px;
+  }
+  .rb-card {
+    padding: 12px 14px;
+    justify-content: center;
+  }
+  .rb-card-title {
+    padding-right: 0;
+    font-size: 0.9rem;
+    text-align: center;
+    width: 100%;
+  }
   .roadmap-canvas { overflow-x: auto; overflow-y: hidden; }
   .rb-filters { flex-direction: column !important; width: 100%; align-items: stretch !important; gap: 12px !important; margin-top: 16px; }
   .rb-filters > div { width: 100% !important; }

@@ -157,10 +157,12 @@ export default function SkillRoadmap() {
   if (view === 'browse') {
     return (
       <div className="skill-roadmap-page">
-        <RoadmapBrowser
-          onSelectRoadmap={handleSelectRoadmap}
-          onGenerateCustom={handleGenerateCustom}
-        />
+        <div className="skill-roadmap-content">
+          <RoadmapBrowser
+            onSelectRoadmap={handleSelectRoadmap}
+            onGenerateCustom={handleGenerateCustom}
+          />
+        </div>
       </div>
     );
   }
@@ -169,11 +171,13 @@ export default function SkillRoadmap() {
   if (view === 'detail' && selectedRoadmapId) {
     return (
       <div className="skill-roadmap-page">
-        <RoadmapDetail
-          roadmapId={selectedRoadmapId}
-          onBack={handleBackToBrowse}
-          onSelectRoadmap={handleSelectRoadmap}
-        />
+        <div className="skill-roadmap-content">
+          <RoadmapDetail
+            roadmapId={selectedRoadmapId}
+            onBack={handleBackToBrowse}
+            onSelectRoadmap={handleSelectRoadmap}
+          />
+        </div>
       </div>
     );
   }
@@ -183,7 +187,8 @@ export default function SkillRoadmap() {
 
   return (
     <div className="skill-roadmap-page">
-      <button className="btn btn-ghost back-btn" onClick={handleBackToBrowse}>
+      <div className="skill-roadmap-content">
+        <button className="btn btn-ghost back-btn" onClick={handleBackToBrowse}>
         <ArrowLeft size={18} /> Back to All Roadmaps
       </button>
 
@@ -272,6 +277,7 @@ export default function SkillRoadmap() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

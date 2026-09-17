@@ -3,13 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getCodingProblem, updateCodingProblem } from '../../data/repository';
 import { analyzeCodingSolutionPrompt, generateVisualDebugPrompt, generateCodeReviewPrompt, callOpenRouterStream } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
-import remarkGfm from 'remark-gfm';
-import { ArrowLeft, Play, Loader, Eye, EyeOff, Code2, CheckCircle2, Bug, Search } from 'lucide-react';
+import { ArrowLeft, Loader } from 'lucide-react';
 import { awardXP } from '../../core/gamification/xpEngine';
 import { updateQuestProgress } from '../../core/gamification/dailyQuests';
 import { checkAchievements } from '../../core/gamification/achievementChecker';
 import { logEvent } from '../../core/analytics/tracker';
+
+// New Architecture Imports
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels';
+import { usePyodide } from './hooks/usePyodide';
+import { useTestRunner } from './hooks/useTestRunner';
+import { problems as localProblems } from './data/problemTestCases';
+
+import ProblemPanel from './components/ProblemPanel';
+import EditorPanel from './components/EditorPanel';
+import TestRunnerPanel from './components/TestRunnerPanel';
+import AITutorDrawer from './components/AITutorDrawer';
+
 import './CodingPractice.css';
 
 export default function CodingWorkspace() {
@@ -18,217 +28,216 @@ export default function CodingWorkspace() {
   const toast = useToast();
 
   const [problem, setProblem] = useState(null);
+  const [dbRecord, setDbRecord] = useState(null);
   const [code, setCode] = useState('');
+  const [language, setLanguage] = useState('python');
   const [loading, setLoading] = useState(true);
   
-  // Modes: 'analysis' | 'debug' | 'review'
-  const [activeMode, setActiveMode] = useState('analysis');
-  const [analyzing, setAnalyzing] = useState(false);
+  // AI Tutor State
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [aiMode, setAiMode] = useState('review'); // 'review' or 'explain-error'
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [aiStreamContent, setAiStreamContent] = useState('');
   
-  const [analysisContent, setAnalysisContent] = useState('');
-  const [debugContent, setDebugContent] = useState('');
-  const [reviewContent, setReviewContent] = useState('');
-  
-  const [streamingContent, setStreamingContent] = useState('');
-  const [showHints, setShowHints] = useState(false);
+  // Local Execution Hooks
+  const pyodideConfig = usePyodide();
+  const { results, status, runTime, runTests, reset: resetTests } = useTestRunner(pyodideConfig);
 
   useEffect(() => {
     (async () => {
-      const p = await getCodingProblem(problemId);
-      if (!p) { navigate('/coding'); return; }
-      setProblem(p);
-      setCode(p.user_code || '');
-      setAnalysisContent(p.ai_analysis || '');
+      // Find problem data from our local test case file
+      const localProblem = localProblems.find(p => p.id === problemId);
+      
+      // Fetch DB record for user progress
+      const pRecord = await getCodingProblem(problemId);
+      
+      if (!localProblem && !pRecord) {
+        toast('Problem not found', 'error');
+        navigate('/coding'); 
+        return; 
+      }
+      
+      // Merge local problem data (which has test cases) with db record (if any)
+      const mergedProblem = { 
+        ...(pRecord || {}), 
+        ...(localProblem || {}),
+        status: pRecord?.status || 'unsolved'
+      };
+      
+      setProblem(mergedProblem);
+      setDbRecord(pRecord);
+      
+      // Load saved code or starter code
+      const savedCode = pRecord?.user_code;
+      const starterCode = localProblem?.starterCode?.[language] || '';
+      setCode(savedCode || starterCode);
+      
       setLoading(false);
     })();
-  }, [problemId]);
+  }, [problemId, language, navigate, toast]);
 
-  const handleAction = async (mode) => {
-    if (!code.trim()) { toast('Write some code first', 'error'); return; }
-    
-    setActiveMode(mode);
-    setAnalyzing(true);
-    setStreamingContent('');
-    
-    // Clear previous content for the mode
-    if (mode === 'analysis') setAnalysisContent('');
-    else if (mode === 'debug') setDebugContent('');
-    else if (mode === 'review') setReviewContent('');
-
-    try {
-      await updateCodingProblem(problemId, { user_code: code });
-
-      let messages;
-      if (mode === 'analysis') {
-        messages = analyzeCodingSolutionPrompt(problem, code, problem.language);
-      } else if (mode === 'debug') {
-        messages = generateVisualDebugPrompt(problem, code, problem.language);
-      } else if (mode === 'review') {
-        messages = generateCodeReviewPrompt(problem, code, problem.language);
-      }
-
-      const fullText = await callOpenRouterStream(messages, (textSoFar) => {
-        setStreamingContent(textSoFar);
-      });
-
-      if (mode === 'analysis') {
-        setAnalysisContent(fullText);
-        // Correctness check logic
-        const isSolved = fullText.toLowerCase().includes('✅') || fullText.toLowerCase().includes('correct');
-        await updateCodingProblem(problemId, { ai_analysis: fullText, status: isSolved ? 'solved' : 'attempted' });
-        setProblem(prev => ({ ...prev, status: isSolved ? 'solved' : 'attempted', ai_analysis: fullText, user_code: code }));
-        
-        if (isSolved && problem.status !== 'solved') {
+  // Gamification hook when tests pass
+  useEffect(() => {
+    if (status === 'passed' && problem && problem.status !== 'solved') {
+      (async () => {
+        try {
+          await updateCodingProblem(problemId, { status: 'solved', user_code: code });
+          setProblem(prev => ({ ...prev, status: 'solved' }));
+          
           await awardXP('guest', 100, 'coding_problem', problemId);
           await updateQuestProgress('guest', 'solve_code', 1);
           await checkAchievements('guest');
+          await logEvent('guest', problemId, 'coding_problem_solved', 0, 100);
+          
+          toast('✅ Solution Accepted! You earned XP.', 'success');
+        } catch(err) {
+          console.error("Failed to update status", err);
         }
-        await logEvent('guest', problemId, 'coding_problem_attempt', 0, isSolved ? 100 : 0);
-        toast(isSolved ? '✅ Solution looks correct!' : '⚠️ Analysis complete', isSolved ? 'success' : 'info');
-      } else if (mode === 'debug') {
-        setDebugContent(fullText);
-        toast('🐞 Debug trace complete', 'info');
-      } else if (mode === 'review') {
-        setReviewContent(fullText);
-        toast('👀 Code review complete', 'success');
-      }
-
-      setStreamingContent('');
-    } catch (err) {
-      console.error(err);
-      toast('Failed to process: ' + err.message, 'error');
+      })();
     }
-    setAnalyzing(false);
+  }, [status, problem, problemId, code, toast]);
+
+  const handleRunTests = async () => {
+    if (!code.trim()) { toast('Write some code first', 'error'); return; }
+    
+    // Save code attempt to DB
+    try {
+      await updateCodingProblem(problemId, { user_code: code });
+    } catch(err) { /* ignore if record doesn't exist yet */ }
+    
+    // Combine public and hidden tests
+    const allTests = [...(problem.publicTestCases || []), ...(problem.hiddenTestCases || [])];
+    
+    if (allTests.length === 0) {
+      toast('No test cases found for this problem', 'warning');
+      return;
+    }
+    
+    await runTests(code, allTests);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = e.target.selectionStart;
-      const end = e.target.selectionEnd;
-      setCode(code.substring(0, start) + '    ' + code.substring(end));
-      setTimeout(() => { e.target.selectionStart = e.target.selectionEnd = start + 4; }, 0);
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset your code to the starter template?')) {
+      setCode(problem?.starterCode?.[language] || '');
+      resetTests();
     }
+  };
+
+  const handleAskAI = async (mode = 'review') => {
+    if (!code.trim()) { toast('Write some code first', 'error'); return; }
+    
+    setAiMode(mode);
+    setAiDrawerOpen(true);
+    setAiAnalyzing(true);
+    setAiStreamContent('');
+
+    try {
+      let messages;
+      
+      if (mode === 'explain-error') {
+        const failedTest = results.find(r => !r.passed);
+        const promptStr = failedTest 
+          ? `My code failed test case ${failedTest.name || failedTest.id}.\nInput: ${JSON.stringify(failedTest.input)}\nExpected: ${JSON.stringify(failedTest.expected)}\nActual output: ${failedTest.actual}\nError (if any): ${failedTest.stderr}\n\nHere is my code:\n` + code
+          : `My code is failing tests. Please help me debug it.\n\nCode:\n` + code;
+          
+        messages = [
+          { role: 'system', content: 'You are an expert coding tutor. Explain why the code fails the given test case and suggest a fix. Be concise and focus on the logical error.' },
+          { role: 'user', content: promptStr }
+        ];
+      } else {
+        messages = generateCodeReviewPrompt(problem, code, language);
+      }
+
+      await callOpenRouterStream(messages, (textSoFar) => {
+        setAiStreamContent(textSoFar);
+      });
+      
+    } catch (err) {
+      console.error(err);
+      toast('Failed to contact AI: ' + err.message, 'error');
+    }
+    setAiAnalyzing(false);
   };
 
   if (loading) return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
 
-  const renderActiveContent = () => {
-    if (analyzing) return streamingContent;
-    if (activeMode === 'analysis') return analysisContent;
-    if (activeMode === 'debug') return debugContent;
-    if (activeMode === 'review') return reviewContent;
-    return '';
-  };
-
   return (
-    <div className="coding-workspace">
-      <div className="workspace-header">
-        <h1 style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', margin: 0, flex: '1 1 100%' }}>
-          <button className="btn btn-ghost btn-icon" onClick={() => navigate('/coding')} style={{ flexShrink: 0, margin: 0 }}>
-            <ArrowLeft size={18} />
-          </button>
-          <span style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
-            <Code2 size={20} style={{ flexShrink: 0, marginTop: '4px' }} />
-            <span style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>{problem.title}</span>
-          </span>
-        </h1>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="badge" style={{ background: problem.difficulty === 'Easy' ? 'var(--success-soft)' : problem.difficulty === 'Medium' ? 'var(--warning-soft)' : 'var(--danger-soft)', color: problem.difficulty === 'Easy' ? 'var(--success)' : problem.difficulty === 'Medium' ? 'var(--warning)' : 'var(--danger)' }}>{problem.difficulty}</span>
-          <span className="badge badge-accent">{problem.language}</span>
-          <span className="badge badge-accent">{problem.topic}</span>
-          {problem.status === 'solved' && <span className="badge badge-success"><CheckCircle2 size={10} /> Solved</span>}
+    <div className="coding-workspace" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-root)' }}>
+      {/* Top Navbar */}
+      <div className="workspace-header" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', flexShrink: 0 }}>
+        <button className="btn btn-ghost btn-icon" onClick={() => navigate('/coding')} style={{ padding: 0 }}>
+          <ArrowLeft size={20} />
+        </button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Coding Practice</h2>
+          <span style={{ color: 'var(--text-muted)' }}>/</span>
+          <span style={{ fontWeight: 500 }}>{problem.title}</span>
         </div>
+        {pyodideConfig.loading && (
+          <div className="badge badge-accent" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Loader size={12} className="spin-icon" /> Loading Python Environment...
+          </div>
+        )}
       </div>
 
-      <div className="workspace-split">
-        {/* Left: Problem */}
-        <div className="workspace-left glass-card">
-          <div className="problem-panel">
-            <h2>Problem Statement</h2>
-            <p>{problem.statement}</p>
+      {/* Main Workspace Area */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <PanelGroup direction="horizontal">
+          
+          {/* Left Pane: Problem Description */}
+          <Panel defaultSize={40} minSize={30} style={{ borderRight: '1px solid var(--border-light)' }}>
+            <ProblemPanel problem={problem} />
+          </Panel>
 
-            <h2>Constraints</h2>
-            <pre>{problem.constraints}</pre>
+          <PanelResizeHandle className="panel-resize-handle" style={{ width: '4px', cursor: 'col-resize', background: 'transparent', position: 'relative', zIndex: 10 }}>
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '1px', right: '1px', background: 'var(--border-strong)', transition: 'background 0.2s', ':hover': { background: 'var(--accent-brand)' } }} />
+          </PanelResizeHandle>
 
-            <h2>Sample Input</h2>
-            <pre>{problem.sample_input}</pre>
+          {/* Right Pane: Editor & Tests */}
+          <Panel defaultSize={60} minSize={40}>
+            <PanelGroup direction="vertical">
+              
+              <Panel defaultSize={65} minSize={30} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                <EditorPanel 
+                  code={code} 
+                  setCode={setCode} 
+                  language={language} 
+                  setLanguage={setLanguage}
+                  onRunTests={handleRunTests}
+                  isRunning={status === 'running'}
+                  onReset={handleReset}
+                  onAskAI={handleAskAI}
+                  canAskAI={status === 'failed' || status === 'passed'}
+                  canSubmit={status === 'passed'}
+                />
+              </Panel>
 
-            <h2>Sample Output</h2>
-            <pre>{problem.sample_output}</pre>
+              <PanelResizeHandle className="panel-resize-handle" style={{ height: '4px', cursor: 'row-resize', background: 'transparent', position: 'relative', zIndex: 10 }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '1px', bottom: '1px', background: 'var(--border-strong)' }} />
+              </PanelResizeHandle>
 
-            <h2>Explanation</h2>
-            <p>{problem.explanation}</p>
+              <Panel defaultSize={35} minSize={20} collapsible>
+                <TestRunnerPanel 
+                  results={results}
+                  status={status}
+                  runTime={runTime}
+                  onAskAI={handleAskAI}
+                />
+              </Panel>
+              
+            </PanelGroup>
+          </Panel>
+          
+        </PanelGroup>
 
-            <div className="hints-toggle">
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowHints(!showHints)}>
-                {showHints ? <><EyeOff size={14} /> Hide Hints</> : <><Eye size={14} /> Show Hints</>}
-              </button>
-              {showHints && <div className="hints-content">{problem.hints}</div>}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Code editor */}
-        <div className="workspace-right">
-          <div className="glass-card code-panel">
-            <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{problem.language}</span>
-              <div className="tool-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  className={`btn btn-sm ${activeMode === 'debug' ? 'btn-primary' : 'btn-ghost'}`} 
-                  onClick={() => handleAction('debug')}
-                  disabled={analyzing}
-                  title="Visual Debugger (Simulated Trace)"
-                >
-                  <Bug size={14} /> Debug
-                </button>
-                <button 
-                  className={`btn btn-sm ${activeMode === 'review' ? 'btn-primary' : 'btn-ghost'}`} 
-                  onClick={() => handleAction('review')}
-                  disabled={analyzing}
-                  title="Senior Developer Code Review"
-                >
-                  <Search size={14} /> Review
-                </button>
-              </div>
-            </div>
-            <textarea
-              className="code-textarea"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`// Write your ${problem.language} solution here...`}
-              spellCheck="false"
-            />
-            <div className="code-actions">
-              <button className={`btn ${activeMode === 'analysis' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => handleAction('analysis')} disabled={analyzing || !code.trim()}>
-                {analyzing && activeMode === 'analysis' ? <><Loader size={16} className="spin-icon" /> Analyzing...</> : <><Play size={16} /> Submit for Analysis</>}
-              </button>
-            </div>
-          </div>
-
-          {/* Analysis / Output Panel */}
-          {(analyzing || analysisContent || debugContent || reviewContent) && (
-            <div className="glass-card analysis-panel">
-              <div className="analysis-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                <span style={{ fontWeight: activeMode === 'analysis' ? 'bold' : 'normal', color: activeMode === 'analysis' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('analysis')}>
-                  Analysis Verdict
-                </span>
-                <span style={{ fontWeight: activeMode === 'debug' ? 'bold' : 'normal', color: activeMode === 'debug' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('debug')}>
-                  Debug Trace
-                </span>
-                <span style={{ fontWeight: activeMode === 'review' ? 'bold' : 'normal', color: activeMode === 'review' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setActiveMode('review')}>
-                  Code Review
-                </span>
-              </div>
-              <div className={`markdown-body ${activeMode === 'debug' ? 'debug-trace' : ''}`}>
-                <MarkdownRenderer remarkPlugins={[remarkGfm]}>{renderActiveContent() || 'No data yet for this mode. Run the tool above.'}</MarkdownRenderer>
-                {analyzing && <span className="cursor-blink">|</span>}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Floating AI Tutor Drawer */}
+        <AITutorDrawer 
+          isOpen={aiDrawerOpen} 
+          onClose={() => setAiDrawerOpen(false)} 
+          streamContent={aiStreamContent}
+          isAnalyzing={aiAnalyzing}
+          mode={aiMode}
+        />
       </div>
     </div>
   );

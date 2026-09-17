@@ -41,7 +41,7 @@
   width: 100%;
   max-height: 250px;
   overflow-y: auto;
-  background: var(--bg-surface);
+  background: var(--bg-surface-active);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
