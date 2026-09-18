@@ -156,13 +156,21 @@ export default function CreateQuestionBank() {
                 </button>
               </div>
             ))}
+            {processing && (
+               <div className="glass-card question-item" style={{ justifyContent: 'center', padding: '2rem', gap: '1rem', color: 'var(--text-secondary)' }}>
+                 <Loader size={24} className="spin-icon" color="var(--accent-brand)" />
+                 <span>AI is extracting questions...</span>
+               </div>
+            )}
             
-            <button 
-              className="btn btn-secondary dashed-btn" 
-              onClick={() => setQuestions([...questions, { text: '', marks: 'Unknown' }])}
-            >
-              <Plus size={16} /> Add Question Manually
-            </button>
+            {!processing && (
+              <button 
+                className="btn btn-secondary dashed-btn" 
+                onClick={() => setQuestions([...questions, { text: '', marks: 'Unknown' }])}
+              >
+                <Plus size={16} /> Add Question Manually
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, getCodingStats, getCodingProblems, saveCodingProblem, getLearningTrack, createLearningTrack, getLearningLesson, saveLearningLesson } from '../../data/repository';
-import { generateCodingProblemPrompt, generateLearningLessonPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
+import { generateLearningLessonPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen, CheckCircle2, Circle, Lock, Play, RotateCcw, Type, Calculator, GitBranch, Repeat, Box, List, TerminalSquare, Database, Cpu, FileCode, Clock } from 'lucide-react';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
@@ -125,19 +125,23 @@ export default function CodingPractice() {
   const generateProblem = async () => {
     setGenerating(true);
     try {
-      const messages = generateCodingProblemPrompt(language, topic, difficulty);
-      const responseText = await callOpenRouter(messages);
-      const parsed = extractJson(responseText);
-
-      if (parsed && parsed.title) {
-        const problem = await saveCodingProblem(profile?.id || 'guest', {
-          ...parsed, language, topic, difficulty
-        });
-        toast('Problem generated!', 'success');
-        navigate(`/coding/workspace/${problem.id}`);
-      } else {
-        toast('Failed to generate problem. Try again.', 'error');
-      }
+      // Create a placeholder problem immediately and navigate
+      const problem = await saveCodingProblem(profile?.id || 'guest', {
+        title: `${topic} Problem`,
+        statement: '',
+        constraints: '',
+        sample_input: '',
+        sample_output: '',
+        explanation: '',
+        hints: '',
+        test_cases: '',
+        language,
+        topic,
+        difficulty,
+        status: 'generating'
+      });
+      // Navigate immediately — workspace will handle AI generation
+      navigate(`/coding/workspace/${problem.id}`);
     } catch (err) {
       console.error(err);
       toast('Error: ' + err.message, 'error');
@@ -194,7 +198,6 @@ export default function CodingPractice() {
       <div className="coding-hero">
         <div className="hero-glow"></div>
         <div className="hero-content">
-          <div className="hero-badge"><Code2 size={16}/> Developer Arena</div>
           <h1 className="hero-title">Coding <span>Practice</span></h1>
           <p className="hero-subtitle">Master algorithms, data structures, and languages.</p>
         </div>

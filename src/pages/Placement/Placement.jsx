@@ -69,10 +69,6 @@ export default function Placement() {
       {/* Header Section */}
       <div className="placement-header">
         <div className="placement-header-content">
-          <span className="placement-badge">
-            <Target size={14} />
-            Career Prep Mode
-          </span>
           <h1>Placement <span className="text-accent">Prep</span></h1>
           <p className="placement-subtitle">
             Master concepts before you test. Structured learning paths for every interview stage.

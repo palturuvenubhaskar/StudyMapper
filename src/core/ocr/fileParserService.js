@@ -21,7 +21,25 @@ export const extractTextFromFile = async (file) => {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
+      
+      let pageText = '';
+      let lastY = null;
+      
+      for (const item of textContent.items) {
+        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+          pageText += '\n';
+        } else if (lastY !== null && Math.abs(item.transform[4] - lastY) > 0) { // Same line but might need space if not present
+           // PDF JS usually includes spaces, but we can rely on hasEOL
+        }
+        pageText += item.str;
+        if (item.hasEOL) {
+          pageText += '\n';
+          lastY = null; // Reset for next line
+        } else {
+          lastY = item.transform[5];
+        }
+      }
+      
       fullText += pageText + '\n\n';
     }
     return fullText;

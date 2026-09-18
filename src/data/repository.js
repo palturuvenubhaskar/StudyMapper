@@ -388,7 +388,7 @@ export const saveCodingProblem = async (profileId, problemData) => {
     constraints: problemData.constraints || '', sample_input: problemData.sample_input || '',
     sample_output: problemData.sample_output || '', explanation: problemData.explanation || '',
     hints: problemData.hints || '', test_cases: problemData.test_cases || '',
-    user_code: null, ai_analysis: null, status: 'unsolved',
+    user_code: null, ai_analysis: null, status: problemData.status || 'unsolved',
     created_at: new Date().toISOString()
   };
   await db.coding_problems.add(problem);

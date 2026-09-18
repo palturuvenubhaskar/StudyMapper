@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { extractSyllabusFromText, extractSyllabusFromImage } from '../../core/api/aiService';
+import { extractTextFromFile } from '../../core/ocr/fileParserService';
 import { saveSyllabus } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { v4 as uuidv4 } from 'uuid';
-import { Upload, Type, ArrowLeft, Loader, Plus, Trash2, GripVertical, Check, Edit3 } from 'lucide-react';
+import { Upload, Type, ArrowLeft, Loader, Plus, Trash2, GripVertical, Check, Edit3, FileText } from 'lucide-react';
 import './CreateSubject.css';
 
 export default function CreateSubject() {
@@ -23,40 +24,74 @@ export default function CreateSubject() {
   // Manual input state
   const [manualSubject, setManualSubject] = useState('');
 
-  // ---- IMAGE UPLOAD ----
-  const handleImageUpload = async (e) => {
+  // ---- FILE UPLOAD ----
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setStep('ocr_processing');
       setAiProcessing(true);
+      
+      let result;
 
-      const base64Image = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
+      if (file.type.startsWith('image/')) {
+        const base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = error => reject(error);
+        });
+        result = await extractSyllabusFromImage(base64Image);
+        
+        if (!result || !result.units || result.units.length === 0) {
+          toast('AI could not parse the syllabus structure. Try manual input.', 'error');
+          setStep('choose');
+          return;
+        }
 
-      const result = await extractSyllabusFromImage(base64Image);
+        setSubjectTitle(result.subject || 'New Subject');
+        setUnits(result.units.map((u, i) => ({
+          id: uuidv4(),
+          title: u.title || `Unit ${i + 1}`,
+          topics: (u.topics || []).map(t => typeof t === 'string' ? { id: uuidv4(), title: t, prereq_titles: [] } : { id: uuidv4(), title: t.title || 'Untitled Topic', prereq_titles: t.prereq_titles || [] }),
+        })));
+        
+        setStep('review');
+      } else {
+        const text = await extractTextFromFile(file);
+        
+        setSubjectTitle('New Subject...');
+        setUnits([]);
+        setStep('review'); // Switch to review for streaming
+        
+        let currentUnits = [];
+        result = await extractSyllabusFromText(text, (partial) => {
+          if (partial.subject && partial.subject !== 'Parsing Subject...') {
+            setSubjectTitle(partial.subject);
+          }
+          if (partial.units) {
+             const newUnits = partial.units.map((pu, i) => {
+                const existingUnit = currentUnits[i];
+                const unitId = existingUnit ? existingUnit.id : uuidv4();
+                
+                const newTopics = (pu.topics || []).map((pt, j) => {
+                   const existingTopic = existingUnit && existingUnit.topics[j];
+                   return {
+                      id: existingTopic ? existingTopic.id : uuidv4(),
+                      title: typeof pt === 'string' ? pt : (pt.title || ''),
+                      prereq_titles: pt.prereq_titles || []
+                   };
+                });
+                return { id: unitId, title: pu.title || `Unit ${i + 1}`, topics: newTopics };
+             });
+             currentUnits = newUnits;
+             setUnits(newUnits);
+          }
+        });
+      }
       
       setAiProcessing(false);
-
-      if (!result || !result.units || result.units.length === 0) {
-        toast('AI could not parse the syllabus structure. Try manual input.', 'error');
-        setStep('choose');
-        return;
-      }
-
-      setSubjectTitle(result.subject || 'New Subject');
-      setUnits(result.units.map((u, i) => ({
-        id: uuidv4(),
-        title: u.title || `Unit ${i + 1}`,
-        topics: (u.topics || []).map(t => typeof t === 'string' ? { id: uuidv4(), title: t, prereq_titles: [] } : { id: uuidv4(), title: t.title || 'Untitled Topic', prereq_titles: t.prereq_titles || [] }),
-      })));
-      
-      setStep('review');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Something went wrong during extraction.', 'error');
@@ -205,14 +240,14 @@ export default function CreateSubject() {
 
         <div className="create-hero">
           <h1>Create a New Subject</h1>
-          <p>Upload a syllabus image for AI extraction, or type your syllabus manually.</p>
+          <p>Upload a syllabus file or image for AI extraction, or type your syllabus manually.</p>
         </div>
         <div className="create-options">
-          <label className="glass-card create-option" htmlFor="image-upload">
+          <label className="glass-card create-option" htmlFor="file-upload">
             <Upload size={40} />
-            <h3>Upload Syllabus Image</h3>
-            <p>Photo of a syllabus, textbook index, or handwritten notes</p>
-            <input type="file" id="image-upload" accept="image/*" hidden onChange={handleImageUpload} />
+            <h3>Upload Syllabus File</h3>
+            <p>PDF, DOCX, or Image of a syllabus/index</p>
+            <input type="file" id="file-upload" accept=".pdf,.docx,.doc,image/*" hidden onChange={handleFileUpload} />
           </label>
           <div className="glass-card create-option" onClick={startManualInput}>
             <Type size={40} />
@@ -289,14 +324,15 @@ export default function CreateSubject() {
             className="input subject-name-input"
             value={subjectTitle}
             onChange={(e) => setSubjectTitle(e.target.value)}
+            disabled={aiProcessing}
           />
         </div>
         <div className="review-actions">
-          <button className="btn btn-secondary" onClick={addUnit}>
+          <button className="btn btn-secondary" onClick={addUnit} disabled={aiProcessing}>
             <Plus size={16} /> Add Unit
           </button>
-          <button className="btn btn-primary btn-lg" onClick={handleSave}>
-            <Check size={16} /> Save Subject
+          <button className="btn btn-primary btn-lg" onClick={handleSave} disabled={aiProcessing || units.length === 0}>
+            {aiProcessing ? <Loader size={16} className="spin-icon" /> : <Check size={16} />} Save Subject
           </button>
         </div>
       </div>
@@ -338,12 +374,20 @@ export default function CreateSubject() {
                   </button>
                 </div>
               ))}
-              <button className="btn btn-secondary btn-sm add-topic-btn" onClick={() => addTopic(unit.id)}>
-                <Plus size={14} /> Add Topic
-              </button>
+              {!aiProcessing && (
+                <button className="btn btn-secondary btn-sm add-topic-btn" onClick={() => addTopic(unit.id)}>
+                  <Plus size={14} /> Add Topic
+                </button>
+              )}
             </div>
           </div>
         ))}
+        {aiProcessing && (
+          <div className="glass-card review-unit" style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+            <Loader size={24} className="spin-icon" color="var(--accent-brand)" />
+            <span>AI is parsing units and topics...</span>
+          </div>
+        )}
       </div>
     </div>
   );

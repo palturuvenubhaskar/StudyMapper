@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle, BookOpen, Target, Sparkles } from 'lucide-react';
 import './Placement.css';
 import './AptitudePractice.css';
 import { usePlacementState } from '../../context/PlacementStateContext';
@@ -147,7 +147,8 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <div className="scope-text">
+            <BookOpen size={20} />
+            <div>
               <strong>Learned Topics Only</strong>
               <span>Test yourself on {learnedTopicsCount} topics you've studied</span>
             </div>
@@ -163,7 +164,8 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <div className="scope-text">
+            <Target size={20} />
+            <div>
               <strong>Weak Areas</strong>
               <span>Focus on {weakTopicsCount} topics you struggled with</span>
             </div>
@@ -179,7 +181,8 @@ export default function AptitudePractice() {
             onChange={(e) => setTestScope(e.target.value)}
           />
           <div className="scope-card">
-            <div className="scope-text">
+            <Sparkles size={20} />
+            <div>
               <strong>Full Test</strong>
               <span>All topics mixed together</span>
             </div>
@@ -197,6 +200,7 @@ export default function AptitudePractice() {
         <div className="quiz-container">
           <div className="glass-card quiz-card">
             <div className="quiz-progress">
+
               <span>Question {currentIdx + 1} of {questions.length}</span>
               <div className="quiz-timer"><Clock size={14} /> {formatTime(timer)}</div>
               <span className="badge badge-accent">{difficulty}</span>

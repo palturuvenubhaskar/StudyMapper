@@ -154,11 +154,12 @@ export default function HRInterview() {
         </label>
       </div>
 
-      <div className="practice-controls" style={{ marginTop: '16px' }}>
-        <button className="btn btn-primary" onClick={generateQuestions} disabled={generating}>
-          {generating ? <><Loader size={16} className="spin-icon" /> Generating...</> : <><RefreshCw size={16} /> Generate HR Questions</>}
+
+      <div className="generate-action">
+        <button className="btn-generate" onClick={generateQuestions} disabled={generating}>
+          {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate HR Questions</>}
         </button>
-        {profile && <span className="badge badge-accent">Career: {profile.career_goal}</span>}
+        {profile && <span className="badge badge-accent" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>Career: {profile.career_goal}</span>}
       </div>
 
       <div className="hr-questions-list">
@@ -202,7 +203,7 @@ export default function HRInterview() {
       </div>
 
       {questions.length === 0 && (
-        <div className="empty-state">
+        <div className="empty-state-elegant">
           <p>Generate HR interview questions to start practicing.</p>
         </div>
       )}

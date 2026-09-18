@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getStudentProfile, getAllSubjects, getStudyPlan } from '../../data/repository';
+import { Link } from 'react-router-dom';
+import { getStudentProfile, saveStudentProfile, getAllSubjects, getStudyPlan } from '../../data/repository';
 import { generateAdaptivePlan, triggerPanicMode } from '../../core/planner/adaptivePlanner';
 import { downloadIcsFile } from '../../core/planner/icalExport';
 import { Calendar, RefreshCw, Loader, AlertTriangle, Download, BookOpen } from 'lucide-react';
@@ -14,6 +15,8 @@ export default function StudyPlanner() {
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [examDate, setExamDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [goal, setGoal] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -87,12 +90,49 @@ export default function StudyPlanner() {
     toast("Calendar file downloaded!", "success");
   };
 
+  const handleSaveProfile = async () => {
+    if (!goal.trim()) return;
+    setIsSaving(true);
+    try {
+      await saveStudentProfile({ career_goal: goal.trim() });
+      await loadProfileAndData();
+      toast("Profile created successfully!", "success");
+    } catch (error) {
+      toast("Failed to save profile.", "error");
+    }
+    setIsSaving(false);
+  };
+
   if (!profile) {
     return (
       <div className="empty-state" style={{ background: 'transparent', border: 'none', height: '100%', flex: 1, marginTop: 0 }}>
         <BookOpen size={48} className="empty-icon" />
         <h3>Profile Required</h3>
-        <p>Please complete your profile first.</p>
+        <p>To use the Study Planner, we just need to know what you're learning.</p>
+        
+        <div style={{ marginTop: '24px', maxWidth: '400px', margin: '24px auto 0' }}>
+          <div className="form-group" style={{ textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+              What is your primary learning or career goal?
+            </label>
+            <input 
+              type="text" 
+              className="input" 
+              placeholder="e.g. Master React and Node.js"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveProfile()}
+            />
+          </div>
+          <button 
+            className="btn btn-primary" 
+            style={{ width: '100%', marginTop: '16px' }}
+            onClick={handleSaveProfile}
+            disabled={!goal.trim() || isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Set Goal and Unlock Planner'}
+          </button>
+        </div>
       </div>
     );
   }

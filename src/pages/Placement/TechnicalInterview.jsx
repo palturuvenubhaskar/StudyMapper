@@ -91,11 +91,11 @@ export default function TechnicalInterview() {
 
       <h1 style={{ marginBottom: '24px' }}>Technical Interview Practice</h1>
 
-      <div className="practice-controls">
-        <select className="input" value={topic} onChange={e => setTopic(e.target.value)}>
+      <div className="controls-section">
+        <select className="modern-select" value={topic} onChange={e => setTopic(e.target.value)}>
           {TOPICS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="input" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+        <select className="modern-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
           <option>Easy</option>
           <option>Medium</option>
           <option>Hard</option>
@@ -155,9 +155,9 @@ export default function TechnicalInterview() {
         </label>
       </div>
 
-      <div className="practice-controls" style={{ marginTop: '16px' }}>
-        <button className="btn btn-primary" onClick={generateQuestions} disabled={generating}>
-          {generating ? <><Loader size={16} className="spin-icon" /> Generating...</> : <><RefreshCw size={16} /> Generate 5 Questions</>}
+      <div className="generate-action">
+        <button className="btn-generate" onClick={generateQuestions} disabled={generating}>
+          {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate 5 Questions</>}
         </button>
       </div>
 
@@ -198,7 +198,7 @@ export default function TechnicalInterview() {
       </div>
 
       {questions.length === 0 && (
-        <div className="empty-state">
+        <div className="empty-state-elegant">
           <p>Select a topic and generate questions to start practicing.</p>
         </div>
       )}
