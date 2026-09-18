@@ -19,21 +19,27 @@ export function useTestRunner(pyodideConfig) {
     return match ? match[1] : 'solution';
   };
 
-  const runTests = async (code, testCases) => {
-    if (!pyodide) return;
-
+  const runTests = async (code, testCases, language = 'Python', onProgress) => {
     setStatus('running');
     setResults([]);
     const startTime = performance.now();
     let allPassed = true;
     const currentResults = [];
-    const functionName = getFunctionName(code);
+
+    const isPython = language.toLowerCase() === 'python';
+
+    if (isPython && !pyodide) return;
 
     for (const testCase of testCases) {
-      // Safely escape the json for python string literal
-      const inputJson = JSON.stringify(testCase.input).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      
-      const harness = `
+      const tStart = performance.now();
+      let stdout = '';
+      let stderr = '';
+      let success = false;
+
+      if (isPython) {
+        const functionName = getFunctionName(code);
+        const inputJson = JSON.stringify(testCase.input).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const harness = `
 import json
 import sys
 
@@ -43,31 +49,74 @@ ${code}
 # Test execution
 try:
     _input_args = json.loads('${inputJson}')
-    # All test case inputs are defined as arrays of arguments
     result = ${functionName}(*_input_args)
     print(json.dumps(result))
 except Exception as e:
     import traceback
     sys.stderr.write(traceback.format_exc())
 `;
+        const result = await runPython(harness);
+        stdout = result.stdout;
+        stderr = result.stderr;
+        success = result.success;
+      } else {
+        // Use Wandbox API for other languages
+        const langMap = {
+          'c': 'gcc-head-c',
+          'c++': 'gcc-head',
+          'cpp': 'gcc-head',
+          'java': 'openjdk-jdk-22+36',
+          'javascript': 'nodejs-20.17.0',
+        };
+        const compiler = langMap[language.toLowerCase()] || 'gcc-head-c';
+        
+        try {
+          const res = await fetch('https://wandbox.org/api/compile.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              compiler: compiler,
+              code: code,
+              stdin: typeof testCase.input === 'string' ? testCase.input : JSON.stringify(testCase.input)
+            })
+          });
+          
+          if (!res.ok) {
+            stderr = `API Error: ${res.statusText}`;
+          } else {
+            const data = await res.json();
+            stdout = data.program_output || data.compiler_output || '';
+            stderr = data.program_error || '';
+            success = data.status === "0";
+            
+            if (data.compiler_error) {
+               stderr = data.compiler_error + '\n' + stderr;
+               if (!stdout && data.status !== "0") {
+                  success = false;
+               }
+            }
+          }
+        } catch (e) {
+          stderr = e.message;
+        }
+      }
 
-      const tStart = performance.now();
-      const result = await runPython(harness);
       const tEnd = performance.now();
-      
-      const passed = result.success && compareOutputs(result.stdout, testCase.expected);
+      const expectedOutput = testCase.expected !== undefined ? testCase.expected : testCase.expected_output;
+      const passed = success && compareOutputs(stdout, expectedOutput);
       if (!passed) allPassed = false;
 
       currentResults.push({
         ...testCase,
         passed,
-        actual: result.stdout,
-        stderr: result.stderr,
+        actual: stdout,
+        stderr: stderr,
         executionTime: Math.round(tEnd - tStart)
       });
 
       // Update UI progressively
       setResults([...currentResults]);
+      if (onProgress) onProgress(currentResults);
     }
 
     const endTime = performance.now();

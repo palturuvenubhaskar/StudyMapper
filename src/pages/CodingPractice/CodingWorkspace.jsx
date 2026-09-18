@@ -69,8 +69,21 @@ export default function CodingWorkspace() {
         setGeneratingStream(textSoFar);
         // Try to parse partial JSON to update problem progressively
         try {
-          const partial = extractJson(textSoFar);
-          if (partial) {
+          let partial = extractJson(textSoFar);
+          if (!partial) {
+            partial = {};
+            const parseField = (field) => {
+              const regex = new RegExp(`"${field}"\\s*:\\s*"([^]*?)(?:"|$)`);
+              const match = textSoFar.match(regex);
+              return match ? match[1].replace(/\\\\n/g, '\\n').replace(/\\\\"/g, '"') : null;
+            };
+            const fields = ['title', 'statement', 'constraints', 'sample_input', 'sample_output', 'explanation', 'hints'];
+            fields.forEach(f => {
+              const val = parseField(f);
+              if (val) partial[f] = val;
+            });
+          }
+          if (partial && Object.keys(partial).length > 0) {
             setProblem(prev => ({
               ...prev,
               title: partial.title || prev.title,
@@ -159,6 +172,40 @@ export default function CodingWorkspace() {
     })();
   }, [problemId, language, navigate, toast, streamGenerateProblem]);
 
+  const getTestCases = (includeHidden) => {
+    let tests = [];
+    if (problem.publicTestCases) {
+      tests = [...problem.publicTestCases];
+      if (includeHidden && problem.hiddenTestCases) {
+        tests = [...tests, ...problem.hiddenTestCases];
+      }
+    }
+    
+    if (tests.length === 0) {
+      let tc = problem.test_cases_json || problem.test_cases;
+      if (tc) {
+        try {
+          const tcArr = typeof tc === 'string' ? JSON.parse(tc) : tc;
+          if (Array.isArray(tcArr)) {
+            tests = tcArr;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (tests.length === 0 && problem.sample_input && (problem.sample_output || problem.expected_output)) {
+       tests = [{
+         input: problem.sample_input,
+         expected: problem.sample_output || problem.expected_output,
+         expected_output: problem.sample_output || problem.expected_output,
+         is_hidden: false,
+         isHidden: false
+       }];
+    }
+    
+    return includeHidden ? tests : tests.filter(t => !t.isHidden && !t.is_hidden);
+  };
+
   const handleRunTests = async () => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
     
@@ -167,21 +214,14 @@ export default function CodingWorkspace() {
       await updateCodingProblem(problemId, { user_code: code });
     } catch(err) { /* ignore if record doesn't exist yet */ }
     
-    // Run ONLY public test cases for "Run"
-    let publicTests = problem.publicTestCases || [];
-    if (!publicTests.length && problem.test_cases_json) {
-       try {
-         const tcJson = typeof problem.test_cases_json === 'string' ? JSON.parse(problem.test_cases_json) : problem.test_cases_json;
-         publicTests = tcJson.filter(t => !t.isHidden && !t.is_hidden);
-       } catch (e) {}
-    }
+    const publicTests = getTestCases(false);
 
     if (publicTests.length === 0) {
       toast('No visible test cases found for this problem', 'warning');
       return;
     }
     
-    await runTests(code, publicTests);
+    await runTests(code, publicTests, language);
   };
 
   const handleSubmit = async () => {
@@ -196,13 +236,7 @@ export default function CodingWorkspace() {
       await updateCodingProblem(problemId, { user_code: code });
     } catch(err) { /* ignore if record doesn't exist yet */ }
     
-    // Run ALL test cases (public + hidden)
-    let allTests = [...(problem.publicTestCases || []), ...(problem.hiddenTestCases || [])];
-    if (allTests.length === 0 && problem.test_cases_json) {
-       try {
-         allTests = typeof problem.test_cases_json === 'string' ? JSON.parse(problem.test_cases_json) : problem.test_cases_json;
-       } catch (e) {}
-    }
+    const allTests = getTestCases(true);
 
     if (allTests.length === 0) {
       toast('No test cases found for this problem', 'warning');
@@ -215,7 +249,7 @@ export default function CodingWorkspace() {
     // Wait, runTests updates `results` state which is passed to TestCasePanel.
     // For Submission Modal, we also want to intercept it or just use `results` state.
     // Let's run it using the hook, and copy the results state to `submitResults`.
-    await runTests(code, allTests, (currentResults) => {
+    await runTests(code, allTests, language, (currentResults) => {
       setSubmitResults([...currentResults]);
     });
 
@@ -300,15 +334,7 @@ export default function CodingWorkspace() {
 
   let totalSubmissionTests = 0;
   if (problem) {
-     const p1 = problem.publicTestCases || [];
-     const p2 = problem.hiddenTestCases || [];
-     totalSubmissionTests = p1.length + p2.length;
-     if (totalSubmissionTests === 0 && problem.test_cases_json) {
-       try {
-         const parsed = typeof problem.test_cases_json === 'string' ? JSON.parse(problem.test_cases_json) : problem.test_cases_json;
-         totalSubmissionTests = parsed.length;
-       } catch (e) {}
-     }
+     totalSubmissionTests = getTestCases(true).length;
   }
 
   return (

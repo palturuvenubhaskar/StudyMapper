@@ -4,10 +4,9 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Free models — ordered to prioritize models that can generate VERY long JSON without truncating
 const FREE_MODELS = [
-  "google/gemma-4-31b-it:free",               // 31B — large context, very reliable for long JSON
-  "nvidia/nemotron-3-ultra-550b-a55b:free",   // 550B — capable of long generation
-  "nvidia/nemotron-3-super-120b-a12b:free",   // 120B — capable of long generation
-  "poolside/laguna-s-2.1:free",
+  "deepseek/deepseek-v4-flash-0731:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "qwen/qwen3.8-27b:free",
   "openrouter/free"
 ];
 
@@ -686,7 +685,18 @@ Return ONLY a valid JSON object:
   "sample_output": "Expected output for the example",
   "explanation": "Explanation of why this output is correct",
   "hints": "2-3 hints separated by newlines",
-  "test_cases": "3 additional test cases formatted as Input: ... Output: ..."
+  "test_cases": [
+    {
+      "input": "Input for test case 1",
+      "expected_output": "Expected output for test case 1",
+      "is_hidden": false
+    },
+    {
+      "input": "Input for test case 2",
+      "expected_output": "Expected output for test case 2",
+      "is_hidden": true
+    }
+  ]
 }
 
 Make the problem clear, well-defined, and solvable. Match the difficulty level appropriately.` }

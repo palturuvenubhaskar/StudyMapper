@@ -106,12 +106,6 @@ function TestCaseDetail({ result }) {
         ) : (
           <span className="result-badge failed">Wrong Answer</span>
         )}
-        
-        {result.executionTime != null && (
-          <span className="execution-time">
-            Execution Time: {result.executionTime}ms
-          </span>
-        )}
       </div>
     </div>
   );

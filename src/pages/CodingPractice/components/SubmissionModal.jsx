@@ -41,7 +41,6 @@ export default function SubmissionModal({ results, isRunning, totalTests, onClos
               <tr>
                 <th>Testcase #</th>
                 <th>Status</th>
-                <th>Time</th>
               </tr>
             </thead>
             <tbody>
@@ -68,7 +67,6 @@ export default function SubmissionModal({ results, isRunning, totalTests, onClos
                         )
                       )}
                     </td>
-                    <td>{result ? `${result.executionTime || 0}ms` : '--'}</td>
                   </tr>
                 );
               })}
@@ -80,7 +78,6 @@ export default function SubmissionModal({ results, isRunning, totalTests, onClos
         <div className="submission-footer">
           {!isRunning ? (
             <div className="submission-stats">
-              <span><Clock size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '4px' }} /> Total: {totalExecutionTime}ms</span>
               <span className={`score ${allPassed ? 'pass' : 'fail'}`}>
                 Score: {score}/100
               </span>
