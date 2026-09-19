@@ -6,6 +6,8 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Play, Loader, Code2, BookOpen, Sparkles } from 'lucide-react';
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels';
+import CodeEditorPanel from './components/CodeEditorPanel';
 import './CodingPractice.css';
 
 export default function LearningWorkspace() {
@@ -154,101 +156,108 @@ export default function LearningWorkspace() {
         </div>
       </div>
 
-      <div className="workspace-split">
-        {/* Left: Theory and Problem Statement */}
-        <div className="workspace-left">
-          <div className="glass-card problem-panel" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
-            <div className="coding-tabs" style={{ display: 'flex', gap: '8px', padding: '12px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-              <button 
-                className={`btn ${activeTab === 'theory' ? 'btn-primary' : 'btn-ghost'}`} 
-                onClick={() => setActiveTab('theory')}
-                style={{ borderRadius: 'var(--radius-md)' }}
-              >
-                <BookOpen size={16} /> Theory
-              </button>
-              <button 
-                className={`btn ${activeTab === 'problem' ? 'btn-primary' : 'btn-ghost'}`} 
-                onClick={() => setActiveTab('problem')}
-                style={{ borderRadius: 'var(--radius-md)' }}
-              >
-                <Code2 size={16} /> Exercise
-              </button>
+      <div className="split-pane">
+        <PanelGroup orientation="horizontal">
+          
+          {/* Left Pane: Theory and Problem Statement */}
+          <Panel defaultSize={45} minSize={30}>
+            <div className="pane-left-content">
+              <div className="glass-card problem-panel" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+                <div className="coding-tabs" style={{ display: 'flex', gap: '8px', padding: '12px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                  <button 
+                    className={`btn ${activeTab === 'theory' ? 'btn-primary' : 'btn-ghost'}`} 
+                    onClick={() => setActiveTab('theory')}
+                    style={{ borderRadius: 'var(--radius-md)' }}
+                  >
+                    <BookOpen size={16} /> Theory
+                  </button>
+                  <button 
+                    className={`btn ${activeTab === 'problem' ? 'btn-primary' : 'btn-ghost'}`} 
+                    onClick={() => setActiveTab('problem')}
+                    style={{ borderRadius: 'var(--radius-md)' }}
+                  >
+                    <Code2 size={16} /> Exercise
+                  </button>
+                </div>
+                
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                  {generatingLesson ? (
+                    <div className="markdown-body">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--accent-brand)' }}>
+                         <Sparkles size={24} className="spin-icon" />
+                         <h2 style={{ margin: 0, color: 'var(--accent-brand)' }}>Generating Lesson...</h2>
+                      </div>
+                      <MarkdownRenderer remarkPlugins={[remarkGfm]}>{streamedTheory}</MarkdownRenderer>
+                      <span className="cursor-blink">|</span>
+                    </div>
+                  ) : activeTab === 'theory' ? (
+                    <div className="markdown-body">
+                      <h1 style={{ color: 'var(--text-accent)' }}>{lesson.title}</h1>
+                      <MarkdownRenderer remarkPlugins={[remarkGfm]}>{lesson.theory}</MarkdownRenderer>
+                    </div>
+                  ) : (
+                    <div className="markdown-body">
+                      <h2 style={{ color: 'var(--text-accent)' }}>Exercise</h2>
+                      <p>{lesson.problem_statement}</p>
+
+                      {lesson.sample_input && (
+                        <>
+                          <h3>Sample Input</h3>
+                          <pre>{lesson.sample_input}</pre>
+                        </>
+                      )}
+
+                      <h3>Sample Output</h3>
+                      <pre>{lesson.sample_output}</pre>
+
+                      {lesson.hints && (
+                        <>
+                          <h3>Hint</h3>
+                          <div className="hints-content">{lesson.hints}</div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-              {generatingLesson ? (
-                <div className="markdown-body">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--accent-brand)' }}>
-                     <Sparkles size={24} className="spin-icon" />
-                     <h2 style={{ margin: 0, color: 'var(--accent-brand)' }}>Generating Lesson...</h2>
+          </Panel>
+
+          <PanelResizeHandle style={{ width: '16px', background: 'transparent', cursor: 'col-resize' }} />
+
+          {/* Right Pane: Code editor */}
+          <Panel defaultSize={55} minSize={40}>
+            <div className="pane-right-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', gap: '16px', paddingRight: '4px' }}>
+              <div className="pane-right-top" style={{ height: '90vh', flexShrink: 0 }}>
+                <CodeEditorPanel 
+                  code={code} 
+                  setCode={setCode} 
+                  language={lesson.language} 
+                  setLanguage={() => {}}
+                  onRun={() => {}}
+                  isRunning={false}
+                  onSubmit={handleSubmit}
+                  isSubmitting={analyzing}
+                  onReset={() => setCode('')}
+                  onAskAI={() => {}}
+                />
+              </div>
+
+              {/* Analysis */}
+              {(analyzing || analysis) && (
+                <div className="pane-right-bottom" style={{ minHeight: '400px', flexShrink: 0, marginBottom: '24px' }}>
+                  <div className="glass-card analysis-panel" style={{ height: '100%' }}>
+                    <div className="markdown-body">
+                      <MarkdownRenderer remarkPlugins={[remarkGfm]}>{analyzing ? streamingAnalysis : analysis}</MarkdownRenderer>
+                      {analyzing && <span className="cursor-blink">|</span>}
+                    </div>
                   </div>
-                  <MarkdownRenderer remarkPlugins={[remarkGfm]}>{streamedTheory}</MarkdownRenderer>
-                  <span className="cursor-blink">|</span>
-                </div>
-              ) : activeTab === 'theory' ? (
-                <div className="markdown-body">
-                  <h1 style={{ color: 'var(--text-accent)' }}>{lesson.title}</h1>
-                  <MarkdownRenderer remarkPlugins={[remarkGfm]}>{lesson.theory}</MarkdownRenderer>
-                </div>
-              ) : (
-                <div className="markdown-body">
-                  <h2 style={{ color: 'var(--text-accent)' }}>Exercise</h2>
-                  <p>{lesson.problem_statement}</p>
-
-                  {lesson.sample_input && (
-                    <>
-                      <h3>Sample Input</h3>
-                      <pre>{lesson.sample_input}</pre>
-                    </>
-                  )}
-
-                  <h3>Sample Output</h3>
-                  <pre>{lesson.sample_output}</pre>
-
-                  {lesson.hints && (
-                    <>
-                      <h3>Hint</h3>
-                      <div className="hints-content">{lesson.hints}</div>
-                    </>
-                  )}
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Right: Code editor */}
-        <div className="workspace-right">
-          <div className="glass-card code-panel">
-            <div className="code-editor-header">
-              <span>{lesson.language} Code</span>
-              <span>{code.split('\n').length} lines</span>
-            </div>
-            <textarea
-              className="code-textarea"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`// Write your ${lesson.language} solution here...`}
-              spellCheck="false"
-            />
-            <div className="code-actions">
-              <button className="btn btn-primary" onClick={handleSubmit} disabled={analyzing || !code.trim()}>
-                {analyzing ? <><Loader size={16} className="spin-icon" /> Analyzing...</> : <><Play size={16} /> Submit Code</>}
-              </button>
-            </div>
-          </div>
-
-          {/* Analysis */}
-          {(analyzing || analysis) && (
-            <div className="glass-card analysis-panel">
-              <div className="markdown-body">
-                <MarkdownRenderer remarkPlugins={[remarkGfm]}>{analyzing ? streamingAnalysis : analysis}</MarkdownRenderer>
-                {analyzing && <span className="cursor-blink">|</span>}
-              </div>
-            </div>
-          )}
-        </div>
+          </Panel>
+          
+        </PanelGroup>
       </div>
     </div>
   );
