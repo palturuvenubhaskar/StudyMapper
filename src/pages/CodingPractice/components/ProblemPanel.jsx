@@ -1,6 +1,6 @@
 import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
-import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { HintsSection } from './HintsSection';
 
@@ -138,47 +138,30 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
       {/* ─── Top Tabs (Description / Submissions) ─── */}
       <div style={{ display: 'flex', gap: '24px', padding: '16px 24px', borderBottom: '1px solid var(--border-light)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}>
-          <span style={{ color: 'var(--accent-brand)' }}>📄</span> Description
+          <FileText size={16} color="var(--accent-brand)" /> Description
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.875rem', cursor: 'pointer' }}>
-          <span>🕒</span> Submissions
+          <Clock size={16} /> Submissions
         </div>
       </div>
 
       <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
         {/* ─── Generating banner ─── */}
         {isGenerating && (
-          <div style={{
-            marginBottom: '24px', padding: '16px 20px',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(56,189,248,0.08))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: '16px',
-            display: 'flex', alignItems: 'center', gap: '14px',
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: 'linear-gradient(135deg, #818cf8, #38bdf8)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <Sparkles size={20} color="#fff" />
+          <div className="generating-banner">
+            <div className="generating-banner-icon">
+              <Sparkles size={18} color="#fff" className="spin-icon" />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '6px', color: 'var(--text-primary)' }}>
-                ✨ Synthesizing Problem...
+            <div className="generating-banner-content">
+              <div className="generating-banner-title">
+                Generating Problem
+                <span className="generating-dots"><span>.</span><span>.</span><span>.</span></span>
               </div>
-              <div style={{
-                height: '4px', borderRadius: '4px', overflow: 'hidden',
-                background: 'rgba(99,102,241,0.15)',
-              }}>
-                <div style={{
-                  height: '100%', borderRadius: '4px',
-                  background: 'linear-gradient(90deg, #818cf8, #38bdf8)',
-                  width: `${progress}%`,
-                  transition: 'width 0.6s ease',
-                }} />
+              <div className="generating-progress-track">
+                <div className="generating-progress-fill" style={{ width: `${progress}%` }} />
+                <div className="generating-progress-shimmer" />
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              <div className="generating-banner-status">
                 {completedCount} of {sections.length} sections ready
               </div>
             </div>

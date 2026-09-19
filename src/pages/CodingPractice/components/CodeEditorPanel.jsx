@@ -69,17 +69,15 @@ export default function CodeEditorPanel({
   return (
     <div className="code-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Editor Header / Action Bar */}
-      <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#252526', borderBottom: '1px solid #333' }}>
-        <div className="toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: 'var(--success)' }}>&lt; / &gt;</span> Code
-          </div>
-          <div className="lang-selector" ref={dropdownRef} style={{ marginLeft: '12px' }}>
+      <div className="code-toolbar">
+        {/* Left: Language selector */}
+        <div className="code-toolbar-left">
+          <div className="lang-selector" ref={dropdownRef}>
             <button 
               className="lang-btn"
               onClick={() => setShowLangDropdown(!showLangDropdown)}
             >
-              {language || 'Select Language'} <ChevronDown size={14} />
+              {language || 'Select Language'} <ChevronDown size={12} />
             </button>
             {showLangDropdown && (
               <div className="lang-dropdown">
@@ -98,7 +96,10 @@ export default function CodeEditorPanel({
               </div>
             )}
           </div>
-          
+        </div>
+
+        {/* Right: Actions */}
+        <div className="code-toolbar-right">
           <button 
             className="toolbar-btn" 
             onClick={onReset}
@@ -106,18 +107,18 @@ export default function CodeEditorPanel({
           >
             <RefreshCw size={14} /> Reset
           </button>
-        </div>
-        
-        <div className="toolbar-right">
+
           <button 
-            className="toolbar-btn ask-ai" 
+            className="toolbar-btn toolbar-btn-ai" 
             onClick={() => onAskAI && onAskAI()}
           >
             <Sparkles size={14} /> Ask AI
           </button>
-          
+
+          <div className="toolbar-divider" />
+
           <button 
-            className="btn-run" 
+            className="toolbar-action-btn toolbar-run-btn" 
             onClick={onRun}
             disabled={isRunning || isSubmitting}
             title="Run visible test cases (Ctrl+Enter)"
@@ -130,7 +131,7 @@ export default function CodeEditorPanel({
           </button>
           
           <button 
-            className="btn-submit" 
+            className="toolbar-action-btn toolbar-submit-btn" 
             onClick={onSubmit}
             disabled={isRunning || isSubmitting}
             title="Submit all test cases (Ctrl+Shift+Enter)"
@@ -145,13 +146,39 @@ export default function CodeEditorPanel({
       </div>
       
       {/* Monaco Editor */}
-      <div className="editor-container">
+      <div className="editor-container" id="monaco-editor-wrapper">
         <Editor
           height="100%"
           language={monacoLang}
           theme="vs-dark"
           value={code}
           onChange={handleEditorChange}
+          onMount={(editor) => {
+            const domNode = editor.getDomNode();
+            if (!domNode) return;
+            
+            // Intercept wheel events in the capture phase (before Monaco swallows them)
+            domNode.addEventListener('wheel', (e) => {
+              const scrollTop = editor.getScrollTop();
+              const scrollHeight = editor.getScrollHeight();
+              const clientHeight = editor.getLayoutInfo().height;
+              
+              const isAtTop = scrollTop === 0;
+              const isAtBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
+
+              // If scrolling up and at the top, OR scrolling down and at the bottom
+              if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+                // Prevent Monaco from receiving the event and stopping propagation
+                e.stopPropagation();
+                
+                // Find the parent scroll container and scroll it manually
+                const scrollParent = domNode.closest('.pane-right-container');
+                if (scrollParent) {
+                  scrollParent.scrollBy({ top: e.deltaY });
+                }
+              }
+            }, { capture: true, passive: true });
+          }}
           options={{
             minimap: { enabled: false },
             fontSize: 14,
@@ -164,7 +191,8 @@ export default function CodeEditorPanel({
             wordWrap: 'on',
             tabSize: 4,
             insertSpaces: true,
-            padding: { top: 16 }
+            padding: { top: 16 },
+            scrollbar: { alwaysConsumeMouseWheel: false }
           }}
           loading={<div style={{ padding: '24px', color: '#6e7681' }}>Loading editor...</div>}
         />

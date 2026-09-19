@@ -275,7 +275,7 @@ export default function CodingWorkspace() {
           await checkAchievements('guest');
           await logEvent('guest', problemId, 'coding_problem_solved', 0, 100);
           
-          toast('✅ Solution Accepted! You earned XP.', 'success');
+          toast('Solution Accepted! You earned XP.', 'success');
         } catch(err) {
           console.error("Failed to update status", err);
         }
@@ -377,7 +377,7 @@ export default function CodingWorkspace() {
           <Panel defaultSize={55} minSize={40}>
             <div className="pane-right-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', gap: '16px', paddingRight: '4px' }}>
               
-              <div className="pane-right-top" style={{ height: 'calc(100vh - 120px)', flexShrink: 0 }}>
+              <div className="pane-right-top" style={{ height: '90vh', flexShrink: 0 }}>
                 <CodeEditorPanel 
                   code={code} 
                   setCode={setCode} 

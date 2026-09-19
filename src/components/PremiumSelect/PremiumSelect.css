@@ -91,6 +91,24 @@
   font-weight: 500;
 }
 
+.premium-select-group-header {
+  padding: 8px 14px 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-brand);
+  opacity: 0.8;
+  cursor: default;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.premium-select-group-header:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+
 .check-icon {
   color: var(--accent-brand);
 }

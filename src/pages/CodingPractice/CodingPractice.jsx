@@ -8,7 +8,52 @@ import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
 import './CodingPractice.css';
 
 const LANGUAGES = ['HTML', 'CSS', 'C', 'C++', 'C#', 'Java', 'Python', 'JavaScript', 'TypeScript', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'R', 'Dart', 'Scala'];
-const TOPICS = ['Arrays', 'Strings', 'Linked Lists', 'Stacks', 'Queues', 'Trees', 'Graphs', 'Dynamic Programming', 'Recursion', 'Sorting', 'Searching', 'Hashing', 'Greedy', 'Backtracking'];
+
+const TOPIC_CATEGORIES = {
+  'Fundamentals': [
+    'Hello World & I/O',
+    'Variables & Data Types',
+    'Operators & Expressions',
+    'Conditionals (If/Else/Switch)',
+    'Loops (For/While)',
+    'Functions & Methods',
+    'Strings Basics',
+    'Arrays/Lists Basics',
+    'Error Handling & Exceptions',
+  ],
+  'Number & Math Problems': [
+    'Number Operations',
+    'Pattern Printing',
+    'Math & Logic Puzzles',
+    'Prime Numbers & Factorials',
+    'Base Conversions',
+  ],
+  'Data Structures': [
+    'Arrays',
+    'Strings',
+    'Linked Lists',
+    'Stacks',
+    'Queues',
+    'Trees',
+    'Graphs',
+    'Hashing',
+  ],
+  'Algorithms': [
+    'Sorting',
+    'Searching',
+    'Recursion',
+    'Dynamic Programming',
+    'Greedy',
+    'Backtracking',
+  ],
+};
+
+// Build flattened options array with group headers for PremiumSelect
+const TOPICS_OPTIONS = [];
+Object.entries(TOPIC_CATEGORIES).forEach(([category, topics]) => {
+  TOPICS_OPTIONS.push({ label: category, value: '', isGroupHeader: true });
+  topics.forEach(t => TOPICS_OPTIONS.push({ label: t, value: t }));
+});
 const CURRICULUMS = {
   HTML: [
     { title: 'HTML Basics and Structure', icon: FileCode, time: '5 mins' },
@@ -35,16 +80,21 @@ const CURRICULUMS = {
     { title: 'Building a Responsive Page', icon: Code2, time: '20 mins' }
   ],
   default: [
+    { title: 'Hello World & Program Structure', icon: Code2, time: '5 mins' },
     { title: 'Variables and Data Types', icon: Type, time: '5 mins' },
+    { title: 'Basic Input & Output', icon: TerminalSquare, time: '5 mins' },
     { title: 'Basic Operators and Math', icon: Calculator, time: '8 mins' },
     { title: 'Conditionals (If/Else)', icon: GitBranch, time: '10 mins' },
     { title: 'Loops (For and While)', icon: Repeat, time: '12 mins' },
+    { title: 'Pattern Printing', icon: Box, time: '10 mins' },
     { title: 'Functions and Scope', icon: Box, time: '15 mins' },
     { title: 'Arrays / Lists Basics', icon: List, time: '12 mins' },
+    { title: 'Number Problems & Math Logic', icon: Calculator, time: '12 mins' },
     { title: 'Strings and Manipulation', icon: TerminalSquare, time: '10 mins' },
     { title: 'Dictionaries / Maps / Objects', icon: Database, time: '15 mins' },
+    { title: 'Error Handling & Exceptions', icon: FileCode, time: '10 mins' },
     { title: 'Object-Oriented Basics', icon: Cpu, time: '20 mins' },
-    { title: 'File I/O and Error Handling', icon: FileCode, time: '15 mins' }
+    { title: 'File I/O and Final Project', icon: FileCode, time: '15 mins' }
   ]
 };
 
@@ -62,8 +112,8 @@ export default function CodingPractice() {
   
   // Practice state
   const [language, setLanguage] = useState('Python');
-  const [topic, setTopic] = useState('Arrays');
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [topic, setTopic] = useState('Hello World & I/O');
+  const [difficulty, setDifficulty] = useState('Easy');
   const [generating, setGenerating] = useState(false);
 
   // Learning state
@@ -256,7 +306,7 @@ export default function CodingPractice() {
                 <PremiumSelect 
                   value={topic} 
                   onChange={e => setTopic(e.target.value)} 
-                  options={TOPICS} 
+                  options={TOPICS_OPTIONS} 
                 />
               </div>
               <div className="premium-form-group">
@@ -306,7 +356,7 @@ export default function CodingPractice() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="badge badge-accent">{p.language}</span>
                       <span className="badge" style={{ background: p.status === 'solved' ? 'var(--success-soft)' : 'var(--bg-glass)', color: p.status === 'solved' ? 'var(--success)' : 'var(--text-muted)' }}>
-                        {p.status === 'solved' ? '✅ Solved' : '⏳ Unsolved'}
+                        {p.status === 'solved' ? 'Solved' : 'Unsolved'}
                       </span>
                       <ChevronRight size={16} color="var(--text-muted)" />
                     </div>

@@ -672,15 +672,56 @@ Be constructive and encouraging, but honest.` }
 ];
 
 // ========== CODING PRACTICE PROMPTS ==========
-export const generateCodingProblemPrompt = (language, topic, difficulty) => [
-  { role: "system", content: "You are an expert competitive programmer and DSA instructor. Generate a coding problem. Return ONLY valid JSON, no markdown." },
-  { role: "user", content: `Generate a ${difficulty} difficulty coding problem on "${topic}" to be solved in ${language}.
+const FUNDAMENTAL_TOPICS = [
+  'Hello World & I/O', 'Variables & Data Types', 'Operators & Expressions',
+  'Conditionals (If/Else/Switch)', 'Loops (For/While)', 'Functions & Methods',
+  'Strings Basics', 'Arrays/Lists Basics', 'Error Handling & Exceptions',
+  'Number Operations', 'Pattern Printing', 'Math & Logic Puzzles',
+  'Prime Numbers & Factorials', 'Base Conversions',
+  // Step-by-step curriculum titles
+  'Hello World & Program Structure', 'Basic Input & Output',
+  'Variables and Data Types', 'Basic Operators and Math',
+  'Conditionals (If/Else)', 'Loops (For and While)',
+  'Functions and Scope', 'Arrays / Lists Basics',
+  'Number Problems & Math Logic', 'Strings and Manipulation',
+  'Error Handling & Exceptions', 'Pattern Printing'
+];
+
+const isFundamentalTopic = (topic) => FUNDAMENTAL_TOPICS.includes(topic);
+
+export const generateCodingProblemPrompt = (language, topic, difficulty) => {
+  const fundamental = isFundamentalTopic(topic);
+
+  const contextNote = fundamental
+    ? `IMPORTANT: This is a FUNDAMENTALS / BASICS topic. The problem must test basic ${language} syntax, structure, and methodology — NOT complex algorithms or data structures.
+Focus on teaching proper coding patterns, basic logic, and language features.
+The problem should be solvable by a complete beginner who is just learning this topic.
+Examples of good fundamental problems:
+- "Hello World & I/O": Print formatted output, read user input
+- "Variables & Data Types": Swap two variables, type conversion
+- "Operators & Expressions": Calculator, area of shapes
+- "Loops (For/While)": Print numbers 1 to N, sum of digits
+- "Pattern Printing": Star pyramids, number triangles, diamond patterns
+- "Number Operations": Even/odd check, reverse a number, digit sum
+- "Prime Numbers & Factorials": Check prime, print factorial, Fibonacci
+- "Functions & Methods": Write a function to do X, function with return value
+Keep inputs simple (single numbers, short strings). No arrays of 10^5 elements.`
+    : `This is a data structures / algorithms topic. Generate an appropriate competitive-programming-style problem with proper constraints.`;
+
+  return [
+    { role: "system", content: fundamental
+      ? "You are an expert programming instructor who teaches beginners. Generate a clear, simple coding problem. Return ONLY valid JSON, no markdown."
+      : "You are an expert competitive programmer and DSA instructor. Generate a coding problem. Return ONLY valid JSON, no markdown."
+    },
+    { role: "user", content: `Generate a ${difficulty} difficulty coding problem on "${topic}" to be solved in ${language}.
+
+${contextNote}
 
 Return ONLY a valid JSON object:
 {
   "title": "Problem Title",
   "statement": "Detailed problem statement explaining what needs to be done",
-  "constraints": "Input constraints (e.g., 1 <= n <= 10^5)",
+  "constraints": "Input constraints (e.g., 1 <= n <= 100 for fundamentals, or 1 <= n <= 10^5 for DSA)",
   "sample_input": "Example input",
   "sample_output": "Expected output for the example",
   "explanation": "Explanation of why this output is correct",
@@ -700,7 +741,8 @@ Return ONLY a valid JSON object:
 }
 
 Make the problem clear, well-defined, and solvable. Match the difficulty level appropriately.` }
-];
+  ];
+};
 
 export const analyzeCodingSolutionPrompt = (problem, code, language) => [
   { role: "system", content: "You are an expert code reviewer and competitive programmer. Analyze the submitted solution thoroughly in Markdown." },
@@ -780,25 +822,44 @@ Return ONLY a JSON array:
 ];
 
 
-export const generateLearningLessonPrompt = (language, topic) => [
-  {
-    role: "system",
-    content: "You are an expert programming tutor. Return ONLY valid JSON."
-  },
-  {
-    role: "user",
-    content: `Create a beginner-friendly lesson on "${topic}" in ${language}.
+export const generateLearningLessonPrompt = (language, topic) => {
+  const fundamental = isFundamentalTopic(topic);
+
+  const topicGuidance = fundamental
+    ? `This is a FUNDAMENTALS topic. The lesson MUST:
+- Start by explaining the basic SYNTAX and STRUCTURE of this concept in ${language}
+- Show the exact syntax with simple, runnable code examples
+- Explain WHY this concept matters and WHEN to use it
+- Include common beginner mistakes and how to avoid them
+- The practice problem must be VERY SIMPLE — a beginner should be able to solve it after reading the theory
+- For "Pattern Printing": show star/number pattern examples
+- For "Number Operations": show basic math operations on numbers
+- For "Hello World": show how to write, compile/run a first program`
+    : `This is an intermediate/advanced topic. Provide clear theory with code examples and a practice problem that tests understanding.`;
+
+  return [
+    {
+      role: "system",
+      content: "You are an expert programming tutor. Return ONLY valid JSON."
+    },
+    {
+      role: "user",
+      content: `Create a beginner-friendly lesson on "${topic}" in ${language}.
+
+${topicGuidance}
+
 Return a JSON object exactly matching this schema:
 {
   "title": "A catchy title for the lesson",
-  "theory": "Markdown formatted explanation of the topic. Include small code snippets, analogies, and a supportive tone. Make it beginner friendly.",
+  "theory": "Markdown formatted explanation of the topic. Include small code snippets, analogies, and a supportive tone. Make it beginner friendly. Cover the syntax, structure, and methodology of this concept.",
   "problem_statement": "A simple coding problem that tests the user on this specific topic.",
   "sample_input": "Example input (or empty if not applicable)",
   "sample_output": "Expected output",
   "hints": "A helpful hint if they get stuck"
 }`
-  }
-];
+    }
+  ];
+};
 
 // ========== AI STUDY PLANNER PROMPTS ==========
 export const generateStudyPlanPrompt = (profile, subjects, topics, stats, questionBanks) => [

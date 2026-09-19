@@ -113,7 +113,7 @@ export default function LearningWorkspace() {
       const isSolved = fullText.toLowerCase().includes('✅') || fullText.toLowerCase().includes('correct');
       await updateLearningLesson(lessonId, { ai_analysis: fullText, status: isSolved ? 'solved' : 'attempted' });
       setLesson(prev => ({ ...prev, status: isSolved ? 'solved' : 'attempted', ai_analysis: fullText, user_code: code }));
-      toast(isSolved ? '✅ Solution looks correct!' : '⚠️ Analysis complete', isSolved ? 'success' : 'info');
+      toast(isSolved ? 'Solution looks correct!' : 'Analysis complete', isSolved ? 'success' : 'info');
     } catch (err) {
       console.error(err);
       toast('Failed to analyze: ' + err.message, 'error');
@@ -149,7 +149,7 @@ export default function LearningWorkspace() {
         </div>
         <div className="header-status">
           <span className="badge" style={{ background: lesson.status === 'solved' ? 'var(--success-soft)' : 'var(--warning-soft)', color: lesson.status === 'solved' ? 'var(--success)' : 'var(--warning)' }}>
-            {lesson.status === 'solved' ? '✅ Completed' : '⏳ In Progress'}
+            {lesson.status === 'solved' ? 'Completed' : 'In Progress'}
           </span>
         </div>
       </div>
