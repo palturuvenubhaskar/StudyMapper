@@ -234,8 +234,12 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
             {JSON.parse(content.formulas_json).map((formula, i) => (
               <div key={i} className="formula-card">
                 <div className="formula-name">{formula.name}</div>
-                <div className="formula-math">{formula.formula}</div>
-                <div className="formula-desc">{formula.description}</div>
+                <div className="formula-math">
+                  <MarkdownRenderer>{formula.formula}</MarkdownRenderer>
+                </div>
+                <div className="formula-desc">
+                  <MarkdownRenderer>{formula.description}</MarkdownRenderer>
+                </div>
               </div>
             ))}
           </div>
@@ -246,7 +250,9 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
             {JSON.parse(content.examples_json).map((ex, i) => (
               <div key={i} className="example-card">
                 <div className="example-number">Example {i + 1}</div>
-                <div className="example-question">{ex.question}</div>
+                <div className="example-question">
+                  <MarkdownRenderer>{ex.question}</MarkdownRenderer>
+                </div>
                 <div className="example-solution">
                   <strong>Solution:</strong>
                   <MarkdownRenderer>{ex.solution}</MarkdownRenderer>
@@ -261,7 +267,7 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
             {JSON.parse(content.tips_json).map((tip, i) => (
               <div key={i} className="tip-card">
                 <Lightbulb size={18} className="tip-icon" />
-                <p>{tip}</p>
+                <span>{tip}</span>
               </div>
             ))}
           </div>
@@ -300,7 +306,7 @@ function buildTopicPrompt(categoryId, topic) {
 Generate content in this exact JSON structure:
 {
   "explanation": "Detailed markdown explanation with ## headings",
-  "formulas": [{"name": "Formula name", "formula": "LaTeX or plain text formula", "description": "When to use"}],
+  "formulas": [{"name": "Formula name", "formula": "Markdown string using $ for inline math and $$ for block math. E.g. '$$W = R \\times T$$'", "description": "When to use"}],
   "examples": [{"question": "Problem statement", "solution": "Step-by-step markdown solution"}],
   "tips": ["Tip 1", "Tip 2", "Tip 3"]
 }
@@ -310,7 +316,7 @@ Keep explanations concise but thorough. Include 2-3 solved examples.`,
 Generate content in this exact JSON structure:
 {
   "explanation": "Detailed markdown with ## headings covering concepts, common interview questions, and key points",
-  "formulas": [{"name": "Concept/Formula name", "formula": "Code snippet or formula", "description": "Explanation"}],
+  "formulas": [{"name": "Concept/Formula name", "formula": "Markdown string using $ for inline and $$ for block math", "description": "Explanation"}],
   "examples": [{"question": "Interview question or problem", "solution": "Detailed answer with code if applicable"}],
   "tips": ["Interview tip 1", "Common mistake to avoid", "Quick recall tip"]
 }
