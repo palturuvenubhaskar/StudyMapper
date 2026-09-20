@@ -617,8 +617,66 @@
     flex-direction: column;
   }
   
+  .topic-detail {
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  
+  .topic-detail-header h1 {
+    font-size: 1.75rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  
+  .topic-detail-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .footer-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .topic-content-area {
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .content-section, .formula-card, .example-card, .tip-card, .markdown-body {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    box-sizing: border-box;
+  }
+  
+  .content-section * {
+    max-width: 100%;
+  }
+
+  .content-section pre,
+  .content-section code {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-x: auto;
+  }
+  
+  .content-section img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .content-section table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
   }
 }

@@ -43,18 +43,18 @@
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   border-radius: 20px;
-  background-color: white;
+  background-color: var(--bg-surface);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-strong);
 }
 
 .swipe-card-back {
   transform: rotateY(180deg);
-  background-color: #f8fafc;
+  background-color: var(--bg-surface-active);
 }
 
 .card-tag {

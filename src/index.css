@@ -149,8 +149,8 @@ html {
   background: var(--bg-root);
   background-color: var(--bg-root); /* Fallback */
   scroll-behavior: smooth;
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   height: 100vh;
   overflow: hidden;
 }
@@ -160,8 +160,8 @@ body {
   background: transparent;
   color: var(--text-primary);
   line-height: 1.6;
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -170,8 +170,8 @@ body {
 
 #root {
   display: flex;
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   height: 100vh;
   overflow: hidden;
   min-width: 0;
@@ -185,6 +185,11 @@ a {
 
 a:hover {
   color: var(--accent-brand);
+}
+
+option {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
 }
 
 /* --- Scrollbar --- */
@@ -206,7 +211,7 @@ a:hover {
 .app-layout {
   display: flex;
   flex-direction: row;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   padding: 16px;
   overflow: hidden;

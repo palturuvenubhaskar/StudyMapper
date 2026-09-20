@@ -49,6 +49,16 @@ export default function CodingWorkspace() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResults, setSubmitResults] = useState([]);
   
+  // Mobile Layout State
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [activeTab, setActiveTab] = useState('problem'); // 'problem', 'code', 'tests'
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Local Execution Hooks
   const pyodideConfig = usePyodide();
   const { results, status, runTime, runTests, reset: resetTests } = useTestRunner(pyodideConfig);
@@ -362,14 +372,71 @@ export default function CodingWorkspace() {
 
       {/* Main Workspace Area */}
       <div className="split-pane">
-        <PanelGroup orientation="horizontal">
-          
-          {/* Left Pane: Problem Description */}
-          <Panel defaultSize={45} minSize={30}>
-            <div className="pane-left-content">
-              <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} />
+        {isMobile ? (
+          <div className="mobile-workspace">
+            <div className="mobile-tab-bar">
+              <button 
+                className={`mobile-tab ${activeTab === 'problem' ? 'active' : ''}`}
+                onClick={() => setActiveTab('problem')}
+              >
+                Problem
+              </button>
+              <button 
+                className={`mobile-tab ${activeTab === 'code' ? 'active' : ''}`}
+                onClick={() => setActiveTab('code')}
+              >
+                Code
+              </button>
+              <button 
+                className={`mobile-tab ${activeTab === 'tests' ? 'active' : ''}`}
+                onClick={() => setActiveTab('tests')}
+              >
+                Test Cases
+              </button>
             </div>
-          </Panel>
+            
+            <div className="mobile-tab-content">
+              {activeTab === 'problem' && (
+                <div className="pane-left-content" style={{ height: '100%' }}>
+                  <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} />
+                </div>
+              )}
+              {activeTab === 'code' && (
+                <div className="pane-right-top" style={{ height: '100%', flexShrink: 0 }}>
+                  <CodeEditorPanel 
+                    code={code} 
+                    setCode={setCode} 
+                    language={language} 
+                    setLanguage={setLanguage}
+                    onRun={handleRunTests}
+                    isRunning={status === 'running'}
+                    onSubmit={handleSubmit}
+                    isSubmitting={isSubmitting}
+                    onReset={handleReset}
+                    onAskAI={handleAskAI}
+                  />
+                </div>
+              )}
+              {activeTab === 'tests' && (
+                <div className="pane-right-bottom" style={{ height: '100%', flexShrink: 0 }}>
+                  <TestCasePanel 
+                    results={results}
+                    status={status}
+                    runTime={runTime}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <PanelGroup orientation="horizontal">
+            
+            {/* Left Pane: Problem Description */}
+            <Panel defaultSize={45} minSize={30}>
+              <div className="pane-left-content">
+                <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} />
+              </div>
+            </Panel>
 
           <PanelResizeHandle style={{ width: '16px', background: 'transparent', cursor: 'col-resize' }} />
 
@@ -403,7 +470,8 @@ export default function CodingWorkspace() {
             </div>
           </Panel>
           
-        </PanelGroup>
+          </PanelGroup>
+        )}
 
         {/* Floating AI Tutor Drawer */}
         <AITutorDrawer 

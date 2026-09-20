@@ -523,8 +523,8 @@
 .modern-select {
   width: 100%;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   font-size: 1rem;
   font-weight: 500;
@@ -542,10 +542,15 @@
 }
 
 .modern-select:hover, .modern-select:focus {
-  border-color: #6366f1;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
-  background-color: rgba(255, 255, 255, 0.95);
+  border-color: var(--accent-brand);
+  box-shadow: 0 4px 20px var(--accent-brand-soft);
+  background-color: var(--bg-surface);
   transform: translateY(-1px);
+}
+
+.modern-select option {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
 }
 
 .test-scope-selector {
@@ -571,8 +576,8 @@
 .scope-card {
   height: 100%;
   padding: 24px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: var(--bg-surface);
+  border: 2px solid var(--border-light);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -605,21 +610,21 @@
 
 .scope-option:hover .scope-card {
   transform: translateY(-4px);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
-  box-shadow: 0 16px 40px rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: var(--bg-surface-hover);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong);
 }
 
 .scope-option input[type="radio"]:checked + .scope-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(236, 72, 153, 0.05));
-  border-color: #6366f1;
-  box-shadow: 0 16px 48px rgba(99, 102, 241, 0.2);
+  background: var(--accent-brand-soft);
+  border-color: var(--accent-brand);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-6px);
 }
 
 .scope-option input[type="radio"]:checked + .scope-card svg,
 .scope-option input[type="radio"]:checked + .scope-card strong {
-  color: #6366f1;
+  color: var(--accent-brand);
 }
 
 .generate-action {

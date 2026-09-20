@@ -106,7 +106,7 @@ export default function Dashboard() {
         <div className="dashboard-grid">
           
           {/* Hero Banner */}
-          <div className="surface-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between', alignItems: 'center', padding: '32px', marginBottom: '24px' }}>
+          <div className="surface-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between', alignItems: 'center', padding: '32px', marginBottom: '24px', transition: 'none', animation: 'none' }}>
             <div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 Good <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>afternoon</span>
