@@ -20,7 +20,7 @@ const MockExamSetup = () => {
     const loadData = async () => {
       try {
         const banks = await repository.getAllQuestionBanks();
-        const currentBank = banks.find(b => b.id === parseInt(bankId));
+        const currentBank = banks.find(b => b.id === bankId);
         setBank(currentBank);
         if (currentBank) {
           const questions = await repository.getQuestionsForBank(currentBank.id);
@@ -75,7 +75,7 @@ const MockExamSetup = () => {
 
   return (
     <div className="mock-exam-setup-container">
-      <div className="mock-exam-setup-card">
+      <div className="surface-card mock-exam-setup-card">
         <div className="setup-header">
           <BookOpen className="setup-icon" size={32} />
           <h1>Configure Mock Exam</h1>
@@ -131,7 +131,7 @@ const MockExamSetup = () => {
           </div>
 
           <div className="setup-actions">
-            <button className="btn btn-outline" onClick={() => navigate(`/question-bank/${bankId}`)}>
+            <button className="btn btn-secondary" onClick={() => navigate(`/question-bank/${bankId}`)}>
               Cancel
             </button>
             <button className="btn btn-primary btn-large" onClick={handleStart}>

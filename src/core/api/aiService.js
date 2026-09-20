@@ -1,4 +1,7 @@
 // OpenRouter AI Service — with Streaming support
+import { parse as parsePartialJson } from 'partial-json';
+import { jsonrepair } from 'jsonrepair';
+
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -183,34 +186,98 @@ export const callOpenRouterStream = async (messages, onChunk) => {
   throw new Error(`All AI models failed to stream. Last error: ${lastError?.message || 'Unknown error'}`);
 };
 
+// Strip markdown code fences and preamble text that free-tier models commonly add
+const cleanAIResponse = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+};
+
+// Robust JSON extractor: tries direct parse → substring extraction → jsonrepair
 const extractJson = (text) => {
   if (!text) return null;
+
+  // Step 1: Clean markdown fences
+  const cleaned = cleanAIResponse(text);
+
+  // Step 2: Try direct parse (fastest path — works when model outputs clean JSON)
+  try { return JSON.parse(cleaned); } catch {}
+
+  // Step 3: Try extracting { ... } or [ ... ] substring and parsing
   try {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      return JSON.parse(text.substring(start, end + 1));
+    const objStart = cleaned.indexOf('{');
+    const objEnd = cleaned.lastIndexOf('}');
+    if (objStart !== -1 && objEnd > objStart) {
+      return JSON.parse(cleaned.substring(objStart, objEnd + 1));
     }
   } catch {}
   try {
-    const arrStart = text.indexOf('[');
-    const arrEnd = text.lastIndexOf(']');
-    if (arrStart !== -1 && arrEnd !== -1 && arrEnd > arrStart) {
-      return JSON.parse(text.substring(arrStart, arrEnd + 1));
+    const arrStart = cleaned.indexOf('[');
+    const arrEnd = cleaned.lastIndexOf(']');
+    if (arrStart !== -1 && arrEnd > arrStart) {
+      return JSON.parse(cleaned.substring(arrStart, arrEnd + 1));
     }
   } catch {}
+
+  // Step 4: Use jsonrepair as a last resort — fixes trailing commas, unescaped quotes, etc.
+  try {
+    // Find the JSON-like portion first
+    const firstBracket = Math.min(
+      cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
+      cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
+    );
+    if (firstBracket !== Infinity) {
+      const jsonPortion = cleaned.substring(firstBracket);
+      const repaired = jsonrepair(jsonPortion);
+      return JSON.parse(repaired);
+    }
+  } catch {}
+
+  // Step 5: Try jsonrepair on completely raw text (handles extreme cases)
+  try {
+    const repaired = jsonrepair(cleaned);
+    return JSON.parse(repaired);
+  } catch {}
+
   return null;
 };
 
-export const extractSyllabusFromText = async (ocrText, onChunk) => {
-  const messages = [
-    {
-      role: "system",
-      content: "You are an expert educational AI. You extract syllabus structures from text and return ONLY valid JSON, no markdown, no explanation."
-    },
-    {
-      role: "user",
-      content: `Extract the syllabus structure from the following text.
+// Streaming-safe syllabus parser using partial-json library
+const parsePartialSyllabus = (text) => {
+  try {
+    // Strip markdown fences and find the start of JSON
+    let cleaned = cleanAIResponse(text);
+    const jsonStart = cleaned.indexOf('{');
+    if (jsonStart === -1) return { subject: 'Parsing...', units: [] };
+    cleaned = cleaned.substring(jsonStart);
+
+    const partial = parsePartialJson(cleaned);
+    return {
+      subject: partial.subject || 'Parsing Subject...',
+      units: (partial.units || []).map(u => ({
+        title: u.title || '',
+        topics: (u.topics || []).map(t =>
+          typeof t === 'string'
+            ? { title: t, prereq_titles: [] }
+            : { title: t.title || '', prereq_titles: t.prereq_titles || [] }
+        )
+      }))
+    };
+  } catch {
+    return { subject: 'Parsing...', units: [] };
+  }
+};
+
+const SYLLABUS_EXTRACTION_PROMPT = (ocrText) => [
+  {
+    role: "system",
+    content: "You are an expert educational AI. You extract syllabus structures from text and return ONLY valid JSON, no markdown, no explanation, no code fences."
+  },
+  {
+    role: "user",
+    content: `Extract the syllabus structure from the following text.
 Identify the Subject Name (if available), Units, Modules, Chapters, and Topics/Subtopics.
 Handle Roman numerals (I, II, III), Arabic numerals (1, 2, 3), bullets, and nested topics.
 Recognize patterns like "UNIT I", "Unit 1", "Module 1", "Chapter 1".
@@ -218,11 +285,11 @@ Ignore page numbers and unnecessary symbols.
 
 IMPORTANT RULES FOR TOPICS:
 1. You MUST separate distinct topics into individual strings.
-2. Syllabus topics are often separated by hyphens (-), en-dashes (–), commas (,), or semicolons (;). You MUST split them aggressively. 
-   Example: "Topic A - Topic B – Topic C" becomes ["Topic A", "Topic B", "Topic C"].
+2. Syllabus topics are often separated by hyphens (-), en-dashes (\u2013), commas (,), or semicolons (;). You MUST split them aggressively. 
+   Example: "Topic A - Topic B \u2013 Topic C" becomes ["Topic A", "Topic B", "Topic C"].
 3. NEVER combine multiple distinct concepts into a single long string.
 
-Return ONLY a valid JSON object matching this schema exactly:
+Return ONLY a valid JSON object (NO markdown code fences, NO explanation) matching this schema exactly:
 {
   "subject": "Name of Subject",
   "units": [
@@ -240,41 +307,43 @@ Return ONLY a valid JSON object matching this schema exactly:
 
 Text:
 ${ocrText}`
-    }
-  ];
+  }
+];
+
+export const extractSyllabusFromText = async (ocrText, onChunk) => {
+  const messages = SYLLABUS_EXTRACTION_PROMPT(ocrText);
 
   if (onChunk) {
-    const parsePartialSyllabus = (text) => {
-      const subjectMatch = text.match(/"subject":\s*"([^"]+)"/);
-      const subject = subjectMatch ? subjectMatch[1] : 'Parsing Subject...';
-      
-      const units = [];
-      const unitMatches = [...text.matchAll(/\{\s*"title":\s*"([^"]+)",\s*"topics":\s*\[(.*?)\](?=\s*\}|\s*,)/gs)];
-      
-      for (const m of unitMatches) {
-        const title = m[1];
-        const topicsRaw = m[2];
-        const topicMatches = [...topicsRaw.matchAll(/\{\s*"title":\s*"([^"]+)"/g)];
-        const topics = topicMatches.map(tm => ({ title: tm[1], prereq_titles: [] })); // Stream parser simplification
-        units.push({ title, topics });
-      }
-      
-      const lastUnitTitleMatch = [...text.matchAll(/\{\s*"title":\s*"([^"]+)"(?:\s*,\s*"topics":\s*\[)?/gs)].pop();
-      if (lastUnitTitleMatch) {
-         const title = lastUnitTitleMatch[1];
-         if (!units.find(u => u.title === title)) {
-            const afterMatch = text.substring(lastUnitTitleMatch.index + lastUnitTitleMatch[0].length);
-            const topicMatches = [...afterMatch.matchAll(/\{\s*"title":\s*"([^"]+)"/g)];
-            units.push({ title, topics: topicMatches.map(tm => ({ title: tm[1], prereq_titles: [] })) });
-         }
-      }
-      return { subject, units };
-    };
-
     const finalResponse = await callOpenRouterStream(messages, (chunkText) => {
       onChunk(parsePartialSyllabus(chunkText));
     });
-    return extractJson(finalResponse) || parsePartialSyllabus(finalResponse);
+
+    // Try robust final parse first, fall back to partial parser
+    const finalParsed = extractJson(finalResponse);
+    if (finalParsed && finalParsed.units && finalParsed.units.length > 0) {
+      return finalParsed;
+    }
+
+    // Fallback: partial parser on the final complete text
+    const partialResult = parsePartialSyllabus(finalResponse);
+    if (partialResult.units.length > 0) {
+      return partialResult;
+    }
+
+    // Retry-with-repair: Ask AI to fix the broken JSON
+    try {
+      const repairMessages = [
+        { role: "system", content: "The following text is a broken or incomplete JSON response from a previous AI call. Fix it and return ONLY the corrected valid JSON. Do NOT add markdown fences or explanation." },
+        { role: "user", content: finalResponse }
+      ];
+      const repairedText = await callOpenRouter(repairMessages);
+      const repairedParsed = extractJson(repairedText);
+      if (repairedParsed && repairedParsed.units) return repairedParsed;
+    } catch {
+      // Repair attempt failed, return best partial result
+    }
+
+    return partialResult;
   }
 
   const responseText = await callOpenRouter(messages);
@@ -294,7 +363,7 @@ IMPORTANT RULES FOR TOPICS:
    Example: "Topic A - Topic B – Topic C" becomes ["Topic A", "Topic B", "Topic C"].
 3. NEVER combine multiple distinct concepts into a single long string.
 
-Return ONLY a valid JSON object matching this schema exactly:
+Return ONLY a valid JSON object (NO markdown code fences, NO explanation) matching this schema exactly:
 {
   "subject": "Name of Subject",
   "units": [
@@ -370,14 +439,14 @@ export const extractQuestionsFromText = async (text, onChunk) => {
   const messages = [
     {
       role: "system",
-      content: "You are an expert educational AI. Extract all questions and their allocated marks from the given exam paper or question bank text. Return ONLY a valid JSON array, no markdown."
+      content: "You are an expert educational AI. Extract all questions and their allocated marks from the given exam paper or question bank text. Return ONLY a valid JSON array, no markdown, no code fences."
     },
     {
       role: "user",
       content: `Extract all questions from the text below. Identify the exact question text and the allocated marks (e.g., "10M", "2M", "5 Marks").
 If the marks are not explicitly stated next to the question, look for section headers (e.g., "Part A - 2 Marks each") and infer them. If totally unknown, use "Unknown".
 
-Return ONLY a valid JSON array of objects matching this schema exactly:
+Return ONLY a valid JSON array (NO markdown code fences, NO explanation) matching this schema exactly:
 [
   {
     "text": "What is virtual memory and how does it work?",
@@ -395,20 +464,20 @@ ${text}`
   ];
 
   if (onChunk) {
+    // Streaming-safe question parser using partial-json
     const parsePartialQuestions = (chunk) => {
-      const matches = [...chunk.matchAll(/\{[^{}]+\}/g)];
-      const qs = matches.map(m => {
-        try { return JSON.parse(m[0]); } catch { return null; }
-      }).filter(Boolean);
-      
-      const lastIndex = matches.length > 0 ? matches[matches.length - 1].index + matches[matches.length - 1][0].length : 0;
-      const remainder = chunk.substring(lastIndex);
-      
-      const incompleteTextMatch = remainder.match(/"text":\s*"([^"\\]*(?:\\.[^"\\]*)*)/);
-      if (incompleteTextMatch) {
-          qs.push({ text: incompleteTextMatch[1].replace(/\\"/g, '"') + '...', marks: '...' });
+      try {
+        let cleaned = cleanAIResponse(chunk);
+        const arrStart = cleaned.indexOf('[');
+        if (arrStart === -1) return [];
+        cleaned = cleaned.substring(arrStart);
+
+        const partial = parsePartialJson(cleaned);
+        if (!Array.isArray(partial)) return [];
+        return partial.filter(q => q && q.text);
+      } catch {
+        return [];
       }
-      return qs;
     };
 
     const finalResponse = await callOpenRouterStream(messages, (chunkText) => {

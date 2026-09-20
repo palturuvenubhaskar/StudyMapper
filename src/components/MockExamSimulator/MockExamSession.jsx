@@ -30,7 +30,7 @@ const MockExamSession = () => {
           return;
         }
 
-        let allQuestions = await repository.getQuestionsForBank(parseInt(bankId));
+        let allQuestions = await repository.getQuestionsForBank(bankId);
         // Shuffle questions
         allQuestions.sort(() => 0.5 - Math.random());
         
@@ -122,7 +122,7 @@ const MockExamSession = () => {
 
     // Save Mock Exam Record
     const examRecord = {
-      bank_id: parseInt(bankId),
+      bank_id: bankId,
       duration_minutes: location.state?.duration,
       total_questions: currentQuestions.length,
       created_at: new Date().toISOString()
@@ -150,7 +150,7 @@ const MockExamSession = () => {
   return (
     <div className="mock-exam-session">
       {/* Top Navigation Bar */}
-      <div className="exam-header">
+      <div className="surface-card exam-header" style={{ borderRadius: 'var(--radius-lg)' }}>
         <div className="exam-title">Mock Exam</div>
         <div className={`exam-timer ${timeLeft < 300 ? 'danger' : ''}`}>
           <Clock size={20} />
@@ -171,7 +171,7 @@ const MockExamSession = () => {
 
       <div className="exam-body">
         {/* Main Question Area */}
-        <div className="exam-content">
+        <div className="surface-card exam-content" style={{ borderRadius: 'var(--radius-lg)' }}>
           <div className="question-header">
             <h2>Question {currentIndex + 1} of {questions.length}</h2>
             <span className="marks-badge">{currentQuestion.marks} Marks</span>
@@ -187,7 +187,7 @@ const MockExamSession = () => {
               placeholder="Type your answer here..."
               value={answers[currentQuestion.id] || ''}
               onChange={(e) => handleAnswerChange(e.target.value)}
-              className="answer-textarea"
+              className="textarea answer-textarea"
             />
           </div>
 
@@ -203,7 +203,7 @@ const MockExamSession = () => {
             
             <div className="nav-buttons">
               <button 
-                className="btn btn-outline"
+                className="btn btn-secondary"
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex(i => i - 1)}
               >
@@ -221,7 +221,7 @@ const MockExamSession = () => {
         </div>
 
         {/* Sidebar Navigation */}
-        <div className="exam-sidebar">
+        <div className="surface-card exam-sidebar" style={{ borderRadius: 'var(--radius-lg)' }}>
           <h3>Question Navigator</h3>
           <div className="question-grid">
             {questions.map((q, index) => {

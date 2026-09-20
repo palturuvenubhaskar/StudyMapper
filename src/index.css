@@ -66,9 +66,9 @@
   --bg-root: radial-gradient(at 0% 0%, rgba(125, 211, 252, 0.5) 0px, transparent 60%), radial-gradient(at 100% 0%, rgba(249, 168, 212, 0.5) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(252, 211, 77, 0.5) 0px, transparent 60%), radial-gradient(at 0% 100%, rgba(196, 181, 253, 0.5) 0px, transparent 60%), #ffffff;
   --bg-app: transparent;
   --bg-panel: rgba(255, 255, 255, 0.2);
-  --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
-  --bg-surface-hover: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
-  --bg-surface-active: rgba(255, 255, 255, 0.9);
+  --bg-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  --bg-surface-hover: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.9) 100%);
+  --bg-surface-active: rgba(255, 255, 255, 0.95);
 
   --text-primary: #0F172A;
   --text-secondary: #334155;
@@ -78,7 +78,7 @@
   --border-strong: rgba(15, 23, 42, 0.12);
   --border-glass: rgba(15, 23, 42, 0.08);
 
-  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass: rgba(255, 255, 255, 0.85);
   --bg-glass-hover: rgba(255, 255, 255, 0.95);
 
   --accent-primary: #0F172A;
@@ -98,9 +98,9 @@
   --bg-root: #0a0a0f;
   --bg-app: transparent;
   --bg-panel: #15151a;
-  --bg-surface: linear-gradient(135deg, rgba(35, 35, 42, 0.95) 0%, rgba(20, 20, 25, 0.8) 100%);
-  --bg-surface-hover: linear-gradient(135deg, rgba(45, 45, 52, 1) 0%, rgba(25, 25, 30, 0.9) 100%);
-  --bg-surface-active: rgba(50, 50, 55, 1);
+  --bg-surface: linear-gradient(135deg, rgba(35, 35, 42, 0.95) 0%, rgba(20, 20, 25, 0.85) 100%);
+  --bg-surface-hover: linear-gradient(135deg, rgba(45, 45, 52, 0.98) 0%, rgba(25, 25, 30, 0.9) 100%);
+  --bg-surface-active: rgba(50, 50, 55, 0.95);
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -110,9 +110,9 @@
   --border-strong: rgba(255, 255, 255, 0.12);
   --border-glass: rgba(255, 255, 255, 0.08);
 
-  --bg-glass-container: rgba(24, 24, 27, 0.6);
-  --bg-glass: rgba(24, 24, 27, 0.5);
-  --bg-glass-hover: rgba(39, 39, 42, 0.6);
+  --bg-glass-container: rgba(24, 24, 27, 0.9);
+  --bg-glass: rgba(24, 24, 27, 0.85);
+  --bg-glass-hover: rgba(39, 39, 42, 0.95);
   
   --accent-primary: #ffffff;
   --accent-primary-fg: #000000;

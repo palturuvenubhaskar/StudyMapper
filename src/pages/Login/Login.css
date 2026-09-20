@@ -13,7 +13,8 @@
   display: flex;
   width: 100%;
   max-width: 1000px;
-  height: 600px;
+  min-height: 600px;
+  height: auto;
   max-height: calc(100vh - 48px);
   background: var(--bg-surface);
   backdrop-filter: blur(20px);
@@ -86,9 +87,9 @@
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
   padding: 40px;
   background: var(--bg-panel);
+  overflow-y: auto;
 }
 
 .login-card {
@@ -96,6 +97,7 @@
   max-width: 380px;
   display: flex;
   flex-direction: column;
+  margin: auto;
 }
 
 .login-header {

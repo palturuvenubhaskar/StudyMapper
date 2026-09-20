@@ -8,7 +8,7 @@
     align-items: center;
     justify-content: space-around;
     padding: 12px 8px;
-    background: var(--bg-surface);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--border-glass);
@@ -48,4 +48,8 @@
     font-size: 0.7rem;
     font-weight: 600;
   }
+}
+
+[data-theme='dark'] .mobile-nav {
+  background: rgba(25, 25, 30, 0.95);
 }
