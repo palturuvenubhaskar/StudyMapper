@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
-import { NODE_TYPES } from './data/roadmapData';
+import { NODE_TYPES } from './data/roadmapMeta';
 
 // Compute a path between two nodes (right-angle connectors like roadmap.sh)
 function computePath(fromNode, toNode) {

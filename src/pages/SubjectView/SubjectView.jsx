@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSubjectById, getUnitsForSubject, getTopicsForUnit, updateSubject, getQuestionBanksForSubject, getLatestTopicContent, deleteSubject, deleteQuestionBank } from '../../data/repository';
+import { getSubjectById, getUnitsForSubject, getTopicsForUnits, updateSubject, getQuestionBanksForSubject, getLatestTopicContent, deleteSubject, deleteQuestionBank } from '../../data/repository';
 import { ArrowLeft, BookOpen, ChevronRight, Edit3, Check, FileText, Plus, Download, Loader, X, Trash2 } from 'lucide-react';
 
 import { useToast } from '../../components/ToastProvider/ToastProvider';
@@ -32,11 +32,13 @@ export default function SubjectView() {
     setTitleInput(sub.title);
 
     const units = await getUnitsForSubject(subjectId);
-    const result = [];
-    for (const unit of units) {
-      const topics = await getTopicsForUnit(unit.id);
-      result.push({ ...unit, topics });
-    }
+    const topics = await getTopicsForUnits(units.map(u => u.id));
+    const topicsByUnit = new Map(units.map(u => [u.id, []]));
+    for (const t of topics) topicsByUnit.get(t.unit_id)?.push(t);
+    const result = units.map(u => ({
+      ...u,
+      topics: topicsByUnit.get(u.id).sort((a, b) => a.order_index - b.order_index),
+    }));
     setUnitsWithTopics(result);
     // Expand all by default
     setExpandedUnits(new Set(units.map(u => u.id)));

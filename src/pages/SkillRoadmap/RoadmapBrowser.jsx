@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Search, Bookmark, BookmarkCheck, Sparkles, ArrowRight, Map } from 'lucide-react';
-import { ALL_ROADMAPS, ROADMAP_CATEGORIES, getCategoryCounts, NEW_ROADMAPS } from './data/roadmapData';
+import { ALL_ROADMAPS, ROADMAP_CATEGORIES, getCategoryCounts } from './data/roadmapCatalog';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
 
 const BOOKMARK_KEY = 'studymapper_roadmap_bookmarks';

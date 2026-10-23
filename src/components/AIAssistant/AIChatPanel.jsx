@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import MarkdownRenderer from '../MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowUp, Paperclip, Loader, X, FileText, Sparkles } from 'lucide-react';
@@ -9,6 +9,43 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '../ToastProvider/ToastProvider';
 import GeneratingState from '../GeneratingState/GeneratingState';
 import MermaidRenderer from '../MarkdownRenderer/MermaidRenderer';
+
+const REMARK_PLUGINS = [remarkGfm];
+
+const MARKDOWN_COMPONENTS = {
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
+const ChatMessage = memo(function ChatMessage({ message }) {
+  return (
+    <div className={`ai-message ${message.role}`}>
+      {message.role === 'assistant' && (
+        <div className="ai-avatar">
+          <Sparkles size={16} />
+        </div>
+      )}
+      <div className="ai-message-bubble">
+        {message.role === 'user' ? (
+          <div style={{ whiteSpace: 'pre-wrap' }}>
+            {message.content.replace(/--- Attached File:.*?---[\s\S]*```[\s\S]*?```/, '[File Attached]')}
+          </div>
+        ) : (
+          <div className="markdown-body">
+            <MarkdownRenderer remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+              {message.content}
+            </MarkdownRenderer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated, messages, setMessages }) {
   const [input, setInput] = useState('');
@@ -86,7 +123,11 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
       }));
       apiHistory.push({ role: 'user', content: userContent });
 
+      let lastStreamUpdate = 0;
       const fullResponse = await callAIAssistantStream(apiHistory, currentContext, (chunk) => {
+        const now = Date.now();
+        if (now - lastStreamUpdate < 150) return;
+        lastStreamUpdate = now;
         setStreamingText(chunk);
       });
 
@@ -135,37 +176,7 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
           )}
 
           {messages.map((m) => (
-            <div key={m.id} className={`ai-message ${m.role}`}>
-              {m.role === 'assistant' && (
-                <div className="ai-avatar">
-                  <Sparkles size={16} />
-                </div>
-              )}
-              <div className="ai-message-bubble">
-                {m.role === 'user' ? (
-                  <div style={{ whiteSpace: 'pre-wrap' }}>
-                    {m.content.replace(/--- Attached File:.*?---[\s\S]*```[\s\S]*?```/, '[File Attached]')}
-                  </div>
-                ) : (
-                  <div className="markdown-body">
-                    <MarkdownRenderer 
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        code({node, inline, className, children, ...props}) {
-                          const match = /language-(\w+)/.exec(className || '')
-                          if (!inline && match && match[1] === 'mermaid') {
-                            return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
-                          }
-                          return <code className={className} {...props}>{children}</code>
-                        }
-                      }}
-                    >
-                      {m.content}
-                    </MarkdownRenderer>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ChatMessage key={m.id} message={m} />
           ))}
           
           {isGenerating && (
@@ -177,16 +188,8 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
                 {streamingText ? (
                   <div className="markdown-body">
                     <MarkdownRenderer
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        code({node, inline, className, children, ...props}) {
-                          const match = /language-(\w+)/.exec(className || '')
-                          if (!inline && match && match[1] === 'mermaid') {
-                            return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
-                          }
-                          return <code className={className} {...props}>{children}</code>
-                        }
-                      }}
+                      remarkPlugins={REMARK_PLUGINS}
+                      components={MARKDOWN_COMPONENTS}
                     >
                       {streamingText}
                     </MarkdownRenderer>

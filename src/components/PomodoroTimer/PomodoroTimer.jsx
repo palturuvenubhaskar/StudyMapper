@@ -15,31 +15,32 @@ export default function PomodoroTimer({ topicId }) {
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
-    let interval = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(time => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && isActive) {
-      setIsActive(false);
-      // Log session
-      if (topicId) {
-        db.study_sessions.add({
-          id: uuidv4(),
-          topic_id: topicId,
-          duration_minutes: 25,
-          created_at: new Date().toISOString()
-        }).then(async () => {
-          await awardXP('guest', 30, 'pomodoro');
-          await updateQuestProgress('guest', 'pomodoro', 1);
-          await checkAchievements('guest');
-          await logEvent('guest', topicId, 'pomodoro_complete', 25 * 60, null);
-        }).catch(console.error);
-      }
-      // Play sound or show toast here
-      alert("Pomodoro session complete!");
-    }
+    if (!isActive) return;
+    const interval = setInterval(() => {
+      setTimeLeft(time => Math.max(0, time - 1));
+    }, 1000);
     return () => clearInterval(interval);
+  }, [isActive]);
+
+  useEffect(() => {
+    if (timeLeft !== 0 || !isActive) return;
+    setIsActive(false);
+    // Log session
+    if (topicId) {
+      db.study_sessions.add({
+        id: uuidv4(),
+        topic_id: topicId,
+        duration_minutes: 25,
+        created_at: new Date().toISOString()
+      }).then(async () => {
+        await awardXP('guest', 30, 'pomodoro');
+        await updateQuestProgress('guest', 'pomodoro', 1);
+        await checkAchievements('guest');
+        await logEvent('guest', topicId, 'pomodoro_complete', 25 * 60, null);
+      }).catch(console.error);
+    }
+    // Play sound or show toast here
+    alert("Pomodoro session complete!");
   }, [isActive, timeLeft, topicId]);
 
   const toggleTimer = () => setIsActive(!isActive);

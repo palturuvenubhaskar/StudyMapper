@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllBookmarks, deleteBookmark } from '../../data/repository';
-import { getRoadmapById } from '../SkillRoadmap/data/roadmapData';
+import { getRoadmapSummary } from '../SkillRoadmap/data/roadmapCatalog';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, Bookmark, Trash2, Map } from 'lucide-react';
 import './BookmarksPage.css';
@@ -22,7 +22,7 @@ export default function BookmarksPage() {
     // Load Roadmap Bookmarks from localStorage
     const rawRms = localStorage.getItem('studymapper_roadmap_bookmarks');
     const rmIds = rawRms ? JSON.parse(rawRms) : [];
-    const rms = rmIds.map(id => getRoadmapById(id)).filter(Boolean);
+    const rms = rmIds.map(getRoadmapSummary).filter(Boolean);
     setRoadmapBookmarks(rms);
 
     setLoading(false);

@@ -20,17 +20,25 @@ export default function CommandPalette({ isOpen, onClose }) {
   }, [isOpen]);
 
   useEffect(() => {
-    const search = async () => {
-      if (query.trim().length < 2) {
-        setResults({ subjects: [], topics: [] });
-        return;
-      }
+    if (query.trim().length < 2) {
+      setResults({ subjects: [], topics: [] });
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       const q = query.toLowerCase();
-      const subjects = await db.subjects.filter(s => s.title.toLowerCase().includes(q)).toArray();
-      const topics = await db.topics.filter(t => t.title.toLowerCase().includes(q)).toArray();
-      setResults({ subjects, topics });
+      const [subjects, topics] = await Promise.all([
+        db.subjects.filter(s => s.title.toLowerCase().includes(q)).toArray(),
+        db.topics.filter(t => t.title.toLowerCase().includes(q)).toArray(),
+      ]);
+      if (!cancelled) setResults({ subjects, topics });
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
-    search();
   }, [query]);
 
   useEffect(() => {

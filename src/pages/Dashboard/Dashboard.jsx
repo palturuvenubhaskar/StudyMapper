@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllSubjects, getSubjectProgress, getAllQuestionBanks } from '../../data/repository';
+import { getAllSubjects, getSubjectsProgress, getAllQuestionBanks } from '../../data/repository';
+import { db } from '../../data/db';
 import { Search, ChevronRight, Play, BookOpen, FileText, Plus, Award, Activity } from 'lucide-react';
 import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
 import PomodoroTimer from '../../components/PomodoroTimer/PomodoroTimer';
@@ -32,21 +33,13 @@ export default function Dashboard() {
 
   const loadSubjects = async () => {
     setLoading(true);
-    const subs = await getAllSubjects();
-    const sortedSubs = [...subs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    setSubjects(sortedSubs);
-    
-    const allQbanks = await getAllQuestionBanks();
-    const sortedQbanks = [...allQbanks].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    setQbanks(sortedQbanks);
-    
-    let totalProgressSum = 0;
-    
-    for (const s of subs) {
-      const p = await getSubjectProgress(s.id);
-      totalProgressSum += p || 0;
-    }
-    
+    const [subs, allQbanks] = await Promise.all([getAllSubjects(), getAllQuestionBanks()]);
+    setSubjects(subs);
+    setQbanks(allQbanks);
+
+    const progress = await getSubjectsProgress(subs.map(s => s.id));
+    const totalProgressSum = Object.values(progress).reduce((sum, p) => sum + p, 0);
+
     setStats({
       totalUnits: subs.length,
       avgProgress: subs.length > 0 ? Math.round(totalProgressSum / subs.length) : 0

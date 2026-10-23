@@ -1,34 +1,6 @@
-// Pre-built roadmap data modeled after roadmap.sh
-// Each roadmap has nodes (positioned), connections, and metadata
-
-export const ROADMAP_CATEGORIES = [
-  { id: 'all', label: 'All Roadmaps', count: 0 }, // count computed dynamically
-  { id: 'role', label: 'Role Based', count: 0 },
-  { id: 'skill', label: 'Skill Based', count: 0 },
-  { id: 'tool', label: 'Tools', count: 0 },
-  { id: 'language', label: 'Languages', count: 0 },
-  { id: 'framework', label: 'Frameworks', count: 0 },
-  { id: 'database', label: 'Databases', count: 0 },
-  { id: 'mobile', label: 'Mobile', count: 0 },
-  { id: 'concept', label: 'Concepts', count: 0 },
-  { id: 'beginner', label: 'Absolute Beginners', count: 0 },
-  { id: 'best-practices', label: 'Best Practices', count: 0 },
-];
-
-// Node types
-export const NODE_TYPES = {
-  TOPIC: 'topic',           // Yellow bg — key topics to learn
-  CHECKPOINT: 'checkpoint', // Dark bg — project ideas / milestones
-  SECTION: 'section',       // Text label — section marker
-  ANNOTATION: 'annotation', // Light bordered box — explanatory text
-  SUBTOPIC: 'subtopic',     // Smaller yellow/orange — sub-skill inside a topic
-};
-
-// Connection types
-export const CONN_TYPES = {
-  SOLID: 'solid',
-  DASHED: 'dashed',
-};
+// Full roadmap payload. Import this dynamically (see RoadmapDetail) so routes
+// that only list roadmap titles don't download and parse the whole dataset.
+export { NODE_TYPES, CONN_TYPES, ROADMAP_CATEGORIES } from './roadmapMeta';
 
 import { GENERATED_ROADMAPS } from './generatedRoadmaps';
 import { 
@@ -171,32 +143,6 @@ export const DETAILED_ROADMAPS = [
   ].includes(r.id)),
 ];
 
-// All roadmaps (detailed + stubs) for the browser listing
-export const ALL_ROADMAPS = DETAILED_ROADMAPS.map(r => ({
-  id: r.id,
-  title: r.title,
-  description: r.description,
-  category: r.category,
-  hasFlowchart: true,
-}));
-
 // Get a detailed roadmap by ID
-export const getRoadmapById = (id) => DETAILED_ROADMAPS.find(r => r.id === id);
-
-// Get roadmaps filtered by category
-export const getRoadmapsByCategory = (category) => {
-  if (category === 'all') return ALL_ROADMAPS;
-  return ALL_ROADMAPS.filter(r => r.category === category);
-};
-
-// Get category counts
-export const getCategoryCounts = () => {
-  const counts = { all: ALL_ROADMAPS.length };
-  for (const r of ALL_ROADMAPS) {
-    counts[r.category] = (counts[r.category] || 0) + 1;
-  }
-  return counts;
-};
-
-// New roadmaps (featured / recently added)
-export const NEW_ROADMAPS = ['product-design', 'prompt-engineering', 'ai-engineer', 'mlops'];
+const byId = new Map(DETAILED_ROADMAPS.map(r => [r.id, r]));
+export const getRoadmapById = (id) => byId.get(id);

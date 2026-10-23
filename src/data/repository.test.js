@@ -7,7 +7,10 @@ import {
   deleteSubject, 
   getSubjectById,
   saveTopicContent,
-  addBookmark
+  addBookmark,
+  getAllBookmarks,
+  getSubjectsProgress,
+  searchAll
 } from './repository';
 
 describe('Database Repository Tests', () => {
@@ -61,5 +64,51 @@ describe('Database Repository Tests', () => {
     expect(await db.topics.count()).toBe(0);
     expect(await db.topic_contents.count()).toBe(0);
     expect(await db.bookmarks.count()).toBe(0);
+  });
+
+  it('computes progress for several subjects in one pass', async () => {
+    const subjectA = await addSubject('Subject A');
+    const subjectB = await addSubject('Subject B');
+    const subjectC = await addSubject('Subject C');
+    const unitA = await addUnit(subjectA.id, 'Unit A', 1);
+    const topicA1 = await addTopic(unitA.id, 'Topic A1', 1);
+    await addTopic(unitA.id, 'Topic A2', 2);
+    const unitB = await addUnit(subjectB.id, 'Unit B', 1);
+    await addTopic(unitB.id, 'Topic B1', 1);
+
+    await saveTopicContent(topicA1.id, '{"intro":"hello"}');
+
+    expect(await getSubjectsProgress([subjectA.id, subjectB.id, subjectC.id])).toEqual({
+      [subjectA.id]: 50,
+      [subjectB.id]: 0,
+      [subjectC.id]: 0,
+    });
+    expect(await getSubjectsProgress([subjectC.id])).toEqual({ [subjectC.id]: 0 });
+  });
+
+  it('enriches bookmarks with topic titles', async () => {
+    const subject = await addSubject('Subject');
+    const unit = await addUnit(subject.id, 'Unit', 1);
+    const topic = await addTopic(unit.id, 'Topic title', 1);
+    await addBookmark(topic.id);
+
+    const bookmarks = await getAllBookmarks();
+    expect(bookmarks).toHaveLength(1);
+    expect(bookmarks[0].topic_title).toBe('Topic title');
+  });
+
+  it('searches only the latest content version', async () => {
+    const subject = await addSubject('Operating Systems');
+    const unit = await addUnit(subject.id, 'Scheduling', 1);
+    const topic = await addTopic(unit.id, 'Round Robin', 1);
+
+    await saveTopicContent(topic.id, '{"body":"old needle"}');
+    await saveTopicContent(topic.id, '{"body":"fresh haystack"}');
+
+    const fresh = await searchAll('haystack');
+    expect(fresh.filter(r => r.type === 'topic-content')).toHaveLength(1);
+
+    const old = await searchAll('needle');
+    expect(old.filter(r => r.type === 'topic-content')).toHaveLength(0);
   });
 });

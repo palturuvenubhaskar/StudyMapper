@@ -2,7 +2,7 @@ import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRende
 import { GeneratingDots } from '../../../components/GeneratingState/GeneratingState';
 import remarkGfm from 'remark-gfm';
 import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HintsSection } from './HintsSection';
 
 /* ── Skeleton shimmer bar ────────────────────────────────── */
@@ -95,44 +95,46 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
   }
 
   // Handle both legacy sample_input/output and new examples_json format
-  let examples = [];
-  if (problem.examples) {
-    examples = problem.examples;
-  } else if (problem.examples_json) {
-    try {
-      examples = typeof problem.examples_json === 'string' ? JSON.parse(problem.examples_json) : problem.examples_json;
-    } catch (e) {
-      console.error(e);
+  const examples = useMemo(() => {
+    if (problem.examples) return problem.examples;
+    if (problem.examples_json) {
+      try {
+        return typeof problem.examples_json === 'string' ? JSON.parse(problem.examples_json) : problem.examples_json;
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
     }
-  } else if (has('sample_input')) {
-    examples = [{
-      input: problem.sample_input,
-      output: problem.sample_output,
-      explanation: problem.explanation
-    }];
-  }
+    if (problem.sample_input && String(problem.sample_input).trim().length > 0) {
+      return [{
+        input: problem.sample_input,
+        output: problem.sample_output,
+        explanation: problem.explanation
+      }];
+    }
+    return [];
+  }, [problem]);
 
   // Determine hints
-  let hints = [];
-  if (problem.hints_json) {
-    try {
-      hints = typeof problem.hints_json === 'string' ? JSON.parse(problem.hints_json) : problem.hints_json;
-    } catch (e) { console.error(e); }
-  } else if (problem.hints) {
-    hints = problem.hints;
-  }
+  const hints = useMemo(() => {
+    if (problem.hints_json) {
+      try {
+        return typeof problem.hints_json === 'string' ? JSON.parse(problem.hints_json) : problem.hints_json;
+      } catch (e) { console.error(e); }
+    }
+    return problem.hints || [];
+  }, [problem]);
 
   // Test cases for the table
-  let testCases = [];
-  if (problem.testCases) {
-    testCases = problem.testCases;
-  } else if (problem.test_cases_json) {
-    try {
-      testCases = typeof problem.test_cases_json === 'string' ? JSON.parse(problem.test_cases_json) : problem.test_cases_json;
-    } catch (e) { console.error(e); }
-  } else if (problem.publicTestCases) {
-    testCases = problem.publicTestCases;
-  }
+  const testCases = useMemo(() => {
+    if (problem.testCases) return problem.testCases;
+    if (problem.test_cases_json) {
+      try {
+        return typeof problem.test_cases_json === 'string' ? JSON.parse(problem.test_cases_json) : problem.test_cases_json;
+      } catch (e) { console.error(e); }
+    }
+    return problem.publicTestCases || [];
+  }, [problem]);
 
   return (
     <div className="problem-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>

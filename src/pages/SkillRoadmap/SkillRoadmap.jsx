@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getStudentProfile, saveStudentProfile, getRoadmapForProfile, createRoadmap, getSkillsForRoadmap, updateRoadmapSkill, deleteRoadmapSkill, addRoadmapSkill, deleteRoadmap } from '../../data/repository';
 import { callOpenRouter, generateRoadmapPrompt, extractJson } from '../../core/api/aiService';
-import { ALL_ROADMAPS } from './data/roadmapData';
+import { ALL_ROADMAPS } from './data/roadmapCatalog';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import ProfileSetup from './ProfileSetup';
@@ -174,6 +174,7 @@ export default function SkillRoadmap() {
       <div className="skill-roadmap-page">
         <div className="skill-roadmap-content">
           <RoadmapDetail
+            key={selectedRoadmapId}
             roadmapId={selectedRoadmapId}
             onBack={handleBackToBrowse}
             onSelectRoadmap={handleSelectRoadmap}

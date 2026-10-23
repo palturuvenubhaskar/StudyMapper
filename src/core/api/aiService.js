@@ -20,6 +20,10 @@ const VISION_MODELS = [
   "dots-studio/dots-3-note-preview:free",
 ];
 
+// Retrying another model can't fix a bad request or bad credentials.
+const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404]);
+const apiError = (status, body) => Object.assign(new Error(`API error (${status}): ${body}`), { status });
+
 // Non-streaming call (used for syllabus extraction and JSON responses)
 export const callOpenRouter = async (messages) => {
   let lastError = null;
@@ -48,7 +52,7 @@ export const callOpenRouter = async (messages) => {
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`API error (${response.status}): ${err}`);
+        throw apiError(response.status, err);
       }
 
       const data = await response.json();
@@ -56,6 +60,7 @@ export const callOpenRouter = async (messages) => {
     } catch (error) {
       clearTimeout(timeoutId);
       console.warn(`Model ${model} failed, trying next...`, error);
+      if (NON_RETRYABLE_STATUSES.has(error.status)) throw error;
       lastError = error;
       // continue to the next model in the array
     }
@@ -98,7 +103,7 @@ export const callOpenRouterVision = async (base64Image, prompt) => {
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`API error (${response.status}): ${err}`);
+        throw apiError(response.status, err);
       }
 
       const data = await response.json();
@@ -106,6 +111,7 @@ export const callOpenRouterVision = async (base64Image, prompt) => {
     } catch (error) {
       clearTimeout(timeoutId);
       console.warn(`Vision model ${model} failed, trying next...`, error);
+      if (NON_RETRYABLE_STATUSES.has(error.status)) throw error;
       lastError = error;
     }
   }
@@ -136,7 +142,7 @@ export const callOpenRouterStream = async (messages, onChunk) => {
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`API error (${response.status}): ${err}`);
+        throw apiError(response.status, err);
       }
 
       // If we reach here, connection is successful!
@@ -177,9 +183,9 @@ export const callOpenRouterStream = async (messages, onChunk) => {
 
       return fullText; // Success! Break out of the loop by returning
     } catch (error) {
-      console.warn(`Streaming Model ${model} failed, trying next...`, error);
+      console.warn(`Streaming model ${model} failed, trying next...`, error);
+      if (NON_RETRYABLE_STATUSES.has(error.status)) throw error;
       lastError = error;
-      // continue to the next model
     }
   }
 

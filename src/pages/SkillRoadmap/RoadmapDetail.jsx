@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import { ArrowLeft, Bookmark, BookmarkCheck, Download, Share2, ChevronDown, ChevronUp, Users, Sparkles, X, CheckCircle2, Circle, Clock } from 'lucide-react';
-import { getRoadmapById, NODE_TYPES } from './data/roadmapData';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Bookmark, BookmarkCheck, Download, Share2, ChevronDown, ChevronUp, X, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { NODE_TYPES } from './data/roadmapMeta';
 import RoadmapFlowchart from './RoadmapFlowchart';
 import LinearRoadmap from './LinearRoadmap';
 
@@ -36,11 +36,33 @@ const toggleBookmarkStorage = (id) => {
 };
 
 export default function RoadmapDetail({ roadmapId, onBack, onSelectRoadmap }) {
-  const roadmap = getRoadmapById(roadmapId);
+  const [roadmap, setRoadmap] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(() => isBookmarked(roadmapId));
   const [faqOpen, setFaqOpen] = useState(false);
   const [nodeProgress, setNodeProgress] = useState(() => loadProgress(roadmapId));
   const [selectedNode, setSelectedNode] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    import('./data/roadmapData')
+      .then(({ getRoadmapById }) => {
+        if (cancelled) return;
+        setRoadmap(getRoadmapById(roadmapId) || null);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRoadmap(null);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [roadmapId]);
+
+  if (loading) {
+    return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
+  }
 
   if (!roadmap) {
     return (

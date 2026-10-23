@@ -5,33 +5,30 @@ import { awardXP } from './xpEngine';
 import confetti from 'canvas-confetti';
 
 export const checkAchievements = async (userId = 'guest') => {
+  const unlockedIds = new Set(
+    (await db.achievements.where('user_id').equals(userId).toArray()).map(a => a.achievement_id)
+  );
+  const locked = ACHIEVEMENTS.filter(a => !unlockedIds.has(a.id));
+  if (locked.length === 0) return [];
+
   const unlocked = [];
 
-  for (const achievement of ACHIEVEMENTS) {
-    // Check if already unlocked
-    const exists = await db.achievements
-      .where('achievement_id')
-      .equals(achievement.id)
-      .first();
+  for (const achievement of locked) {
+    const isMet = await achievement.condition_checker(userId);
+    if (isMet) {
+      // Unlock
+      await db.achievements.add({
+        id: uuidv4(),
+        user_id: userId,
+        achievement_id: achievement.id,
+        unlocked_at: new Date().toISOString(),
+        viewed: 0
+      });
 
-    if (!exists) {
-      // Check condition
-      const isMet = await achievement.condition_checker(userId);
-      if (isMet) {
-        // Unlock
-        await db.achievements.add({
-          id: uuidv4(),
-          user_id: userId,
-          achievement_id: achievement.id,
-          unlocked_at: new Date().toISOString(),
-          viewed: 0
-        });
-        
-        // Award XP
-        await awardXP(userId, achievement.xp_reward, 'achievement', achievement.id);
-        
-        unlocked.push(achievement);
-      }
+      // Award XP
+      await awardXP(userId, achievement.xp_reward, 'achievement', achievement.id);
+
+      unlocked.push(achievement);
     }
   }
 

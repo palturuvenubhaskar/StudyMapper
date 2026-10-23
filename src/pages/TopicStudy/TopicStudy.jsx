@@ -34,6 +34,19 @@ const SECTION_MAP = [
   ['summary', 'Summary'],
 ];
 
+const SECTION_COMPONENTS = {
+  p: 'p',
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
+const INLINE_COMPONENTS = { p: 'span' };
+
 // Try to parse partial JSON by closing open brackets/braces
 const tryParsePartialJson = (raw) => {
   if (!raw) return null;
@@ -222,7 +235,11 @@ export default function TopicStudy() {
     try {
       const messages = getTopicNotesPrompt(topic.title, subject.title);
 
+      let lastStreamUpdate = 0;
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
+        const now = Date.now();
+        if (now - lastStreamUpdate < 150) return;
+        lastStreamUpdate = now;
         const partial = tryParsePartialJson(textSoFar);
         if (partial) {
           lastSuccessfulParse = partial;
@@ -495,33 +512,22 @@ export default function TopicStudy() {
         {!isCollapsed && (
           <div className="section-body">
             {typeof data === 'string' && (
-              <MarkdownRenderer 
-                components={{ 
-                  p: 'p',
-                  code({node, inline, className, children, ...props}) {
-                    const match = /language-(\w+)/.exec(className || '');
-                    if (!inline && match && match[1] === 'mermaid') {
-                      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
-                    }
-                    return <code className={className} {...props}>{children}</code>;
-                  }
-                }}
-              >
+              <MarkdownRenderer components={SECTION_COMPONENTS}>
                 {normalizeMarkdown(data)}
               </MarkdownRenderer>
             )}
             {Array.isArray(data) && data.length > 0 && (
               typeof data[0] === 'string' ? (
-                <ul>{data.map((item, i) => <li key={i}><MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item)}</MarkdownRenderer></li>)}</ul>
+                <ul>{data.map((item, i) => <li key={i}><MarkdownRenderer components={INLINE_COMPONENTS}>{normalizeMarkdown(item)}</MarkdownRenderer></li>)}</ul>
               ) : (
                 <div className="qa-list">
                   {data.map((item, i) => (
                     <div key={i} className="qa-item">
-                      {item.term && <><strong>{item.term}:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.definition)}</MarkdownRenderer></>}
+                      {item.term && <><strong>{item.term}:</strong> <MarkdownRenderer components={INLINE_COMPONENTS}>{normalizeMarkdown(item.definition)}</MarkdownRenderer></>}
                       {item.q && (
                         <>
-                          <div className="qa-q"><strong>Q:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.q)}</MarkdownRenderer></div>
-                          <div className="qa-a"><strong>A:</strong> <MarkdownRenderer components={{ p: 'span' }}>{normalizeMarkdown(item.a)}</MarkdownRenderer></div>
+                          <div className="qa-q"><strong>Q:</strong> <MarkdownRenderer components={INLINE_COMPONENTS}>{normalizeMarkdown(item.q)}</MarkdownRenderer></div>
+                          <div className="qa-a"><strong>A:</strong> <MarkdownRenderer components={INLINE_COMPONENTS}>{normalizeMarkdown(item.a)}</MarkdownRenderer></div>
                         </>
                       )}
                     </div>

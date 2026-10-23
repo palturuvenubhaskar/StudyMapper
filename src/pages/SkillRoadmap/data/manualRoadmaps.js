@@ -1,5 +1,4 @@
 // Hand-crafted pixel-perfect representations of roadmaps based on PDFs
-import { NODE_TYPES } from './roadmapData';
 
 export const aiAgentsRoadmap = {
   id: 'ai-agents',

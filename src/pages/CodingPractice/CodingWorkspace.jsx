@@ -75,7 +75,11 @@ export default function CodingWorkspace() {
         pRecord.language, pRecord.topic, pRecord.difficulty
       );
 
+      let lastStreamUpdate = 0;
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
+        const now = Date.now();
+        if (now - lastStreamUpdate < 200) return;
+        lastStreamUpdate = now;
         setGeneratingStream(textSoFar);
         // Try to parse partial JSON to update problem progressively
         try {

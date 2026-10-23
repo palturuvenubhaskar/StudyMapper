@@ -20,10 +20,8 @@ export const addSubject = (title) => {
 export const updateSubject = (id, changes) => db.subjects.update(id, changes);
 
 export const deleteSubject = async (id) => {
-  const units = await db.units.where('subject_id').equals(id).toArray();
-  const unitIds = units.map(u => u.id);
-  const topics = await db.topics.where('unit_id').anyOf(unitIds).toArray();
-  const topicIds = topics.map(t => t.id);
+  const unitIds = await db.units.where('subject_id').equals(id).primaryKeys();
+  const topicIds = await db.topics.where('unit_id').anyOf(unitIds).primaryKeys();
 
   await db.transaction('rw', [db.subjects, db.units, db.topics, db.topic_contents, db.bookmarks, db.notes, db.study_stats], async () => {
     await db.study_stats.where('topic_id').anyOf(topicIds).delete();
@@ -53,8 +51,7 @@ export const addUnit = (subjectId, title, orderIndex) => {
 export const updateUnit = (id, changes) => db.units.update(id, changes);
 
 export const deleteUnit = async (id) => {
-  const topics = await db.topics.where('unit_id').equals(id).toArray();
-  const topicIds = topics.map(t => t.id);
+  const topicIds = await db.topics.where('unit_id').equals(id).primaryKeys();
 
   await db.transaction('rw', [db.units, db.topics, db.topic_contents, db.bookmarks, db.notes, db.study_stats], async () => {
     await db.study_stats.where('topic_id').anyOf(topicIds).delete();
@@ -69,6 +66,9 @@ export const deleteUnit = async (id) => {
 // ========== TOPICS ==========
 export const getTopicsForUnit = (unitId) =>
   db.topics.where('unit_id').equals(unitId).sortBy('order_index');
+
+export const getTopicsForUnits = (unitIds) =>
+  db.topics.where('unit_id').anyOf(unitIds).toArray();
 
 export const getTopicById = (id) => db.topics.get(id);
 
@@ -124,12 +124,8 @@ export const getBookmarksForTopic = (topicId) =>
 
 export const getAllBookmarks = async () => {
   const bookmarks = await db.bookmarks.orderBy('created_at').reverse().toArray();
-  const enriched = [];
-  for (const bm of bookmarks) {
-    const topic = await db.topics.get(bm.topic_id);
-    enriched.push({ ...bm, topic_title: topic?.title || 'Unknown' });
-  }
-  return enriched;
+  const topics = await db.topics.bulkGet(bookmarks.map(bm => bm.topic_id));
+  return bookmarks.map((bm, i) => ({ ...bm, topic_title: topics[i]?.title || 'Unknown' }));
 };
 
 export const addBookmark = (topicId, sectionId = null) => {
@@ -194,35 +190,41 @@ export const searchAll = async (query) => {
   const q = query.toLowerCase();
   const results = [];
 
-  const subjects = await db.subjects.toArray();
+  const [subjects, units, topics, latestContents, notes, allQuestions] = await Promise.all([
+    db.subjects.toArray(),
+    db.units.toArray(),
+    db.topics.toArray(),
+    db.topic_contents.where('is_latest').equals(1).toArray(),
+    db.notes.toArray(),
+    db.questions.toArray(),
+  ]);
+
   subjects.filter(s => s.title.toLowerCase().includes(q)).forEach(s => {
     results.push({ id: s.id, type: 'subject', title: s.title, snippet: `Subject: ${s.title}` });
   });
 
   const subjectById = new Map(subjects.map(s => [s.id, s]));
 
-  const units = await db.units.toArray();
   units.forEach(u => {
     const subjectTitle = subjectById.get(u.subject_id)?.title || '';
     if (!u.title.toLowerCase().includes(q) && !subjectTitle.toLowerCase().includes(q)) return;
     results.push({ id: u.id, type: 'unit', title: u.title, snippet: `Unit: ${u.title}${subjectTitle ? ` (${subjectTitle})` : ''}`, parentId: u.subject_id });
   });
 
-  const topics = await db.topics.toArray();
   const topicById = new Map(topics.map(t => [t.id, t]));
   topics.filter(t => t.title.toLowerCase().includes(q)).forEach(t => {
     results.push({ id: t.id, type: 'topic', title: t.title, snippet: `Topic: ${t.title}`, parentId: t.unit_id });
   });
 
-  const allTopicContents = await db.topic_contents.toArray();
-  allTopicContents.forEach(c => {
-    if (!JSON.stringify(c.generated_json || {}).toLowerCase().includes(q)) return;
+  latestContents.forEach(c => {
+    const raw = c.generated_json;
+    const text = typeof raw === 'string' ? raw : JSON.stringify(raw || {});
+    if (!text.toLowerCase().includes(q)) return;
     const topic = topicById.get(c.topic_id);
     if (!topic) return;
     results.push({ id: c.id, type: 'topic-content', title: `Content: ${topic.title}`, snippet: `Content from: ${topic.title}`, parentId: topic.id });
   });
 
-  const notes = await db.notes.toArray();
   notes.forEach(n => {
     const content = n.content || '';
     if (!content.toLowerCase().includes(q)) return;
@@ -230,7 +232,6 @@ export const searchAll = async (query) => {
     results.push({ id: n.id, type: 'note', title: 'Personal Note', snippet, parentId: n.topic_id });
   });
 
-  const allQuestions = await db.questions.toArray();
   allQuestions.forEach(n => {
     const text = n.text || '';
     if (!text.toLowerCase().includes(q)) return;
@@ -251,22 +252,31 @@ export const saveSyllabus = async (subject, units, topics) => {
 };
 
 // ========== PROGRESS ==========
-export const getSubjectProgress = async (subjectId) => {
-  const units = await getUnitsForSubject(subjectId);
-  const unitIds = units.map(u => u.id);
-  const topics = await db.topics.where('unit_id').anyOf(unitIds).toArray();
-  const total = topics.length;
-  if (total === 0) return 0;
-  
-  let studied = 0;
-  
-  for (const topic of topics) {
-    const contentCount = await db.topic_contents.where('topic_id').equals(topic.id).count();
-    if (contentCount > 0) studied++;
+export const getSubjectsProgress = async (subjectIds) => {
+  const progress = Object.fromEntries(subjectIds.map(id => [id, 0]));
+  if (subjectIds.length === 0) return progress;
+
+  const units = await db.units.where('subject_id').anyOf(subjectIds).toArray();
+  const unitToSubject = new Map(units.map(u => [u.id, u.subject_id]));
+  const topics = await db.topics.where('unit_id').anyOf([...unitToSubject.keys()]).toArray();
+
+  const topicIdsBySubject = new Map();
+  for (const t of topics) {
+    const subjectId = unitToSubject.get(t.unit_id);
+    if (!subjectId) continue;
+    if (!topicIdsBySubject.has(subjectId)) topicIdsBySubject.set(subjectId, []);
+    topicIdsBySubject.get(subjectId).push(t.id);
   }
-  
-  return Math.round((studied / total) * 100);
+
+  const studied = new Set(await db.topic_contents.where('topic_id').anyOf(topics.map(t => t.id)).uniqueKeys());
+  for (const [subjectId, topicIds] of topicIdsBySubject) {
+    progress[subjectId] = Math.round((topicIds.filter(id => studied.has(id)).length / topicIds.length) * 100);
+  }
+  return progress;
 };
+
+export const getSubjectProgress = async (subjectId) =>
+  (await getSubjectsProgress([subjectId]))[subjectId] ?? 0;
 
 // ========== QUESTION BANKS ==========
 export const createQuestionBank = async (subjectId, title, questions) => {
@@ -494,23 +504,23 @@ export const searchAIMessages = async (query) => {
   const matched = allMessages.filter(m => m.content.toLowerCase().includes(q));
   
   // Get unique sessions for these matches
-  const results = [];
-  const processedSessions = new Set();
-  
+  const firstMatchBySession = new Map();
   for (const m of matched) {
-    if (!processedSessions.has(m.session_id)) {
-      processedSessions.add(m.session_id);
-      const session = await db.ai_sessions.get(m.session_id);
-      if (session) {
-        results.push({
-          session,
-          snippet: m.content.substring(0, 100) + '...',
-          match_role: m.role
-        });
-      }
-    }
+    if (!firstMatchBySession.has(m.session_id)) firstMatchBySession.set(m.session_id, m);
   }
-  return results;
+
+  const sessionIds = [...firstMatchBySession.keys()];
+  const sessions = await db.ai_sessions.bulkGet(sessionIds);
+  return sessionIds.flatMap((sessionId, i) => {
+    const session = sessions[i];
+    if (!session) return [];
+    const m = firstMatchBySession.get(sessionId);
+    return [{
+      session,
+      snippet: m.content.substring(0, 100) + '...',
+      match_role: m.role
+    }];
+  });
 };
 
 // ========== LEARNING TRACKS ==========
@@ -587,14 +597,8 @@ export const exportUserData = async (profileId) => {
   const studyPlan = await getStudyPlan(profileId);
   const subjects = await db.subjects.where('created_at').reverse().toArray();
   const allQbanks = await db.question_banks.toArray();
-  const allProgress = {};
-  
-  // Get progress for each subject
-  for (const subject of subjects) {
-    const progress = await getSubjectProgress(subject.id);
-    allProgress[subject.id] = progress;
-  }
-  
+  const allProgress = await getSubjectsProgress(subjects.map(s => s.id));
+
   const exportData = {
     profile,
     studyPlan,

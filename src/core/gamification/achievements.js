@@ -33,8 +33,7 @@ export const ACHIEVEMENTS = [
     icon_name: 'TerminalSquare',
     xp_reward: 500,
     condition_checker: async (userId) => {
-      const problems = await db.coding_problems.toArray();
-      const solved = problems.filter(p => p.status === 'solved').length;
+      const solved = await db.coding_problems.where('status').equals('solved').count();
       return solved >= 25;
     }
   },
@@ -71,16 +70,20 @@ export const ACHIEVEMENTS = [
     icon_name: 'BookOpen',
     xp_reward: 500,
     condition_checker: async (userId) => {
-      const subjects = await db.subjects.toArray();
-      for (const subject of subjects) {
-        const units = await db.units.where('subject_id').equals(subject.id).toArray();
-        const topicIds = units.map(u => u.id);
-        const topics = await db.topics.where('unit_id').anyOf(topicIds).toArray();
-        if (topics.length === 0) continue;
-        const topicsWithContent = topics.filter(t => t.has_content === 1);
-        if (topicsWithContent.length === topics.length) {
-          return true; // All topics in this subject have content
+      const [units, topics] = await Promise.all([db.units.toArray(), db.topics.toArray()]);
+      const subjectByUnit = new Map(units.map(u => [u.id, u.subject_id]));
+      const topicCountBySubject = new Map();
+      const studiedCountBySubject = new Map();
+      for (const topic of topics) {
+        const subjectId = subjectByUnit.get(topic.unit_id);
+        if (!subjectId) continue;
+        topicCountBySubject.set(subjectId, (topicCountBySubject.get(subjectId) || 0) + 1);
+        if (topic.has_content === 1) {
+          studiedCountBySubject.set(subjectId, (studiedCountBySubject.get(subjectId) || 0) + 1);
         }
+      }
+      for (const [subjectId, total] of topicCountBySubject) {
+        if (studiedCountBySubject.get(subjectId) === total) return true;
       }
       return false;
     }
@@ -92,12 +95,12 @@ export const ACHIEVEMENTS = [
     icon_name: 'FileText',
     xp_reward: 300,
     condition_checker: async (userId) => {
-      const qbanks = await db.question_banks.toArray();
-      for (const qb of qbanks) {
-        const questions = await db.questions.where('bank_id').equals(qb.id).toArray();
-        if (questions.length >= 10) {
-          return true;
-        }
+      const questions = await db.questions.toArray();
+      const countByBank = new Map();
+      for (const q of questions) {
+        const count = (countByBank.get(q.bank_id) || 0) + 1;
+        if (count >= 10) return true;
+        countByBank.set(q.bank_id, count);
       }
       return false;
     }
@@ -109,9 +112,8 @@ export const ACHIEVEMENTS = [
     icon_name: 'CheckCircle2',
     xp_reward: 100,
     condition_checker: async (userId) => {
-      const topics = await db.topics.toArray();
-      const topicsWithContent = topics.filter(t => t.has_content === 1);
-      return topicsWithContent.length > 0;
+      const count = await db.topics.where('has_content').equals(1).count();
+      return count > 0;
     }
   },
   {

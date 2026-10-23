@@ -12,6 +12,32 @@ import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
 import QuestionVariantGenerator from '../../components/MockExamSimulator/QuestionVariantGenerator';
 import './QuestionBankView.css';
 
+const REMARK_PLUGINS = [remarkGfm];
+
+const STREAMING_COMPONENTS = {
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return (
+        <pre className={className} style={{ margin: '16px 0', padding: '16px', background: 'var(--bg-hover)', borderRadius: '8px', overflowX: 'auto' }}>
+          <code className={className} {...props}>{children}</code>
+        </pre>
+      );
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
+const ANSWER_COMPONENTS = {
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
 export default function QuestionBankView() {
   const { bankId } = useParams();
   const navigate = useNavigate();
@@ -66,8 +92,12 @@ export default function QuestionBankView() {
 
     try {
       const messages = getQuestionAnswerPrompt(question.text, question.marks, subject?.title || '', detailLevel);
-      
+
+      let lastStreamUpdate = 0;
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
+        const now = Date.now();
+        if (now - lastStreamUpdate < 150) return;
+        lastStreamUpdate = now;
         setStreamingStreamText(textSoFar);
       });
 
@@ -227,23 +257,8 @@ export default function QuestionBankView() {
                     ) : (
                       <div className="markdown-body">
                         <MarkdownRenderer 
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            code({node, inline, className, children, ...props}) {
-                              const match = /language-(\w+)/.exec(className || '')
-                              if (!inline && match && match[1] === 'mermaid') {
-                                if (isActive) {
-                                  return (
-                                    <pre className={className} style={{ margin: '16px 0', padding: '16px', background: 'var(--bg-hover)', borderRadius: '8px', overflowX: 'auto' }}>
-                                      <code className={className} {...props}>{children}</code>
-                                    </pre>
-                                  );
-                                }
-                                return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
-                              }
-                              return <code className={className} {...props}>{children}</code>
-                            }
-                          }}
+                          remarkPlugins={REMARK_PLUGINS}
+                          components={STREAMING_COMPONENTS}
                         >
                           {streamingStreamText}
                         </MarkdownRenderer>
@@ -258,16 +273,8 @@ export default function QuestionBankView() {
                     <div className="answer-badge"><CheckCircle2 size={16} /> Generated Answer</div>
                     <div className="markdown-body">
                       <MarkdownRenderer 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({node, inline, className, children, ...props}) {
-                            const match = /language-(\w+)/.exec(className || '')
-                            if (!inline && match && match[1] === 'mermaid') {
-                              return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
-                            }
-                            return <code className={className} {...props}>{children}</code>
-                          }
-                        }}
+                        remarkPlugins={REMARK_PLUGINS}
+                        components={ANSWER_COMPONENTS}
                       >
                         {selectedQuestion.answer}
                       </MarkdownRenderer>
