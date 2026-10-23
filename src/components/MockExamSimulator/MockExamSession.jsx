@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Clock, ChevronLeft, ChevronRight, CheckCircle, AlertTriangle } from 'lucide-react';
 import * as repository from '../../data/repository';
 import { generateQuestionVariant } from '../../core/api/aiService';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import './MockExam.css';
 
 const MockExamSession = () => {
@@ -138,9 +139,11 @@ const MockExamSession = () => {
   if (loading) {
     return (
       <div className="mock-exam-loading fullscreen">
-        <div className="pulse-loader"></div>
-        <p>Generating Exam Environment...</p>
-        <small>Including AI variants if selected.</small>
+        <GeneratingState
+          size="lg"
+          label="Preparing your exam"
+          hint="Mixing questions and AI variants into a timed session."
+        />
       </div>
     );
   }

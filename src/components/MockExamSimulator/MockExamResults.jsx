@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { analyzeMockExamPerformance } from '../../core/api/aiService';
 import MarkdownRenderer from '../MarkdownRenderer/MarkdownRenderer';
-import { CheckCircle, AlertTriangle, ArrowLeft, RefreshCcw } from 'lucide-react';
+import GeneratingState from '../GeneratingState/GeneratingState';
+import { CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import * as repository from '../../data/repository';
 import './MockExam.css';
 
@@ -64,8 +65,10 @@ const MockExamResults = () => {
           <h2><CheckCircle size={24} className="icon-success" /> Performance Analysis</h2>
           {loading ? (
             <div className="analysis-loading">
-              <RefreshCcw className="spin-icon" size={32} />
-              <p>AI is grading your exam...</p>
+              <GeneratingState
+                label="Grading your exam"
+                hint="Reviewing each answer and spotting patterns."
+              />
             </div>
           ) : error ? (
             <div className="analysis-error">

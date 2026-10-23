@@ -11,6 +11,7 @@ import {
 } from '../../data/repository';
 import { callOpenRouter, generateFlashcardsPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import { ArrowLeft, ArrowRight, RotateCcw, Loader, Copy, Trash2, Play, BrainCircuit } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
@@ -167,11 +168,11 @@ export default function FlashcardsStudy() {
       )}
 
       {isGenerating && (
-        <div className="empty-state">
-          <Loader size={64} className="spin-icon empty-icon" />
-          <h2>Generating Flashcards...</h2>
-          <p>Extracting high-yield concepts from the topic. This takes a few seconds.</p>
-        </div>
+        <GeneratingState
+          size="lg"
+          label="Generating flashcards"
+          hint="Extracting high-yield concepts from this topic. This usually takes a few seconds."
+        />
       )}
 
       {deck && flashcards.length > 0 && !isGenerating && (

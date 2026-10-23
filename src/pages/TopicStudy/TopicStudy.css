@@ -59,10 +59,6 @@
   font-size: 0.95rem;
 }
 
-.spin-icon {
-  animation: spin 1s linear infinite;
-}
-
 /* Notes panel */
 .notes-panel {
   padding: 20px;

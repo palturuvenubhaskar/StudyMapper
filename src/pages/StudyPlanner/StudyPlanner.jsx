@@ -5,6 +5,7 @@ import { generateAdaptivePlan, triggerPanicMode } from '../../core/planner/adapt
 import { downloadIcsFile } from '../../core/planner/icalExport';
 import { Calendar, RefreshCw, Loader, AlertTriangle, Download, BookOpen } from 'lucide-react';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import './StudyPlanner.css';
 
 export default function StudyPlanner() {
@@ -207,10 +208,10 @@ export default function StudyPlanner() {
 
         <div className="planner-main">
           {isGenerating ? (
-             <div className="empty-state" style={{ marginTop: '40px' }}>
-                <Loader size={48} className="spin-icon empty-icon" />
-                <h3>Generating your adaptive plan...</h3>
-             </div>
+            <GeneratingState
+              label="Building your adaptive plan"
+              hint="Balancing difficulty, deadlines, and your available study days."
+            />
           ) : schedule ? (
             <div className="premium-planner-card">
               <h2 className="card-title-premium">Day-by-Day Schedule</h2>

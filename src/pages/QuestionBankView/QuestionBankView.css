@@ -311,35 +311,6 @@
   margin-bottom: 12px;
 }
 
-/* Thinking Indicator */
-.thinking-indicator {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  padding: 16px 0;
-  animation: pulse 1.5s infinite;
-}
-
-.sparkle-icon {
-  font-size: 1.4rem;
-  animation: spin-pulse 2s infinite linear;
-}
-
-@keyframes spin-pulse {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; }
-  50% { transform: scale(1.2) rotate(180deg); opacity: 0.7; }
-  100% { transform: scale(1) rotate(360deg); opacity: 1; }
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
 @media (max-width: 768px) {
   .qb-view-container { padding: 16px; }
   .qb-view-hero { flex-direction: column; padding: 24px; align-items: flex-start; }

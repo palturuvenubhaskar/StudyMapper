@@ -1,5 +1,6 @@
-import { X, Sparkles, Loader } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRenderer';
+import GeneratingState from '../../../components/GeneratingState/GeneratingState';
 import remarkGfm from 'remark-gfm';
 
 export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyzing, mode }) {
@@ -30,9 +31,7 @@ export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyz
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'var(--bg-root)' }}>
         <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           {isAnalyzing && !streamContent && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
-              <Loader className="spinner" size={16} /> Thinking...
-            </div>
+            <GeneratingState inline label="Thinking" hint="Reading your code and the problem." />
           )}
           
           <div className="markdown-body" style={{ fontSize: '14px' }}>

@@ -4,6 +4,7 @@ import { extractTextFromFile } from '../../core/ocr/fileParserService';
 import { extractQuestionsFromText } from '../../core/api/aiService';
 import { createQuestionBank } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import { ArrowLeft, Upload, FileText, Check, Loader, Plus, Trash2, Edit2 } from 'lucide-react';
 import './CreateQuestionBank.css';
 
@@ -157,10 +158,9 @@ export default function CreateQuestionBank() {
               </div>
             ))}
             {processing && (
-               <div className="glass-card question-item" style={{ justifyContent: 'center', padding: '2rem', gap: '1rem', color: 'var(--text-secondary)' }}>
-                 <Loader size={24} className="spin-icon" color="var(--accent-brand)" />
-                 <span>AI is extracting questions...</span>
-               </div>
+              <div className="glass-card question-item">
+                <GeneratingState inline label="Extracting questions" hint="AI is reading the document and structuring each question." />
+              </div>
             )}
             
             {!processing && (

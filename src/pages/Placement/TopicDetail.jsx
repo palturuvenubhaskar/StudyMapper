@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../../data/db';
 import { callOpenRouterStream } from '../../core/api/aiService';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
+import GeneratingState, { GeneratingDots } from '../../components/GeneratingState/GeneratingState';
 import './LearnMode.css';
 
 export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
@@ -198,8 +199,8 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
           <span className="difficulty-badge">{topic.difficulty}</span>
           <span><Clock size={14} /> {topic.estimated} min read</span>
           {isGenerating ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)' }}>
-              <Sparkles size={14} className="spin" /> Generating...
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              <GeneratingDots size="sm" /> Generating
             </span>
           ) : (
             <span><BookOpen size={14} /> AI Generated</span>
@@ -225,7 +226,11 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
       <div className="topic-content-area">
         {activeSection === 'explanation' && content && (
           <div className="content-section">
-            <MarkdownRenderer>{content.content_markdown || (isGenerating ? 'Thinking...' : '')}</MarkdownRenderer>
+            {content.content_markdown ? (
+              <MarkdownRenderer>{content.content_markdown}</MarkdownRenderer>
+            ) : isGenerating ? (
+              <GeneratingState label="Thinking" hint="Drafting a clear explanation for this topic." />
+            ) : null}
           </div>
         )}
         

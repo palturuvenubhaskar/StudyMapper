@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generateFlashcardMnemonic } from '../../core/api/aiService';
-import { Lightbulb, Loader2 } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import MarkdownRenderer from '../MarkdownRenderer/MarkdownRenderer';
 
 const MnemonicGenerator = ({ flashcard }) => {
@@ -31,10 +32,11 @@ const MnemonicGenerator = ({ flashcard }) => {
       )}
 
       {loading && (
-        <div style={{ color: '#6b7280' }}>
-          <Loader2 className="spin-icon" size={24} style={{ margin: '0 auto' }} />
-          <p style={{ marginTop: '0.5rem' }}>AI is brainstorming a weird story...</p>
-        </div>
+        <GeneratingState
+          size="sm"
+          label="Brainstorming a memory hook"
+          hint="Turning this card into a weird little story."
+        />
       )}
 
       {error && <div style={{ color: '#ef4444' }}>{error}</div>}

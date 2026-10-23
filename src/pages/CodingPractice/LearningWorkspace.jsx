@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getLearningLessonById, updateLearningLesson } from '../../data/repository';
 import { analyzeCodingSolutionPrompt, callOpenRouterStream, generateLearningLessonPrompt, extractJson } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, Play, Loader, Code2, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowLeft, Play, Loader, Code2, BookOpen } from 'lucide-react';
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditorPanel from './components/CodeEditorPanel';
 import './CodingPractice.css';
@@ -60,7 +61,7 @@ export default function LearningWorkspace() {
                // Replace escaped newlines with actual newlines for markdown rendering
                setStreamedTheory(theoryMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
             } else {
-               setStreamedTheory("Generating lesson content...");
+               setStreamedTheory("");
             }
           });
 
@@ -183,12 +184,18 @@ export default function LearningWorkspace() {
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                   {generatingLesson ? (
                     <div className="markdown-body">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--accent-brand)' }}>
-                         <Sparkles size={24} className="spin-icon" />
-                         <h2 style={{ margin: 0, color: 'var(--accent-brand)' }}>Generating Lesson...</h2>
-                      </div>
-                      <MarkdownRenderer remarkPlugins={[remarkGfm]}>{streamedTheory}</MarkdownRenderer>
-                      <span className="cursor-blink">|</span>
+                      {streamedTheory ? (
+                        <>
+                          <MarkdownRenderer remarkPlugins={[remarkGfm]}>{streamedTheory}</MarkdownRenderer>
+                          <span className="cursor-blink">|</span>
+                        </>
+                      ) : (
+                        <GeneratingState
+                          inline
+                          label="Writing your lesson"
+                          hint="Theory, examples, and an exercise are on the way."
+                        />
+                      )}
                     </div>
                   ) : activeTab === 'theory' ? (
                     <div className="markdown-body">

@@ -4,6 +4,7 @@ import { db } from '../../data/db';
 import { getLatestTopicContent, saveTopicContent, recordTopicOpened, isTopicBookmarked, addBookmark, deleteBookmark, getBookmarksForTopic, getNotesForTopic, addNote, updateNote, deleteNote } from '../../data/repository';
 import { callOpenRouterStream, getTopicNotesPrompt, extractJson, generatePodcastScriptPrompt, generateQuickQuizPrompt, generateConceptWebPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download, Star, Volume2, Mic, CheckSquare, GitBranch, Pause, Square, Play, X } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
@@ -665,8 +666,7 @@ export default function TopicStudy() {
 
       {streaming && (
         <div className="stream-indicator-bar">
-          <div className="spinner"></div>
-          <span>AI is generating notes — sections appear as they're ready</span>
+          <GeneratingState inline label="Generating notes" hint="Sections appear as they're ready." />
         </div>
       )}
 
@@ -731,7 +731,7 @@ export default function TopicStudy() {
             <button className="btn btn-ghost btn-icon" onClick={() => setShowPodcast(false)}><X size={16}/></button>
           </div>
           {isGeneratingPodcast && !podcastScript && (
-            <div className="loading-container"><Loader className="spin-icon" /> Generating script...</div>
+            <GeneratingState label="Writing the podcast script" hint="Turning this topic into a two-host conversation." />
           )}
           <div className="markdown-body">
             <MarkdownRenderer>{podcastScript}</MarkdownRenderer>
@@ -747,7 +747,7 @@ export default function TopicStudy() {
             <button className="btn btn-ghost btn-icon" onClick={() => setShowConceptWeb(false)}><X size={16}/></button>
           </div>
           {isGeneratingConceptWeb && !conceptWeb && (
-            <div className="loading-container"><Loader className="spin-icon" /> Generating mindmap...</div>
+            <GeneratingState label="Mapping the concept web" hint="Connecting the key ideas in this topic." />
           )}
           {conceptWeb && (
             <div className="mindmap-container">

@@ -4,6 +4,7 @@ import { getStudentProfile, saveStudentProfile, getRoadmapForProfile, createRoad
 import { callOpenRouter, generateRoadmapPrompt, extractJson } from '../../core/api/aiService';
 import { ALL_ROADMAPS } from './data/roadmapData';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import ProfileSetup from './ProfileSetup';
 import RoadmapBrowser from './RoadmapBrowser';
 import RoadmapDetail from './RoadmapDetail';
@@ -183,7 +184,7 @@ export default function SkillRoadmap() {
   }
 
   // Custom AI Roadmap view (legacy)
-  if (loading) return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
+  if (loading) return <div className="loading-container"><GeneratingState label="Loading your roadmap" /></div>;
 
   return (
     <div className="skill-roadmap-page">

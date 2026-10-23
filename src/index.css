@@ -520,6 +520,11 @@ textarea {
   animation: spin 0.8s linear infinite;
 }
 
+.spin,
+.spin-icon {
+  animation: spin 0.85s linear infinite;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

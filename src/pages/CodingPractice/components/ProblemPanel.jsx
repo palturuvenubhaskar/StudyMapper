@@ -1,4 +1,5 @@
 import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRenderer';
+import { GeneratingDots } from '../../../components/GeneratingState/GeneratingState';
 import remarkGfm from 'remark-gfm';
 import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb, FileText } from 'lucide-react';
 import { useState } from 'react';
@@ -155,7 +156,7 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
             <div className="generating-banner-content">
               <div className="generating-banner-title">
                 Generating Problem
-                <span className="generating-dots"><span>.</span><span>.</span><span>.</span></span>
+                <GeneratingDots size="sm" />
               </div>
               <div className="generating-progress-track">
                 <div className="generating-progress-fill" style={{ width: `${progress}%` }} />

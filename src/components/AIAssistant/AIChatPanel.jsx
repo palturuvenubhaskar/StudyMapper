@@ -7,6 +7,7 @@ import { callAIAssistantStream } from '../../core/api/aiService';
 import { buildAIContext } from '../../core/api/aiContextHelper';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '../ToastProvider/ToastProvider';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import MermaidRenderer from '../MarkdownRenderer/MermaidRenderer';
 
 export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated, messages, setMessages }) {
@@ -170,26 +171,30 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
           {isGenerating && (
             <div className="ai-message assistant">
               <div className="ai-avatar">
-                <Loader size={16} className="spin-icon" />
+                <Sparkles size={16} />
               </div>
               <div className="ai-message-bubble">
-                <div className="markdown-body">
-                  <MarkdownRenderer 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      code({node, inline, className, children, ...props}) {
-                        const match = /language-(\w+)/.exec(className || '')
-                        if (!inline && match && match[1] === 'mermaid') {
-                          return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
+                {streamingText ? (
+                  <div className="markdown-body">
+                    <MarkdownRenderer
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({node, inline, className, children, ...props}) {
+                          const match = /language-(\w+)/.exec(className || '')
+                          if (!inline && match && match[1] === 'mermaid') {
+                            return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />
+                          }
+                          return <code className={className} {...props}>{children}</code>
                         }
-                        return <code className={className} {...props}>{children}</code>
-                      }
-                    }}
-                  >
-                    {streamingText || '...'}
-                  </MarkdownRenderer>
-                  <span className="cursor-blink" style={{ display: 'inline-block', width: '8px', height: '16px', background: '#e2e2e2', marginLeft: '4px', animation: 'blink 1s step-start infinite' }}></span>
-                </div>
+                      }}
+                    >
+                      {streamingText}
+                    </MarkdownRenderer>
+                    <span className="cursor-blink" style={{ display: 'inline-block', width: '8px', height: '16px', background: '#e2e2e2', marginLeft: '4px', animation: 'blink 1s step-start infinite' }}></span>
+                  </div>
+                ) : (
+                  <GeneratingState inline label="Thinking" hint="Checking your notes and recent activity." />
+                )}
               </div>
             </div>
           )}

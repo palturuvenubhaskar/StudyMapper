@@ -4,6 +4,7 @@ import { extractSyllabusFromText, extractSyllabusFromImage } from '../../core/ap
 import { extractTextFromFile } from '../../core/ocr/fileParserService';
 import { saveSyllabus } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import { v4 as uuidv4 } from 'uuid';
 import { Upload, Type, ArrowLeft, Loader, Plus, Trash2, GripVertical, Check, Edit3, FileText } from 'lucide-react';
 import './CreateSubject.css';
@@ -263,20 +264,15 @@ export default function CreateSubject() {
     return (
       <div className="create-page">
         <div className="loading-container">
-          <div className="spinner spinner-lg"></div>
           {!aiProcessing ? (
             <>
-              <h3>Extracting text from image...</h3>
+              <GeneratingState size="lg" label="Reading your file" hint={`${ocrProgress}% complete`} />
               <div className="progress-bar" style={{ width: '300px' }}>
                 <div className="progress-bar-fill" style={{ width: `${ocrProgress}%` }}></div>
               </div>
-              <p>{ocrProgress}% complete</p>
             </>
           ) : (
-            <>
-              <h3>AI is parsing your syllabus...</h3>
-              <p>Identifying subjects, units, and topics</p>
-            </>
+            <GeneratingState size="lg" label="Parsing your syllabus" hint="Identifying subjects, units, and topics." />
           )}
         </div>
       </div>
@@ -383,9 +379,8 @@ export default function CreateSubject() {
           </div>
         ))}
         {aiProcessing && (
-          <div className="glass-card review-unit" style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-            <Loader size={24} className="spin-icon" color="var(--accent-brand)" />
-            <span>AI is parsing units and topics...</span>
+          <div className="glass-card review-unit">
+            <GeneratingState inline label="Parsing units and topics" hint="This usually takes a few seconds." />
           </div>
         )}
       </div>

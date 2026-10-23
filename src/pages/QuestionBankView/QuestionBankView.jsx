@@ -4,7 +4,8 @@ import { getQuestionBankById, getQuestionsForBank, updateQuestionAnswer, updateQ
 import { callOpenRouterStream, getQuestionAnswerPrompt } from '../../core/api/aiService';
 import { db } from '../../data/db';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, Play, Loader, FileText, CheckCircle2, Edit2, Check, X, Download } from 'lucide-react';
+import GeneratingState, { GeneratingDots } from '../../components/GeneratingState/GeneratingState';
+import { ArrowLeft, Play, FileText, CheckCircle2, Edit2, Check, X, Download } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
@@ -214,7 +215,7 @@ export default function QuestionBankView() {
                       />
                     </div>
                   )}
-                  {isActive && <div className="spinner"></div>}
+                  {isActive && <GeneratingDots size="sm" />}
                 </div>
                 
                 <h3 className="qb-question-text">{selectedQuestion.text}</h3>
@@ -222,9 +223,7 @@ export default function QuestionBankView() {
                 {isActive && (
                   <div className="qb-answer-streaming" ref={activeQRef}>
                     {streamingStreamText.length === 0 ? (
-                      <div className="thinking-indicator">
-                        Thinking...
-                      </div>
+                      <GeneratingState inline label="Thinking" hint="Working through this question." />
                     ) : (
                       <div className="markdown-body">
                         <MarkdownRenderer 

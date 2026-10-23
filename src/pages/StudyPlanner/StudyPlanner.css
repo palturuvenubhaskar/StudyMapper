@@ -302,14 +302,7 @@
 }
 
 .spin-icon {
-  animation: spin 2s linear infinite;
   color: #6366f1;
-}
-
-@keyframes spin {
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 @container planner (max-width: 1024px) {

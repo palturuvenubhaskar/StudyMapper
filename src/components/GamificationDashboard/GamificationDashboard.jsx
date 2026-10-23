@@ -7,6 +7,7 @@ import StreakFlame from './StreakFlame';
 import { Target, CheckCircle2, Circle, Trophy, Share2 } from 'lucide-react';
 import { ACHIEVEMENTS } from '../../core/gamification/achievements';
 import { useToast } from '../ToastProvider/ToastProvider';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import './GamificationDashboard.css';
 
 export default function GamificationDashboard({ userId = 'guest' }) {
@@ -40,7 +41,11 @@ export default function GamificationDashboard({ userId = 'guest' }) {
   const toast = useToast();
 
   if (loading || !profile) {
-    return <div className="gamification-loading"><div className="spinner"></div></div>;
+    return (
+      <div className="gamification-loading">
+        <GeneratingState inline label="Loading your progress" />
+      </div>
+    );
   }
 
   const progress = getXPProgress(profile.total_xp, profile.current_level);

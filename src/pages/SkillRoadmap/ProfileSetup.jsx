@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { GeneratingDots } from '../../components/GeneratingState/GeneratingState';
 
 export default function ProfileSetup({ onSubmit, loading, existingProfile }) {
   const [topic, setTopic] = useState(existingProfile?.career_goal || '');
@@ -29,7 +30,7 @@ export default function ProfileSetup({ onSubmit, loading, existingProfile }) {
           disabled={!topic.trim() || loading}
         >
           {loading ? (
-            <><div className="spinner" style={{ width: 18, height: 18 }}></div> Generating Roadmap...</>
+            <><GeneratingDots size="sm" /> Generating Roadmap...</>
           ) : (
             <><Sparkles size={18} /> Generate My Roadmap</>
           )}

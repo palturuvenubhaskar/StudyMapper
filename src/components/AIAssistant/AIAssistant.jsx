@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { getAISessions, createAISession, getAIMessages, deleteAISession, updateAISession } from '../../data/repository';
 import { generateMorningDigest } from '../../core/analytics/morningDigest';
 import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, Maximize2, Minimize2, GraduationCap, AlertCircle, Sparkles } from 'lucide-react';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import AIChatPanel from './AIChatPanel';
 import './AIAssistant.css';
 
@@ -418,10 +419,10 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
                     )}
                   </>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', opacity: 0.7 }}>
-                    <GraduationCap size={48} style={{ marginBottom: '16px', color: 'var(--text-muted)' }} />
-                    <p>Generating your personalized morning digest...</p>
-                  </div>
+                  <GeneratingState
+                    label="Preparing your morning digest"
+                    hint="Reviewing your subjects, streaks, and tasks for today."
+                  />
                 )}
               </div>
               

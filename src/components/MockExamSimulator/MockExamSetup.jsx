@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Play, Clock, FileQuestion, BookOpen, AlertCircle } from 'lucide-react';
 import * as repository from '../../data/repository';
+import GeneratingState from '../GeneratingState/GeneratingState';
 import './MockExam.css';
 
 const MockExamSetup = () => {
@@ -47,7 +48,11 @@ const MockExamSetup = () => {
   };
 
   if (loading) {
-    return <div className="mock-exam-loading">Loading configuration...</div>;
+    return (
+      <div className="mock-exam-loading">
+        <GeneratingState label="Loading configuration" />
+      </div>
+    );
   }
 
   if (!bank) {
