@@ -69,16 +69,17 @@ const CATEGORY_CONFIG = {
 };
 
 export default function LearnMode() {
-  const { categoryId } = useParams();
+  const { categoryId, topicId } = useParams();
   const navigate = useNavigate();
   const config = CATEGORY_CONFIG[categoryId];
   const { saveState, loadState } = usePlacementState(`learn-${categoryId}`);
   
-  useDocumentTitle(`Learn — ${config?.name || 'Placement Prep'}`);
+  useDocumentTitle(`Learn - ${config?.name || 'Placement Prep'}`);
   
-  // Restore saved state on mount
+  // Restore saved state on mount, preferring a topic from the URL
   const savedState = loadState();
-  const [selectedTopic, setSelectedTopic] = useState(savedState?.selectedTopic || null);
+  const urlTopic = topicId ? config?.topics.find(t => t.id === topicId) : null;
+  const [selectedTopic, setSelectedTopic] = useState(urlTopic || savedState?.selectedTopic || null);
   const [topicsProgress, setTopicsProgress] = useState({});
   const [filter, setFilter] = useState(savedState?.filter || 'all'); // all | easy | medium | hard | completed | pending
 
@@ -128,7 +129,10 @@ export default function LearnMode() {
         categoryId={categoryId}
         topic={selectedTopic}
         config={config}
-        onBack={() => setSelectedTopic(null)}
+        onBack={() => {
+          setSelectedTopic(null);
+          if (topicId) navigate(`/placement/${categoryId}/learn`, { replace: true });
+        }}
         onComplete={loadProgress}
       />
     );

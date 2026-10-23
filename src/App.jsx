@@ -39,7 +39,6 @@ const AptitudePractice = lazy(() => import('./pages/Placement/AptitudePractice')
 const TechnicalInterview = lazy(() => import('./pages/Placement/TechnicalInterview'));
 const HRInterview = lazy(() => import('./pages/Placement/HRInterview'));
 const LearnMode = lazy(() => import('./pages/Placement/LearnMode'));
-const TopicDetail = lazyNamed(() => import('./pages/Placement/TopicDetail'), 'TopicDetail');
 const CodingPractice = lazy(() => import('./pages/CodingPractice/CodingPractice'));
 const CodingWorkspace = lazy(() => import('./pages/CodingPractice/CodingWorkspace'));
 const LearningWorkspace = lazy(() => import('./pages/CodingPractice/LearningWorkspace'));
@@ -185,7 +184,7 @@ function AppContent() {
               <Route path="/roadmap/:roadmapId" element={<SkillRoadmap />} />
               <Route path="/placement" element={<Placement />} />
               <Route path="/placement/:categoryId/learn" element={<LearnMode />} />
-              <Route path="/placement/:categoryId/learn/:topicId" element={<TopicDetail />} />
+              <Route path="/placement/:categoryId/learn/:topicId" element={<LearnMode />} />
               <Route path="/placement/aptitude" element={<AptitudePractice />} />
               <Route path="/placement/aptitude/test" element={<AptitudePractice />} />
               <Route path="/placement/technical" element={<TechnicalInterview />} />
