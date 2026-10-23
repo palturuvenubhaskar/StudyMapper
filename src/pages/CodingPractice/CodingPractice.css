@@ -676,7 +676,7 @@
   padding: 8px 12px;
   text-align: left;
   border-bottom: 2px solid var(--border-color);
-  color: var(--primary);
+  color: var(--accent-brand);
 }
 
 .debug-trace td {

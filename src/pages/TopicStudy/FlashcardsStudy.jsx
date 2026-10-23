@@ -177,7 +177,7 @@ export default function FlashcardsStudy() {
       {deck && flashcards.length > 0 && !isGenerating && (
         <div className="deck-overview">
           <div className="glass-card overview-card">
-            <BrainCircuit size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+            <BrainCircuit size={48} style={{ color: 'var(--accent-brand)', marginBottom: '1rem' }} />
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{deck.title}</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Spaced Repetition Active Recall</p>
 

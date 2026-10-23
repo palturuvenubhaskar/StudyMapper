@@ -1,15 +1,12 @@
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, BookOpen, Search, Plus, FileText, ChevronDown, ChevronRight, Book, Moon, Sun, Settings, User, Bot } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../data/db';
+import { LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -24,9 +21,9 @@ export default function Sidebar() {
   return (
     <aside className="app-sidebar">
       <div className="sidebar-header">
-        <div className="brand-wordmark" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <button type="button" className="brand-wordmark" onClick={() => navigate('/')}>
           <span className="brand-name">StudyMapper</span>
-        </div>
+        </button>
       </div>
 
       <div className="sidebar-nav-scrollable">
@@ -56,6 +53,7 @@ export default function Sidebar() {
                   <button
                     key={item.path}
                     className={`nav-item ${!item.isAction && isActive(item.path, location.pathname) ? 'active' : ''}`}
+                    aria-current={isActive(item.path, location.pathname) ? 'page' : undefined}
                     onClick={() => {
                       if (item.isAction) {
                         window.dispatchEvent(new CustomEvent('toggle-ai-coach'));
@@ -76,7 +74,7 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-footer-profile">
-        <div className="profile-card" onClick={() => navigate('/settings')}>
+        <button type="button" className="profile-card" onClick={() => navigate('/settings')} aria-label="Open account settings">
           <div className="profile-avatar">
             <img 
               src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`} 
@@ -91,7 +89,7 @@ export default function Sidebar() {
           <div className="profile-info">
             <span className="profile-name">{user?.name || 'User'}</span>
           </div>
-        </div>
+        </button>
       </div>
 
     </aside>

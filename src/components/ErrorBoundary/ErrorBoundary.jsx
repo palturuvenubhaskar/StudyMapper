@@ -1,5 +1,6 @@
-import { Component } from 'react';
-import { InternalError } from '../../pages/Errors/InternalError';
+import { Component, lazy, Suspense } from 'react';
+
+const InternalError = lazy(() => import('../../pages/Errors/InternalError').then((module) => ({ default: module.InternalError })));
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -24,11 +25,13 @@ export class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <InternalError 
-          error={this.state.error} 
-          errorInfo={this.state.errorInfo}
-          onReset={this.handleReset}
-        />
+        <Suspense fallback={null}>
+          <InternalError 
+            error={this.state.error} 
+            errorInfo={this.state.errorInfo}
+            onReset={this.handleReset}
+          />
+        </Suspense>
       );
     }
     return this.props.children;

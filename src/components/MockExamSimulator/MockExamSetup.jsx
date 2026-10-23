@@ -20,7 +20,7 @@ const MockExamSetup = () => {
     const loadData = async () => {
       try {
         const banks = await repository.getAllQuestionBanks();
-        const currentBank = banks.find(b => b.id === bankId);
+        const currentBank = banks.find(b => String(b.id) === String(bankId));
         setBank(currentBank);
         if (currentBank) {
           const questions = await repository.getQuestionsForBank(currentBank.id);

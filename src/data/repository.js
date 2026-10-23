@@ -199,19 +199,43 @@ export const searchAll = async (query) => {
     results.push({ id: s.id, type: 'subject', title: s.title, snippet: `Subject: ${s.title}` });
   });
 
+  const subjectById = new Map(subjects.map(s => [s.id, s]));
+
   const units = await db.units.toArray();
-  units.filter(u => u.title.toLowerCase().includes(q)).forEach(u => {
-    results.push({ id: u.id, type: 'unit', title: u.title, snippet: `Unit: ${u.title}`, parentId: u.subject_id });
+  units.forEach(u => {
+    const subjectTitle = subjectById.get(u.subject_id)?.title || '';
+    if (!u.title.toLowerCase().includes(q) && !subjectTitle.toLowerCase().includes(q)) return;
+    results.push({ id: u.id, type: 'unit', title: u.title, snippet: `Unit: ${u.title}${subjectTitle ? ` (${subjectTitle})` : ''}`, parentId: u.subject_id });
   });
 
   const topics = await db.topics.toArray();
+  const topicById = new Map(topics.map(t => [t.id, t]));
   topics.filter(t => t.title.toLowerCase().includes(q)).forEach(t => {
     results.push({ id: t.id, type: 'topic', title: t.title, snippet: `Topic: ${t.title}`, parentId: t.unit_id });
   });
 
+  const allTopicContents = await db.topic_contents.toArray();
+  allTopicContents.forEach(c => {
+    if (!JSON.stringify(c.generated_json || {}).toLowerCase().includes(q)) return;
+    const topic = topicById.get(c.topic_id);
+    if (!topic) return;
+    results.push({ id: c.id, type: 'topic-content', title: `Content: ${topic.title}`, snippet: `Content from: ${topic.title}`, parentId: topic.id });
+  });
+
   const notes = await db.notes.toArray();
-  notes.filter(n => n.content.toLowerCase().includes(q)).forEach(n => {
-    results.push({ id: n.id, type: 'note', title: 'Personal Note', snippet: n.content.substring(0, 80), parentId: n.topic_id });
+  notes.forEach(n => {
+    const content = n.content || '';
+    if (!content.toLowerCase().includes(q)) return;
+    const snippet = content.slice(0, 80).trim() + (content.length > 80 ? '…' : '');
+    results.push({ id: n.id, type: 'note', title: 'Personal Note', snippet, parentId: n.topic_id });
+  });
+
+  const allQuestions = await db.questions.toArray();
+  allQuestions.forEach(n => {
+    const text = n.text || '';
+    if (!text.toLowerCase().includes(q)) return;
+    const snippet = text.slice(0, 80).trim() + (text.length > 80 ? '…' : '');
+    results.push({ id: n.id, type: 'question', title: 'Question', snippet, parentId: n.bank_id });
   });
 
   return results;
@@ -232,8 +256,16 @@ export const getSubjectProgress = async (subjectId) => {
   const unitIds = units.map(u => u.id);
   const topics = await db.topics.where('unit_id').anyOf(unitIds).toArray();
   const total = topics.length;
-  const studied = topics.filter(t => t.has_content === 1).length;
-  return total === 0 ? 0 : Math.round((studied / total) * 100);
+  if (total === 0) return 0;
+  
+  let studied = 0;
+  
+  for (const topic of topics) {
+    const contentCount = await db.topic_contents.where('topic_id').equals(topic.id).count();
+    if (contentCount > 0) studied++;
+  }
+  
+  return Math.round((studied / total) * 100);
 };
 
 // ========== QUESTION BANKS ==========
@@ -548,6 +580,33 @@ export const saveStudyPlan = async (profileId, planData) => {
   }
 };
 
+export const exportUserData = async (profileId) => {
+  if (!profileId) return null;
+  
+  const profile = await db.user_settings.where({ user_id: profileId }).first();
+  const studyPlan = await getStudyPlan(profileId);
+  const subjects = await db.subjects.where('created_at').reverse().toArray();
+  const allQbanks = await db.question_banks.toArray();
+  const allProgress = {};
+  
+  // Get progress for each subject
+  for (const subject of subjects) {
+    const progress = await getSubjectProgress(subject.id);
+    allProgress[subject.id] = progress;
+  }
+  
+  const exportData = {
+    profile,
+    studyPlan,
+    subjects,
+    questionBanks: allQbanks,
+    progress: allProgress,
+    exported_at: new Date().toISOString()
+  };
+  
+  return exportData;
+};
+
 // ========== FLASHCARDS ==========
 export const getFlashcardDeckForTopic = async (topicId) => {
   return await db.flashcard_decks.where({ topic_id: topicId }).first();
@@ -586,6 +645,50 @@ export const saveFlashcards = async (deckId, flashcards) => {
 
 export const getFlashcardsForDeck = async (deckId) => {
   return await db.flashcards.where({ deck_id: deckId }).toArray();
+};
+
+// ========== OFFLINE QUEUE ==========
+export const offlineQueue = {
+  queue: [],
+
+  // Add an action to the queue
+  enqueue: async (action, data) => {
+    const entry = {
+      id: uuidv4(),
+      action,
+      data,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+    await db.xp_transactions.add({
+      ...entry,
+      source: 'offline_queue'
+    });
+    offlineQueue.queue.push(entry);
+    return entry.id;
+  },
+
+  // Get all pending queued actions
+  getPending: async () => {
+    return await db.xp_transactions
+      .where('source').equals('offline_queue')
+      .orderBy('created_at')
+      .toArray();
+  },
+
+  // Mark an action as synced
+  markSynced: async (id) => {
+    await db.xp_transactions.update(id, { status: 'synced', synced_at: new Date().toISOString() });
+  },
+
+  // Clear only synced actions
+  clearSynced: async () => {
+    const queued = await offlineQueue.getPending();
+    const syncedIds = queued.filter(p => p.status === 'synced').map(p => p.id);
+    if (syncedIds.length > 0) {
+      await db.xp_transactions.bulkDelete(syncedIds);
+    }
+  }
 };
 
 // ========== AI ROADMAPS ==========

@@ -22,7 +22,7 @@ export function HelpArticle() {
         </Link>
         <h1>{article.title}</h1>
       </div>
-      <div className="help-article-content" style={{ padding: '24px', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+      <div className="help-article-content" style={{ padding: '24px', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '24px' }}>{article.excerpt}</p>
         <div style={{ lineHeight: 1.6, color: 'var(--text-primary)' }}>
           {article.content}

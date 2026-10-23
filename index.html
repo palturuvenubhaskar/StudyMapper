@@ -5,7 +5,7 @@
     <link rel="icon" href="/STUDYMAPPER%20LOGO.png" sizes="any" type="image/png" />
     <link rel="apple-touch-icon" href="/STUDYMAPPER%20LOGO.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#6366f1" />
+    <meta name="theme-color" content="#f8fafc" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,14 +16,6 @@
     <title>StudyMapper - AI Study Companion</title>
   </head>
   <body>
-    <script>
-      window.addEventListener('error', function(e) {
-        document.body.innerHTML = '<div style="color:red;padding:20px;z-index:9999;position:absolute;background:white;width:100%;height:100%;"><h1>Global Error</h1><pre>' + e.error.stack + '</pre></div>';
-      });
-      window.addEventListener('unhandledrejection', function(e) {
-        document.body.innerHTML = '<div style="color:red;padding:20px;z-index:9999;position:absolute;background:white;width:100%;height:100%;"><h1>Unhandled Promise Rejection</h1><pre>' + (e.reason && e.reason.stack ? e.reason.stack : e.reason) + '</pre></div>';
-      });
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

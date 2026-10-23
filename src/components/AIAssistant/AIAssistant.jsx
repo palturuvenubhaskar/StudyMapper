@@ -6,10 +6,50 @@ import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, 
 import AIChatPanel from './AIChatPanel';
 import './AIAssistant.css';
 
-export default function AIAssistant({ userId = 'guest' }) {
+export default function AIAssistant({ userId = 'guest', currentTopic = null, currentActivity = 'general' }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isCoding = location.pathname.startsWith('/coding');
+  const isDashboard = location.pathname === '/';
+  const isPlacement = location.pathname.startsWith('/placement');
+  const isStudyPlanner = location.pathname === '/planner';
+  
+  // Determine context-aware AI actions based on current activity
+  const getContextAwareActions = () => {
+    const baseActions = [
+      { label: 'Study Coaching', onClick: () => setActiveSessionId('new'), description: 'Get personalized study advice' }
+    ];
+    
+    if (currentActivity === 'coding') {
+      return [
+        { label: 'Code Review', onClick: () => setActiveSessionId('new'), description: 'Get feedback on your code' },
+        { label: 'Explain Concept', onClick: () => setActiveSessionId('new'), description: 'Get help understanding a concept' },
+        { label: 'Generate Practice Problem', onClick: () => setActiveSessionId('new'), description: 'Generate a new practice problem' }
+      ];
+    }
+    
+    if (currentActivity === 'placement') {
+      return [
+        { label: 'Mock Interview', onClick: () => setActiveSessionId('new'), description: 'Practice technical interview questions' },
+        { label: 'Review Weak Areas', onClick: () => setActiveSessionId('new'), description: 'Get help with weak topics' }
+      ];
+    }
+    
+    if (currentActivity === 'flashcards') {
+      return [
+        { label: 'Create Flashcards', onClick: () => setActiveSessionId('new'), description: 'Generate flashcards from current topic' },
+        { label: 'Quiz Me', onClick: () => setActiveSessionId('new'), description: 'Test your knowledge on current topic' }
+      ];
+    }
+    
+    if (currentTopic) {
+      return [
+        { label: `Get Help on ${currentTopic}`, onClick: () => setActiveSessionId('new'), description: `Ask AI about ${currentTopic}` }
+      ];
+    }
+    
+    return baseActions;
+  };
   
   const [historyOpen, setHistoryOpen] = useState(false); // Closed by default in panel mode
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -395,6 +435,35 @@ export default function AIAssistant({ userId = 'guest' }) {
                   <MessageSquare size={20} />
                   Start a New Chat
                 </button>
+                
+                {/* Context-aware quick actions */}
+                {currentActivity !== 'general' && (
+                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
+                    <p style={{ margin: '4px 0 8px 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Quick actions:</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {getContextAwareActions().map((action, idx) => (
+                        <button 
+                          key={idx} 
+                          style={{ 
+                            padding: '8px 12px', 
+                            fontSize: '0.75rem', 
+                            background: 'var(--bg-surface-active)', 
+                            border: '1px solid var(--border-light)', 
+                            borderRadius: '4px', 
+                            textAlign: 'left',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setActiveSessionId('new');
+                            // Could optionally auto-focus AI on this topic
+                          }}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

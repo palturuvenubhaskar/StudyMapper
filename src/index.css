@@ -60,6 +60,36 @@
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Legacy aliases: older page styles still reference these names. */
+  --bg-main: var(--bg-surface-active);
+  --bg-card: var(--bg-surface);
+  --bg-primary: var(--bg-root);
+  --bg-secondary: var(--bg-surface-active);
+  --bg-tertiary: var(--bg-surface-active);
+  --bg-hover: var(--bg-surface-active);
+  --surface-hover: var(--bg-surface-hover);
+  --hover-bg: var(--bg-surface-hover);
+  --border: var(--border-light);
+  --border-color: var(--border-strong);
+  --accent: var(--accent-brand);
+  --accent-hover: var(--accent-brand);
+  --text-accent: var(--accent-brand);
+  --font-geist: var(--font-sans);
+  --shadow-glow: 0 0 0 4px var(--accent-brand-soft);
+  --transition-base: var(--transition-fast);
+  --transition-slow: var(--transition-normal);
+  --warning-soft: rgba(245, 158, 11, 0.12);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
 }
 
 [data-theme='light'] {
@@ -187,6 +217,33 @@ a:hover {
   color: var(--accent-brand);
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-brand-soft);
+  color: var(--text-primary);
+}
+
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3000;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: var(--accent-primary-fg);
+  font-weight: 600;
+  transform: translateY(-150%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 option {
   background-color: var(--bg-surface-active);
   color: var(--text-primary);
@@ -242,6 +299,14 @@ option {
   border-radius: var(--radius-2xl);
 }
 
+.route-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: var(--text-muted);
+}
+
 .container {
   width: 100%;
   padding: 40px;
@@ -258,6 +323,7 @@ h6 {
   color: var(--text-primary);
   line-height: 1.2;
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 h1 {
@@ -279,6 +345,14 @@ h4 {
 p {
   color: var(--text-secondary);
   font-weight: 400;
+  text-wrap: pretty;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 /* --- Utilities & Cards --- */
@@ -290,7 +364,8 @@ p {
   box-shadow: var(--shadow-glass);
   border-radius: var(--radius-lg);
   padding: 24px;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast),
+    background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .surface-card:hover {
@@ -311,7 +386,9 @@ p {
   border-radius: var(--radius-md);
   cursor: pointer;
   white-space: nowrap;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-fast), transform var(--transition-fast);
   border: 1px solid transparent;
   user-select: none;
 }
@@ -383,7 +460,8 @@ p {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   outline: none;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .input:focus,
@@ -705,4 +783,22 @@ p {
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Motion & readability --- */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -33,6 +33,12 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .brand-s-logo {
@@ -234,11 +240,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 8px 0;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: opacity var(--transition-normal);
   background: transparent;
   border: none;
+  color: inherit;
+  text-align: left;
 }
 
 .profile-card:hover {

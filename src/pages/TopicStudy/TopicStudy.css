@@ -22,7 +22,26 @@
   font-size: 72px;
   letter-spacing: -2.52px;
   margin-bottom: 32px;
-  color: var(--color-snow-white);
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+@media (max-width: 900px) {
+  .topic-title {
+    font-size: 48px;
+    letter-spacing: -1.5px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topic-study {
+    padding: 40px 20px;
+  }
+
+  .topic-title {
+    font-size: 36px;
+    letter-spacing: -1px;
+  }
 }
 
 /* Streaming indicator */
@@ -36,7 +55,7 @@
   background: var(--bg-hover);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  color: var(--color-bone);
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 

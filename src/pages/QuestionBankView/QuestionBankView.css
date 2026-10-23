@@ -205,11 +205,8 @@
 }
 
 .qb-answer-streaming {
-  margin-top: 16px;
-  padding: 20px;
-  background: var(--bg-hover);
-  border-radius: var(--radius-sm);
-  max-height: 50vh;
+  margin-top: 20px;
+  max-height: 70vh;
   overflow-y: auto;
 }
 .markdown-body pre {
@@ -266,11 +263,7 @@
 }
 
 .qb-answer-final {
-  margin-top: 16px;
-  padding: 24px;
-  background: var(--bg-glass);
-  border-radius: var(--radius-sm);
-  border-top: 3px solid var(--accent-brand);
+  margin-top: 20px;
 }
 
 .answer-badge {

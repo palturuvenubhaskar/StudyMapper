@@ -157,12 +157,14 @@ export default function Login() {
 
           <div className="login-tabs">
             <button 
+              type="button"
               className={`tab-btn ${activeTab === 'email' ? 'active' : ''}`}
               onClick={() => setActiveTab('email')}
             >
               Email
             </button>
             <button 
+              type="button"
               className={`tab-btn ${activeTab === 'mobile' ? 'active' : ''}`}
               onClick={() => setActiveTab('mobile')}
             >
@@ -173,12 +175,16 @@ export default function Login() {
           {activeTab === 'email' && (
             <form className="login-form" onSubmit={handleEmailAuth}>
               <div className="form-group">
-                <label>Email Address</label>
+                <label htmlFor="login-email">Email Address</label>
                 <div className="input-with-icon">
-                  <Mail size={18} />
+                  <Mail size={18} aria-hidden="true" />
                   <input 
+                    id="login-email"
+                    name="email"
                     type="email" 
                     placeholder="you@example.com" 
+                    autoComplete="email"
+                    spellCheck={false}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -187,12 +193,15 @@ export default function Login() {
               </div>
               
               <div className="form-group">
-                <label>Password</label>
+                <label htmlFor="login-password">Password</label>
                 <div className="input-with-icon">
-                  <Lock size={18} />
+                  <Lock size={18} aria-hidden="true" />
                   <input 
+                    id="login-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••" 
+                    autoComplete={isRegistering ? 'new-password' : 'current-password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -203,15 +212,15 @@ export default function Login() {
                     type="button" 
                     className="password-toggle-btn"
                     onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               <button type="submit" className="submit-btn" disabled={isLoading}>
-                {isLoading ? 'Please wait...' : (isRegistering ? 'Create Account' : 'Sign In')} <ArrowRight size={18} />
+                {isLoading ? 'Please wait…' : (isRegistering ? 'Create Account' : 'Sign In')} <ArrowRight size={18} />
               </button>
               
               <button 
@@ -228,13 +237,14 @@ export default function Login() {
           {activeTab === 'mobile' && !showOtp && (
             <form className="login-form" onSubmit={handleSendOtp}>
               <div className="form-group">
-                <label>Mobile Number</label>
+                <label htmlFor="login-mobile">Mobile Number</label>
                 <div className="input-with-icon phone-input-group">
-                  <Phone size={18} />
+                  <Phone size={18} aria-hidden="true" />
                   <select 
                     value={countryCode} 
                     onChange={(e) => setCountryCode(e.target.value)}
                     className="country-code-select"
+                    aria-label="Country code"
                   >
                     <option value="+1">+1 (US/CA)</option>
                     <option value="+44">+44 (UK)</option>
@@ -243,7 +253,11 @@ export default function Login() {
                     {/* Add more common codes as needed */}
                   </select>
                   <input 
+                    id="login-mobile"
+                    name="tel"
                     type="tel" 
+                    inputMode="tel"
+                    autoComplete="tel"
                     placeholder="0000000000" 
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
@@ -255,7 +269,7 @@ export default function Login() {
               <div id="recaptcha-container" style={{ margin: '16px 0' }}></div>
 
               <button type="submit" className="submit-btn" disabled={isLoading}>
-                {isLoading ? 'Sending...' : 'Send OTP'} <ArrowRight size={18} />
+                {isLoading ? 'Sending…' : 'Send OTP'} <ArrowRight size={18} />
               </button>
             </form>
           )}
@@ -263,11 +277,16 @@ export default function Login() {
           {activeTab === 'mobile' && showOtp && (
             <form className="login-form" onSubmit={handleVerifyOtp}>
               <div className="form-group">
-                <label>Enter 6-digit OTP</label>
+                <label htmlFor="login-otp">Enter 6-digit OTP</label>
                 <div className="input-with-icon">
-                  <ShieldCheck size={18} />
+                  <ShieldCheck size={18} aria-hidden="true" />
                   <input 
+                    id="login-otp"
+                    name="otp"
                     type="text" 
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     placeholder="123456" 
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
@@ -277,7 +296,7 @@ export default function Login() {
               </div>
 
               <button type="submit" className="submit-btn" disabled={isLoading}>
-                {isLoading ? 'Verifying...' : 'Verify & Login'} <ArrowRight size={18} />
+                {isLoading ? 'Verifying…' : 'Verify & Login'} <ArrowRight size={18} />
               </button>
               
               <button 

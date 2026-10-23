@@ -4,8 +4,8 @@
   "description": "AI-powered offline learning platform. Convert any syllabus into organized study notes.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#6366f1",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
   "icons": [
     {
       "src": "/STUDYMAPPER%20LOGO.png",

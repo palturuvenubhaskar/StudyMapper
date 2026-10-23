@@ -1,8 +1,9 @@
 .command-palette-overlay {
   position: fixed;
   inset: 0;
-  background: var(--bg-surface-hover);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -71,11 +72,16 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 12px 16px;
-  cursor: pointer;
+  border: 0;
+  background: none;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  transition: all var(--transition-fast);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .command-item:hover,

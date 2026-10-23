@@ -35,12 +35,6 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        // Since we don't have direct access to the setter here in the same way, we rely on the parent closing it
-        // Or if it's already open, we close it.
-        onClose(false);
-      }
       if (e.key === 'Escape' && isOpen) {
         onClose(false);
       }
@@ -58,18 +52,29 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   return (
     <div className="command-palette-overlay" onClick={() => onClose(false)}>
-      <div className="command-palette" onClick={e => e.stopPropagation()}>
+      <div
+        className="command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="command-input-row">
           <Search size={20} className="command-icon" />
           <input
             ref={inputRef}
             className="command-input"
-            placeholder="Search subjects, topics, or jump to..."
+            placeholder="Search subjects, topics, or jump to…"
+            aria-label="Search subjects and topics"
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
-          <button className="btn btn-ghost btn-icon command-close" onClick={() => onClose(false)}>
-            <X size={18} />
+          <button
+            className="btn btn-ghost btn-icon command-close"
+            onClick={() => onClose(false)}
+            aria-label="Close search"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -79,10 +84,10 @@ export default function CommandPalette({ isOpen, onClose }) {
               <div className="command-section">
                 <div className="command-section-title">Subjects</div>
                 {results.subjects.map(s => (
-                  <div key={s.id} className="command-item" onClick={() => navigateTo(`/subject/${s.id}`)}>
-                    <BookOpen size={16} />
+                  <button type="button" key={s.id} className="command-item" onClick={() => navigateTo(`/subject/${s.id}`)}>
+                    <BookOpen size={16} aria-hidden="true" />
                     <span>{s.title}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -91,10 +96,10 @@ export default function CommandPalette({ isOpen, onClose }) {
               <div className="command-section">
                 <div className="command-section-title">Topics</div>
                 {results.topics.map(t => (
-                  <div key={t.id} className="command-item" onClick={() => navigateTo(`/topic/${t.id}`)}>
-                    <Layers size={16} />
+                  <button type="button" key={t.id} className="command-item" onClick={() => navigateTo(`/topic/${t.id}`)}>
+                    <Layers size={16} aria-hidden="true" />
                     <span>{t.title}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

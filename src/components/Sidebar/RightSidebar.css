@@ -58,13 +58,26 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-glass);
   box-shadow: var(--shadow-sm);
-  cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .rs-course-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+.rs-course-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .rs-course-icon {
@@ -80,14 +93,18 @@
 
 .rs-course-info {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .rs-course-title {
+  overflow: hidden;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rs-course-meta {
@@ -167,7 +184,8 @@
   align-items: center;
   justify-content: center;
 }
-.rs-course-item:hover .rs-item-delete-btn {
+.rs-course-item:hover .rs-item-delete-btn,
+.rs-item-delete-btn:focus-visible {
   opacity: 1;
 }
 .rs-item-delete-btn:hover {

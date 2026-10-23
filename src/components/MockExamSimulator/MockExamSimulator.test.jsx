@@ -3,18 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import MockExamSetup from './MockExamSetup';
-import { repository } from '../../data/repository';
+import * as repository from '../../data/repository';
 
-// Mock dependencies
 vi.mock('../../data/repository', () => ({
-  repository: {
-    getQuestionBanks: vi.fn(),
-    getQuestions: vi.fn(),
-    db: {
-      question_variants: { add: vi.fn() },
-      mock_exams: { add: vi.fn(), update: vi.fn() }
-    }
-  }
+  getAllQuestionBanks: vi.fn(),
+  getQuestionsForBank: vi.fn(),
 }));
 
 describe('MockExamSetup', () => {
@@ -23,7 +16,7 @@ describe('MockExamSetup', () => {
   });
 
   it('renders loading state initially', () => {
-    repository.getQuestionBanks.mockResolvedValue([]);
+    repository.getAllQuestionBanks.mockReturnValue(new Promise(() => {}));
     render(
       <MemoryRouter initialEntries={['/mock-exam/setup/1']}>
         <Routes>
@@ -35,7 +28,7 @@ describe('MockExamSetup', () => {
   });
 
   it('renders error state if question bank not found', async () => {
-    repository.getQuestionBanks.mockResolvedValue([]);
+    repository.getAllQuestionBanks.mockResolvedValue([]);
     render(
       <MemoryRouter initialEntries={['/mock-exam/setup/1']}>
         <Routes>
@@ -50,8 +43,8 @@ describe('MockExamSetup', () => {
   });
 
   it('renders empty state if no questions available', async () => {
-    repository.getQuestionBanks.mockResolvedValue([{ id: 1, title: 'Test Bank' }]);
-    repository.getQuestions.mockResolvedValue([]);
+    repository.getAllQuestionBanks.mockResolvedValue([{ id: 1, title: 'Test Bank' }]);
+    repository.getQuestionsForBank.mockResolvedValue([]);
     
     render(
       <MemoryRouter initialEntries={['/mock-exam/setup/1']}>
@@ -67,8 +60,8 @@ describe('MockExamSetup', () => {
   });
 
   it('renders setup form when data is loaded', async () => {
-    repository.getQuestionBanks.mockResolvedValue([{ id: 1, title: 'Test Bank' }]);
-    repository.getQuestions.mockResolvedValue([
+    repository.getAllQuestionBanks.mockResolvedValue([{ id: 1, title: 'Test Bank' }]);
+    repository.getQuestionsForBank.mockResolvedValue([
       { id: 1, text: 'Q1', marks: 5 },
       { id: 2, text: 'Q2', marks: 10 }
     ]);
@@ -87,3 +80,4 @@ describe('MockExamSetup', () => {
     });
   });
 });
+

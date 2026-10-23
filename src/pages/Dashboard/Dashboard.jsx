@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllSubjects, deleteSubject, getSubjectProgress, getUnitsForSubject, getAllQuestionBanks } from '../../data/repository';
-import { db } from '../../data/db';
-import { Search, Calendar, ChevronRight, MoreHorizontal, Play, BookOpen, FileText, BarChart2, Plus, Award, Activity } from 'lucide-react';
-import StudyPlanner from '../StudyPlanner/StudyPlanner';
-import BookmarksPage from '../BookmarksPage/BookmarksPage';
+import { getAllSubjects, getSubjectProgress, getAllQuestionBanks } from '../../data/repository';
+import { Search, ChevronRight, Play, BookOpen, FileText, Plus, Award, Activity } from 'lucide-react';
 import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
 import PomodoroTimer from '../../components/PomodoroTimer/PomodoroTimer';
 import './Dashboard.css';
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
+}
+
 export default function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   const [qbanks, setQbanks] = useState([]);
-  const [progress, setProgress] = useState({});
   const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0 });
   const [analytics, setAnalytics] = useState({ weekData: [], mockAvg: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const greeting = getGreeting();
+  const shortcutLabel = /mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -35,16 +40,13 @@ export default function Dashboard() {
     const sortedQbanks = [...allQbanks].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     setQbanks(sortedQbanks);
     
-    const prog = {};
     let totalProgressSum = 0;
     
     for (const s of subs) {
       const p = await getSubjectProgress(s.id);
-      prog[s.id] = p;
       totalProgressSum += p || 0;
     }
     
-    setProgress(prog);
     setStats({
       totalUnits: subs.length,
       avgProgress: subs.length > 0 ? Math.round(totalProgressSum / subs.length) : 0
@@ -84,14 +86,22 @@ export default function Dashboard() {
 
   useEffect(() => { loadSubjects(); }, []);
 
+  const maxStudyMinutes = Math.max(...analytics.weekData.map(d => d.minutes), 60);
+
   return (
     <div className="dashboard-content">
       {/* Top Search Bar */}
       <div className="dashboard-top-bar">
-        <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
-          <input type="text" placeholder="Search" className="search-input-fluid" onClick={() => navigate('/search')} />
-        </div>
+        <button
+          type="button"
+          className="search-trigger"
+          onClick={() => navigate('/search')}
+          aria-label="Search subjects, topics and notes"
+        >
+          <Search size={18} className="search-icon" aria-hidden="true" />
+          <span className="search-trigger-text">Search subjects, topics and notes…</span>
+          <kbd className="search-trigger-kbd">{shortcutLabel}</kbd>
+        </button>
       </div>
 
       {loading ? (
@@ -106,22 +116,27 @@ export default function Dashboard() {
         <div className="dashboard-grid">
           
           {/* Hero Banner */}
-          <div className="surface-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between', alignItems: 'center', padding: '32px', marginBottom: '24px', transition: 'none', animation: 'none' }}>
-            <div>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                Good <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>afternoon</span>
+          <section className="surface-card dashboard-hero">
+            <div className="dashboard-hero-copy">
+              <p className="dashboard-eyebrow">Your study workspace</p>
+              <h1 className="dashboard-title">
+                Good <span className="dashboard-title-accent">{greeting}</span>
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Here's what's happening with your studies today.</p>
+              <p className="dashboard-subtitle">
+                {subjects.length > 0
+                  ? 'Pick up where you left off or start something new.'
+                  : 'Create your first subject to start mapping your learning.'}
+              </p>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%', maxWidth: '400px' }}>
-              <button className="btn btn-secondary" onClick={() => navigate('/qb/create')} style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <FileText size={18} /> Upload Bank
+            <div className="dashboard-hero-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => navigate('/qb/create')}>
+                <FileText size={18} aria-hidden="true" /> Upload Bank
               </button>
-              <button className="btn btn-gradient" onClick={() => navigate('/create')} style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Plus size={18} /> New Subject
+              <button type="button" className="btn btn-gradient" onClick={() => navigate('/create')}>
+                <Plus size={18} aria-hidden="true" /> New Subject
               </button>
             </div>
-          </div>
+          </section>
 
           {/* Mobile Subjects & Question Banks */}
           {isMobile && (
@@ -131,32 +146,42 @@ export default function Dashboard() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Your Subjects</h3>
-                <button className="btn-ghost btn-sm" onClick={() => navigate('/create')} style={{ color: 'var(--accent)', fontWeight: '600', padding: '4px 8px', borderRadius: '6px' }}>More</button>
+                <button type="button" className="btn-ghost btn-sm dashboard-more-btn" onClick={() => navigate('/create')}>New</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 {subjects.slice(0, 4).map(sub => (
-                  <div key={sub.id} className="surface-card premium-card" style={{ padding: '20px 16px', cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onClick={() => navigate(`/subject/${sub.id}`)}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-surface-active)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                      <BookOpen size={24} style={{ color: 'var(--accent-primary)' }} />
-                    </div>
-                    <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.title}</div>
-                  </div>
+                  <button
+                    type="button"
+                    key={sub.id}
+                    className="surface-card premium-card dashboard-tile"
+                    onClick={() => navigate(`/subject/${sub.id}`)}
+                  >
+                    <span className="dashboard-tile-icon">
+                      <BookOpen size={24} aria-hidden="true" />
+                    </span>
+                    <span className="dashboard-tile-title">{sub.title}</span>
+                  </button>
                 ))}
                 {subjects.length === 0 && <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>No subjects yet.</div>}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Question Banks</h3>
-                <button className="btn-ghost btn-sm" onClick={() => navigate('/qb/create')} style={{ color: 'var(--accent)', fontWeight: '600', padding: '4px 8px', borderRadius: '6px' }}>More</button>
+                <button type="button" className="btn-ghost btn-sm dashboard-more-btn" onClick={() => navigate('/qb/create')}>New</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
                 {qbanks.slice(0, 4).map(qb => (
-                  <div key={qb.id} className="surface-card premium-card" style={{ padding: '20px 16px', cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onClick={() => navigate(`/qb/${qb.id}`)}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-surface-active)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                      <FileText size={24} style={{ color: 'var(--accent-brand)' }} />
-                    </div>
-                    <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{qb.title}</div>
-                  </div>
+                  <button
+                    type="button"
+                    key={qb.id}
+                    className="surface-card premium-card dashboard-tile"
+                    onClick={() => navigate(`/qb/${qb.id}`)}
+                  >
+                    <span className="dashboard-tile-icon">
+                      <FileText size={24} aria-hidden="true" />
+                    </span>
+                    <span className="dashboard-tile-title">{qb.title}</span>
+                  </button>
                 ))}
                 {qbanks.length === 0 && <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>No question banks yet.</div>}
               </div>
@@ -165,19 +190,23 @@ export default function Dashboard() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
              {/* Jump Back In */}
-             <div className="surface-card premium-card jump-card" onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}>
-                <div className="hover-glow"></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
-                   <div className="jump-icon-box">
-                      <Play size={28} style={{ marginLeft: '4px' }} fill="currentColor" />
-                   </div>
-                   <div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--accent-brand)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Jump Back In</div>
-                      <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', margin: '0', lineHeight: '1.2' }}>{subjects.length > 0 ? subjects[0].title : 'Create a Subject'}</h2>
-                   </div>
-                </div>
-                <ChevronRight size={24} className="jump-chevron" style={{ position: 'relative', zIndex: 1 }} />
-             </div>
+             <button
+                type="button"
+                className="surface-card premium-card jump-card card-button"
+                onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}
+             >
+                <span className="hover-glow" aria-hidden="true"></span>
+                <span className="jump-card-content">
+                   <span className="jump-icon-box">
+                      <Play size={28} style={{ marginLeft: '4px' }} fill="currentColor" aria-hidden="true" />
+                   </span>
+                   <span>
+                      <span className="jump-eyebrow">Jump back in</span>
+                      <span className="jump-title">{subjects.length > 0 ? subjects[0].title : 'Create a subject'}</span>
+                   </span>
+                </span>
+                <ChevronRight size={24} className="jump-chevron" aria-hidden="true" />
+             </button>
              
              {/* Stats Cards */}
              <div className="stats-grid">
@@ -185,7 +214,7 @@ export default function Dashboard() {
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Total Subjects</div>
-                         <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>
+                         <div className="stat-value tabular-nums">
                             {stats.totalUnits}
                          </div>
                       </div>
@@ -199,7 +228,7 @@ export default function Dashboard() {
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Avg Progress</div>
-                         <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>
+                         <div className="stat-value tabular-nums">
                             {stats.avgProgress}%
                          </div>
                       </div>
@@ -221,7 +250,7 @@ export default function Dashboard() {
              {/* Analytics Dashboard */}
              <div className="surface-card premium-card analytics-panel">
                <div className="analytics-header">
-                 <Activity size={24} className="analytics-icon" />
+                 <Activity size={24} className="analytics-icon" aria-hidden="true" />
                  <h2>Study Analytics</h2>
                </div>
                
@@ -230,23 +259,22 @@ export default function Dashboard() {
                  <div className="analytics-chart-container">
                    <h3>Study Time (Last 7 Days)</h3>
                    <div className="bar-chart-wrapper">
-                     {analytics.weekData.map((day, idx) => {
-                       const maxMins = Math.max(...analytics.weekData.map(d => d.minutes), 60);
-                       const heightPct = Math.min((day.minutes / maxMins) * 100, 100);
-                       return (
-                         <div key={idx} className="bar-column">
-                           <div className="bar-fill-wrapper">
-                             <div 
-                               className="bar-fill" 
-                               style={{ height: `${heightPct}%`, minHeight: day.minutes > 0 ? '4px' : '0' }}
-                             >
-                                <span className="bar-tooltip">{day.minutes}m</span>
-                             </div>
-                           </div>
-                           <span className="bar-label">{day.dayName}</span>
-                         </div>
-                       );
-                     })}
+                      {analytics.weekData.map((day) => {
+                        const heightPct = Math.min((day.minutes / maxStudyMinutes) * 100, 100);
+                        return (
+                          <div key={day.dateStr} className="bar-column">
+                            <div className="bar-fill-wrapper">
+                              <div 
+                                className="bar-fill" 
+                                style={{ height: `${heightPct}%`, minHeight: day.minutes > 0 ? '4px' : '0' }}
+                              >
+                                 <span className="bar-tooltip">{day.minutes} min</span>
+                              </div>
+                            </div>
+                            <span className="bar-label">{day.dayName}</span>
+                          </div>
+                        );
+                      })}
                    </div>
                  </div>
 

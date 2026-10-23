@@ -1,21 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ChevronRight, BookOpen, FileText, Trash2 } from 'lucide-react';
+import { ChevronRight, BookOpen, FileText, Trash2 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../data/db';
 import { deleteSubject, deleteQuestionBank } from '../../data/repository';
-import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import PomodoroTimer from '../PomodoroTimer/PomodoroTimer';
 import './RightSidebar.css';
 
 export default function RightSidebar() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const toast = useToast();
   const subjects = useLiveQuery(() => db.subjects.toArray()) || [];
   const qbanks = useLiveQuery(() => db.question_banks.toArray()) || [];
   const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'subject'|'qbank', id, title }
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setConfirmDelete(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmDelete]);
   
   // Always use BookOpen for subjects
   const getSubjectIcon = () => {
@@ -32,7 +39,7 @@ export default function RightSidebar() {
         await deleteQuestionBank(confirmDelete.id);
         toast('Question bank deleted', 'success');
       }
-    } catch (err) {
+    } catch {
       toast('Failed to delete', 'error');
     }
     setConfirmDelete(null);
@@ -44,9 +51,15 @@ export default function RightSidebar() {
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <div className="rs-delete-overlay" onClick={() => setConfirmDelete(null)}>
-          <div className="rs-delete-modal" onClick={e => e.stopPropagation()}>
-            <Trash2 size={28} style={{ color: '#ef4444', marginBottom: '8px' }} />
-            <h4>Delete "{confirmDelete.title}"?</h4>
+          <div
+            className="rs-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rs-delete-title"
+            onClick={e => e.stopPropagation()}
+          >
+            <Trash2 size={28} style={{ color: '#ef4444', marginBottom: '8px' }} aria-hidden="true" />
+            <h4 id="rs-delete-title">Delete “{confirmDelete.title}”?</h4>
             <p>This cannot be undone.</p>
             <div className="rs-delete-actions">
               <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDelete(null)}>Cancel</button>
@@ -68,18 +81,25 @@ export default function RightSidebar() {
       <div className="rs-courses-list">
         {subjects.slice(0, 4).map(sub => (
           <div key={sub.id} className="rs-course-item">
-            <div className="rs-course-icon" onClick={() => navigate(`/subject/${sub.id}`)}>
-              {getSubjectIcon(sub.title)}
-            </div>
-            <div className="rs-course-info" onClick={() => navigate(`/subject/${sub.id}`)}>
-              <span className="rs-course-title">{sub.title}</span>
-            </div>
             <button
-              className="rs-item-delete-btn"
-              onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'subject', id: sub.id, title: sub.title }); }}
-              title="Delete subject"
+              type="button"
+              className="rs-course-link"
+              onClick={() => navigate(`/subject/${sub.id}`)}
             >
-              <Trash2 size={14} />
+              <span className="rs-course-icon">
+                {getSubjectIcon(sub.title)}
+              </span>
+              <span className="rs-course-info">
+                <span className="rs-course-title">{sub.title}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="rs-item-delete-btn"
+              onClick={() => setConfirmDelete({ type: 'subject', id: sub.id, title: sub.title })}
+              aria-label={`Delete subject ${sub.title}`}
+            >
+              <Trash2 size={14} aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -100,18 +120,25 @@ export default function RightSidebar() {
       <div className="rs-courses-list">
         {qbanks.slice(0, 4).map(qb => (
           <div key={qb.id} className="rs-course-item">
-            <div className="rs-course-icon" style={{ background: 'var(--bg-surface-active)' }} onClick={() => navigate(`/qb/${qb.id}`)}>
-              <FileText size={20} color="var(--accent-primary)" />
-            </div>
-            <div className="rs-course-info" onClick={() => navigate(`/qb/${qb.id}`)}>
-              <span className="rs-course-title">{qb.title}</span>
-            </div>
             <button
-              className="rs-item-delete-btn"
-              onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'qbank', id: qb.id, title: qb.title }); }}
-              title="Delete question bank"
+              type="button"
+              className="rs-course-link"
+              onClick={() => navigate(`/qb/${qb.id}`)}
             >
-              <Trash2 size={14} />
+              <span className="rs-course-icon" style={{ background: 'var(--bg-surface-active)', color: 'var(--accent-primary)' }}>
+                <FileText size={20} aria-hidden="true" />
+              </span>
+              <span className="rs-course-info">
+                <span className="rs-course-title">{qb.title}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="rs-item-delete-btn"
+              onClick={() => setConfirmDelete({ type: 'qbank', id: qb.id, title: qb.title })}
+              aria-label={`Delete question bank ${qb.title}`}
+            >
+              <Trash2 size={14} aria-hidden="true" />
             </button>
           </div>
         ))}

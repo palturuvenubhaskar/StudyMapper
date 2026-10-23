@@ -33,11 +33,17 @@
 }
 
 .search-result-item {
+  width: 100%;
   padding: 16px 20px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
+  border: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
 }
 
 .search-result-item:hover {

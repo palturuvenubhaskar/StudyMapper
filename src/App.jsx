@@ -1,73 +1,76 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/ToastProvider/ToastProvider';
 import { ThemeProvider } from './context/ThemeProvider';
 import { PlacementStateProvider } from './context/PlacementStateContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard/Dashboard';
-import CreateSubject from './pages/CreateSubject/CreateSubject';
-import SubjectView from './pages/SubjectView/SubjectView';
-import TopicStudy from './pages/TopicStudy/TopicStudy';
-import FlashcardsStudy from './pages/TopicStudy/FlashcardsStudy';
-import SearchPage from './pages/SearchPage/SearchPage';
-import BookmarksPage from './pages/BookmarksPage/BookmarksPage';
-import CreateQuestionBank from './pages/CreateQuestionBank/CreateQuestionBank';
-import QuestionBankView from './pages/QuestionBankView/QuestionBankView';
-import MockExamSetup from './components/MockExamSimulator/MockExamSetup';
-import MockExamSession from './components/MockExamSimulator/MockExamSession';
-import MockExamResults from './components/MockExamSimulator/MockExamResults';
-import SkillRoadmap from './pages/SkillRoadmap/SkillRoadmap';
-import Placement from './pages/Placement/Placement';
-import AptitudePractice from './pages/Placement/AptitudePractice';
-import TechnicalInterview from './pages/Placement/TechnicalInterview';
-import HRInterview from './pages/Placement/HRInterview';
-import LearnMode from './pages/Placement/LearnMode';
-import { TopicDetail } from './pages/Placement/TopicDetail';
-import CodingPractice from './pages/CodingPractice/CodingPractice';
-import CodingWorkspace from './pages/CodingPractice/CodingWorkspace';
-import LearningWorkspace from './pages/CodingPractice/LearningWorkspace';
-import StudyPlanner from './pages/StudyPlanner/StudyPlanner';
-import AIAssistant from './components/AIAssistant/AIAssistant';
+import { InlineLoading } from './components/Loading/InlineLoading';
 
 import Sidebar from './components/Sidebar/Sidebar';
 import RightSidebar from './components/Sidebar/RightSidebar';
 import CommandPalette from './components/CommandPalette/CommandPalette';
-import Login from './pages/Login/Login';
 import MobileHeader from './components/MobileHeader/MobileHeader';
 import MobileNav from './components/MobileNav/MobileNav';
 
-// New Imports
+import Welcome from './pages/Auth/Welcome';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { OfflineIndicator } from './components/OfflineIndicator/OfflineIndicator';
 import { CookieConsentBanner } from './components/CookieConsent/CookieConsentBanner';
 import { CookiePreferencesModal } from './components/CookieConsent/CookiePreferencesModal';
 import { useCookieConsent } from './hooks/useCookieConsent';
 
-import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
-import { TermsAndConditions } from './pages/Legal/TermsAndConditions';
-import { CookiePolicy } from './pages/Legal/CookiePolicy';
-import { Disclaimer } from './pages/Legal/Disclaimer';
-import { SecurityPolicy } from './pages/Legal/SecurityPolicy';
-import { CommunityGuidelines } from './pages/Legal/CommunityGuidelines';
+const lazyNamed = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
 
-import { ForgotPassword } from './pages/Auth/ForgotPassword';
-import { ResetPassword } from './pages/Auth/ResetPassword';
+const CreateSubject = lazy(() => import('./pages/CreateSubject/CreateSubject'));
+const SubjectView = lazy(() => import('./pages/SubjectView/SubjectView'));
+const TopicStudy = lazy(() => import('./pages/TopicStudy/TopicStudy'));
+const FlashcardsStudy = lazy(() => import('./pages/TopicStudy/FlashcardsStudy'));
+const SearchPage = lazy(() => import('./pages/SearchPage/SearchPage'));
+const BookmarksPage = lazy(() => import('./pages/BookmarksPage/BookmarksPage'));
+const CreateQuestionBank = lazy(() => import('./pages/CreateQuestionBank/CreateQuestionBank'));
+const QuestionBankView = lazy(() => import('./pages/QuestionBankView/QuestionBankView'));
+const MockExamSetup = lazy(() => import('./components/MockExamSimulator/MockExamSetup'));
+const MockExamSession = lazy(() => import('./components/MockExamSimulator/MockExamSession'));
+const MockExamResults = lazy(() => import('./components/MockExamSimulator/MockExamResults'));
+const SkillRoadmap = lazy(() => import('./pages/SkillRoadmap/SkillRoadmap'));
+const Placement = lazy(() => import('./pages/Placement/Placement'));
+const AptitudePractice = lazy(() => import('./pages/Placement/AptitudePractice'));
+const TechnicalInterview = lazy(() => import('./pages/Placement/TechnicalInterview'));
+const HRInterview = lazy(() => import('./pages/Placement/HRInterview'));
+const LearnMode = lazy(() => import('./pages/Placement/LearnMode'));
+const TopicDetail = lazyNamed(() => import('./pages/Placement/TopicDetail'), 'TopicDetail');
+const CodingPractice = lazy(() => import('./pages/CodingPractice/CodingPractice'));
+const CodingWorkspace = lazy(() => import('./pages/CodingPractice/CodingWorkspace'));
+const LearningWorkspace = lazy(() => import('./pages/CodingPractice/LearningWorkspace'));
+const StudyPlanner = lazy(() => import('./pages/StudyPlanner/StudyPlanner'));
+const AIAssistant = lazy(() => import('./components/AIAssistant/AIAssistant'));
+const Login = lazy(() => import('./pages/Login/Login'));
 
-import { AccountSettings } from './pages/Settings/AccountSettings';
-import { Support } from './pages/Support/Support';
-import { HelpCenter } from './pages/Help/HelpCenter';
-import { HelpArticle } from './pages/Help/HelpArticle';
+const PrivacyPolicy = lazyNamed(() => import('./pages/Legal/PrivacyPolicy'), 'PrivacyPolicy');
+const TermsAndConditions = lazyNamed(() => import('./pages/Legal/TermsAndConditions'), 'TermsAndConditions');
+const CookiePolicy = lazyNamed(() => import('./pages/Legal/CookiePolicy'), 'CookiePolicy');
+const Disclaimer = lazyNamed(() => import('./pages/Legal/Disclaimer'), 'Disclaimer');
+const SecurityPolicy = lazyNamed(() => import('./pages/Legal/SecurityPolicy'), 'SecurityPolicy');
+const CommunityGuidelines = lazyNamed(() => import('./pages/Legal/CommunityGuidelines'), 'CommunityGuidelines');
 
-import { NotFound } from './pages/Errors/NotFound';
-import { Forbidden } from './pages/Errors/Forbidden';
-import { InternalError } from './pages/Errors/InternalError';
-import { Maintenance } from './pages/Errors/Maintenance';
-import { Offline } from './pages/Errors/Offline';
+const ForgotPassword = lazyNamed(() => import('./pages/Auth/ForgotPassword'), 'ForgotPassword');
+const ResetPassword = lazyNamed(() => import('./pages/Auth/ResetPassword'), 'ResetPassword');
+
+const AccountSettings = lazyNamed(() => import('./pages/Settings/AccountSettings'), 'AccountSettings');
+const Support = lazyNamed(() => import('./pages/Support/Support'), 'Support');
+const HelpCenter = lazyNamed(() => import('./pages/Help/HelpCenter'), 'HelpCenter');
+const HelpArticle = lazyNamed(() => import('./pages/Help/HelpArticle'), 'HelpArticle');
+
+const NotFound = lazyNamed(() => import('./pages/Errors/NotFound'), 'NotFound');
+const Forbidden = lazyNamed(() => import('./pages/Errors/Forbidden'), 'Forbidden');
+const InternalError = lazyNamed(() => import('./pages/Errors/InternalError'), 'InternalError');
+const Maintenance = lazyNamed(() => import('./pages/Errors/Maintenance'), 'Maintenance');
+const Offline = lazyNamed(() => import('./pages/Errors/Offline'), 'Offline');
 
 function AppContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login' || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
   const isDashboard = location.pathname === '/';
 
@@ -80,7 +83,13 @@ function AppContent() {
     dismissBanner 
   } = useCookieConsent();
 
+  const { user, loading: authLoading } = useAuth();
   const [showCookiePrefs, setShowCookiePrefs] = useState(false);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState(() => {
+    return localStorage.getItem('hasSeenWelcome') === 'true';
+  });
+  const [currentActivity, setCurrentActivity] = useState('general');
+  const [currentTopic, setCurrentTopic] = useState(null);
 
   useEffect(() => {
     const handler = () => setShowCookiePrefs(true);
@@ -89,23 +98,72 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    const hasVisited = localStorage.getItem('hasVisited');
-    if (!hasVisited) {
-      localStorage.setItem('hasVisited', 'true');
-      if (location.pathname !== '/login') {
-        navigate('/login');
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((open) => !open);
       }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleCloseWelcome = () => {
+    localStorage.setItem('hasSeenWelcome', 'true');
+    setHasSeenWelcome(true);
+  };
+
+  const showWelcome = !authLoading && !user && !hasSeenWelcome && isDashboard && !isLoginPage;
+
+  // Detect current activity and topic based on URL
+  useEffect(() => {
+    const path = location.pathname;
+    
+    if (path === '/' || path === '/dashboard') {
+      setCurrentActivity('general');
+      setCurrentTopic(null);
+    } else if (path.startsWith('/coding')) {
+      setCurrentActivity('coding');
+      setCurrentTopic(null);
+    } else if (path.startsWith('/placement')) {
+      setCurrentActivity('placement');
+      setCurrentTopic(null);
+    } else if (path === '/planner') {
+      setCurrentActivity('planning');
+      setCurrentTopic(null);
+    } else if (path.startsWith('/topic/')) {
+      setCurrentActivity('topic');
+      // Extract topic ID and try to get topic title
+      const topicId = path.replace('/topic/', '');
+      // Could fetch topic title from store if needed
+      setCurrentTopic(topicId);
+    } else if (path.startsWith('/flashcards')) {
+      setCurrentActivity('flashcards');
+      setCurrentTopic(null);
+    } else if (path.startsWith('/subject/')) {
+      setCurrentActivity('subject');
+      setCurrentTopic(null);
+    } else {
+      setCurrentActivity('general');
+      setCurrentTopic(null);
     }
-  }, [navigate, location.pathname]);
+  }, [location.pathname]);
 
   return (
     <ErrorBoundary>
+      {showWelcome && <Welcome onClose={handleCloseWelcome} />}
       <div className="app-layout">
+        <a className="skip-link" href="#main-content">Skip to content</a>
         <OfflineIndicator />
         {!isLoginPage && <Sidebar />}
         {!isLoginPage && <MobileHeader onSearchClick={() => setIsSearchOpen(true)} />}
         <div className="content-container">
-          <div className={`main-content-wrapper ${isLoginPage ? 'full-width' : ''} ${!isDashboard ? 'no-right-sidebar' : ''}`}>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className={`main-content-wrapper ${isLoginPage ? 'full-width' : ''} ${!isDashboard ? 'no-right-sidebar' : ''}`}
+          >
+            <Suspense fallback={<div className="route-loading"><InlineLoading text="Loading…" size="md" /></div>}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/login" element={<Login />} />
@@ -164,11 +222,16 @@ function AppContent() {
               <Route path="/offline" element={<Offline />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </div>
+            </Suspense>
+          </main>
           {isDashboard && <RightSidebar />}
         </div>
         {!isLoginPage && <MobileNav />}
-        {!isLoginPage && <AIAssistant />}
+        {!isLoginPage && (
+          <Suspense fallback={null}>
+            <AIAssistant currentActivity={currentActivity} currentTopic={currentTopic} />
+          </Suspense>
+        )}
 
         <CommandPalette isOpen={isSearchOpen} onClose={setIsSearchOpen} />
 

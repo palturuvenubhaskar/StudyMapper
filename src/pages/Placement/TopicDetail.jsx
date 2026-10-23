@@ -165,7 +165,7 @@ export function TopicDetail({ categoryId, topic, config, onBack, onComplete }) {
         <div className="topic-detail-header">
           <button onClick={onBack} className="back-btn"><ArrowLeft size={18} /> Back</button>
         </div>
-        <div className="topic-content-area" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-error)' }}>
+        <div className="topic-content-area" style={{ padding: '2rem', textAlign: 'center', color: 'var(--danger)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <Sparkles size={48} />
             <h2>Generation Failed</h2>
