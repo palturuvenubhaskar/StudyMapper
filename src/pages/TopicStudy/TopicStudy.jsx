@@ -581,94 +581,154 @@ export default function TopicStudy() {
   return (
     <div className="topic-study">
       <div className="reading-progress-bar" style={{ width: `${readingProgress}%` }}></div>
-      <div className="topic-top-bar">
-        <button className="btn btn-ghost" onClick={() => navigate(-1)}><ArrowLeft size={18} /> Back</button>
-          <div className="topic-header-main">
-            <h1 className="topic-title">{topic.title}</h1>
-            <div className="topic-actions">
-              <button className="btn-icon" onClick={toggleBookmark} title="Bookmark Topic">
-                {bookmarked ? <BookmarkCheck size={22} fill="#10b981" color="#10b981" /> : <Bookmark size={22} />}
-              </button>
-            </div>
+      <header className="topic-header-card glass-card">
+        {/* Navigation & Context Row */}
+        <div className="topic-nav-row">
+          <div className="topic-nav-left">
+            <button className="btn btn-ghost btn-sm back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+            {subject?.name && (
+              <span className="topic-subject-crumb">
+                <span className="crumb-divider">/</span>
+                <span className="crumb-name">{subject.name}</span>
+              </span>
+            )}
           </div>
-          
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', padding: '6px 12px', borderRadius: '8px', display: 'inline-flex' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Difficulty:</span>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button 
-                    key={star} 
+
+          <div className="topic-nav-right">
+            <div className="difficulty-badge" title="Set difficulty rating">
+              <span className="difficulty-label">Difficulty:</span>
+              <div className="difficulty-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className="star-btn"
                     onClick={() => handleRateDifficulty(star)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    aria-label={`Rate difficulty ${star} of 5`}
                   >
-                    <Star 
-                      size={14} 
-                      fill={(topic.difficulty_rating || 0) >= star ? "#f59e0b" : "transparent"} 
-                      color={(topic.difficulty_rating || 0) >= star ? "#f59e0b" : "var(--border-color)"}
+                    <Star
+                      size={13}
+                      fill={(topic?.difficulty_rating || 0) >= star ? "#f59e0b" : "transparent"}
+                      color={(topic?.difficulty_rating || 0) >= star ? "#f59e0b" : "var(--text-muted)"}
                     />
                   </button>
                 ))}
               </div>
             </div>
 
-            {prerequisites.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Prerequisites:</span>
-                {prerequisites.map(pr => (
-                  <button 
-                    key={pr.id} 
-                    className="btn btn-ghost btn-sm" 
-                    style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '2px 8px', fontSize: '0.8rem', borderRadius: '4px' }}
+            <button
+              className={`btn btn-ghost btn-icon bookmark-btn ${bookmarked ? 'is-bookmarked' : ''}`}
+              onClick={toggleBookmark}
+              title={bookmarked ? "Remove bookmark" : "Bookmark topic"}
+              aria-label="Bookmark topic"
+            >
+              {bookmarked ? (
+                <BookmarkCheck size={18} fill="var(--success)" color="var(--success)" />
+              ) : (
+                <Bookmark size={18} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Title & Metadata Row */}
+        <div className="topic-title-section">
+          <h1 className="topic-main-title">{displayData?.topic_title || topic?.title}</h1>
+
+          {prerequisites.length > 0 && (
+            <div className="topic-prerequisites">
+              <span className="prereq-label">Prerequisites:</span>
+              <div className="prereq-tags">
+                {prerequisites.map((pr) => (
+                  <button
+                    key={pr.id}
+                    className="prereq-tag"
                     onClick={() => navigate(`/topic/${pr.id}`)}
+                    title={`Go to ${pr.title}`}
                   >
                     {pr.title}
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Toolbar */}
+        <div className="topic-action-toolbar">
+          <div className="toolbar-left">
+            {!streaming && (
+              <>
+                <button
+                  className={`btn btn-sm ${showNotes ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowNotes(!showNotes)}
+                >
+                  <StickyNote size={14} />
+                  <span>Notes ({notes.length})</span>
+                </button>
+
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => navigate(`/topic/${topicId}/flashcards`)}
+                >
+                  <Layers size={14} />
+                  <span>Flashcards</span>
+                </button>
+
+                {isTTSPlaying ? (
+                  <button className="btn btn-primary btn-sm" onClick={handleTTSPause}>
+                    <Pause size={14} />
+                    <span>Pause</span>
+                  </button>
+                ) : isTTSPaused ? (
+                  <button className="btn btn-primary btn-sm" onClick={handleTTSPlay}>
+                    <Play size={14} />
+                    <span>Resume</span>
+                  </button>
+                ) : (
+                  <button className="btn btn-secondary btn-sm" onClick={handleTTSPlay}>
+                    <Volume2 size={14} />
+                    <span>Listen</span>
+                  </button>
+                )}
+
+                {(isTTSPlaying || isTTSPaused) && (
+                  <button
+                    className="btn btn-ghost btn-icon btn-sm"
+                    onClick={handleTTSStop}
+                    title="Stop audio playback"
+                  >
+                    <Square size={13} fill="currentColor" />
+                  </button>
+                )}
+
+                <button
+                  className="btn btn-ghost btn-icon btn-sm"
+                  onClick={handleCopyContent}
+                  title="Copy notes to clipboard"
+                  aria-label="Copy notes"
+                >
+                  <Copy size={15} />
+                </button>
+              </>
             )}
           </div>
-        <div className="topic-top-actions">
-          {!streaming && (
-            <>
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowNotes(!showNotes)}>
-                <StickyNote size={14} /> Notes ({notes.length})
-              </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/topic/${topicId}/flashcards`)}>
-                <Layers size={14} /> Flashcards
-              </button>
-              {isTTSPlaying ? (
-                <button className="btn btn-primary btn-sm" onClick={handleTTSPause}>
-                  <Pause size={14} /> Pause Listen
-                </button>
-              ) : isTTSPaused ? (
-                <button className="btn btn-primary btn-sm" onClick={handleTTSPlay}>
-                  <Play size={14} /> Resume Listen
-                </button>
-              ) : (
-                <button className="btn btn-secondary btn-sm" onClick={handleTTSPlay}>
-                  <Volume2 size={14} /> Listen
-                </button>
-              )}
-              {isTTSPlaying || isTTSPaused ? (
-                <button className="btn btn-ghost btn-icon" onClick={handleTTSStop} title="Stop Listen">
-                  <Square size={14} fill="currentColor" />
-                </button>
-              ) : null}
-              <button className="btn btn-ghost btn-icon" onClick={handleCopyContent} title="Copy Notes">
-                <Copy size={20} />
-              </button>
 
-            </>
-          )}
-          <button className="btn btn-secondary btn-sm" onClick={() => handleGenerate(true)} disabled={streaming}>
-            {streaming ? <Loader size={14} className="spin-icon" /> : <RefreshCw size={14} />}
-            {streaming ? 'Generating...' : 'Regenerate'}
-          </button>
+          <div className="toolbar-right">
+            <button
+              className="btn btn-secondary btn-sm regenerate-btn"
+              onClick={() => handleGenerate(true)}
+              disabled={streaming}
+            >
+              {streaming ? <Loader size={14} className="spin-icon" /> : <RefreshCw size={14} />}
+              <span>{streaming ? 'Generating...' : 'Regenerate'}</span>
+            </button>
+          </div>
         </div>
-      </div>
-
-      <h1 className="topic-title">{displayData?.topic_title || topic?.title}</h1>
+      </header>
 
       {streaming && (
         <div className="stream-indicator-bar">
