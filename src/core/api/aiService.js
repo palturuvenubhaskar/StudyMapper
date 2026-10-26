@@ -5,23 +5,26 @@ import { jsonrepair } from 'jsonrepair';
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Free models — ordered to prioritize models that can generate VERY long JSON without truncating
+// Free models — ordered with OpenRouter free router and high-capacity verified free models
 const FREE_MODELS = [
-  "deepseek/deepseek-v4-flash-0731:free",
-  "google/gemma-4-26b-a4b-it:free",
-  "qwen/qwen3.8-27b:free",
-  "openrouter/free"
+  "openrouter/free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "poolside/laguna-s-2.1:free",
+  "cohere/north-mini-code:free",
+  "nvidia/nemotron-3.5-lightning:free",
+  "recursive/flint-v1.0:free"
 ];
 
 // Vision-capable models
 const VISION_MODELS = [
-  "google/gemma-4-31b-it:free",
-  "nvidia/nemotron-nano-12b-v2-vl:free",
+  "nvidia/nemotron-3.5-super-vl:free",
   "dots-studio/dots-3-note-preview:free",
+  "google/gemma-4-31b-it:free",
 ];
 
-// Retrying another model can't fix a bad request or bad credentials.
-const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404]);
+// Only bad credentials or account-level permissions cannot be fixed by switching models.
+// Model not found (404) or model-specific errors must fall back to the next model.
+const NON_RETRYABLE_STATUSES = new Set([401, 403]);
 const apiError = (status, body) => Object.assign(new Error(`API error (${status}): ${body}`), { status });
 
 // Non-streaming call (used for syllabus extraction and JSON responses)

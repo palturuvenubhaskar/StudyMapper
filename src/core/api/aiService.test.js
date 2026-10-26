@@ -38,6 +38,27 @@ describe('AI Service Fallback Tests', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
+  it('falls back to the next model if a model is unavailable (404)', async () => {
+    // Mock the first fetch to fail with 404 (model deprecated / unavailable for free)
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: async () => '{"error":{"message":"This model is unavailable for free.","code":404}}'
+    });
+
+    // Mock the second fetch to succeed
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'Success after 404 fallback' } }]
+      })
+    });
+
+    const response = await callOpenRouter([{ role: 'user', content: 'test' }]);
+    expect(response).toBe('Success after 404 fallback');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('throws an error if all models fail', async () => {
     // Mock all fetches to fail
     global.fetch.mockImplementation(() => Promise.resolve({
