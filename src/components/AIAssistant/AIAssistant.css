@@ -222,6 +222,11 @@ body:has(.cookie-banner) .ai-fab {
   gap: 32px;
 }
 
+.ai-chat-error {
+  width: 100%;
+  min-width: 0;
+}
+
 .ai-message {
   display: flex;
   width: 100%;

@@ -1054,6 +1054,11 @@
    GENERATING BANNER
    ================================ */
 
+.problem-generation-error,
+.lesson-generation-error {
+  margin-bottom: 20px;
+}
+
 .generating-banner {
   position: relative;
   display: flex;

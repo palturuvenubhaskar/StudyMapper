@@ -642,6 +642,11 @@
   transform: translateY(-50%);
 }
 
+.placement-generate-error {
+  max-width: 640px;
+  margin: -28px auto 40px;
+}
+
 @media (max-width: 768px) {
   .generate-action {
     flex-direction: column;

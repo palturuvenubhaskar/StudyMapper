@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateTechnicalInterviewPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Eye, EyeOff, CheckCircle2, BookOpen, Target, Sparkles } from 'lucide-react';
@@ -24,6 +25,7 @@ export default function TechnicalInterview() {
   const [topic, setTopic] = useState(saved?.topic || 'Data Structures');
   const [difficulty, setDifficulty] = useState(saved?.difficulty || 'Medium');
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
   const [questions, setQuestions] = useState(saved?.questions || []);
   const [visibleAnswers, setVisibleAnswers] = useState(saved?.visibleAnswers || {});
 
@@ -49,6 +51,7 @@ export default function TechnicalInterview() {
 
   const generateQuestions = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const messages = generateTechnicalInterviewPrompt(topic, difficulty, 5);
       const responseText = await callOpenRouter(messages);
@@ -64,11 +67,11 @@ export default function TechnicalInterview() {
         setVisibleAnswers({});
         toast('Questions generated!', 'success');
       } else {
-        toast('Failed to generate questions. Try again.', 'error');
+        setGenerateError('The AI response was incomplete. Try again to generate the questions.');
       }
     } catch (err) {
       console.error(err);
-      toast('Error: ' + err.message, 'error');
+      setGenerateError('The AI service did not respond. This is usually temporary.');
     }
     setGenerating(false);
   };
@@ -160,6 +163,16 @@ export default function TechnicalInterview() {
           {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate 5 Questions</>}
         </button>
       </div>
+
+      {generateError && !generating && (
+        <GenerationError
+          title="Couldn't generate questions"
+          message={generateError}
+          onRetry={generateQuestions}
+          retrying={generating}
+          className="placement-generate-error"
+        />
+      )}
 
       <div className="tech-questions-list">
         {questions.map((q, idx) => (

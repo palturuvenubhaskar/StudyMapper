@@ -5,6 +5,7 @@ import { extractQuestionsFromText } from '../../core/api/aiService';
 import { createQuestionBank } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, Upload, FileText, Check, Loader, Plus, Trash2, Edit2 } from 'lucide-react';
 import './CreateQuestionBank.css';
 
@@ -18,16 +19,20 @@ export default function CreateQuestionBank() {
   const [file, setFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [processError, setProcessError] = useState(null);
   
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+      setProcessError(null);
     }
   };
 
   const processFile = async () => {
     if (!file) return;
     setProcessing(true);
+    setProcessError(null);
+    let partialCount = 0;
     toast('Extracting text from file...', 'info');
 
     try {
@@ -36,6 +41,7 @@ export default function CreateQuestionBank() {
       
       setStep(2); // Show the UI progressively
       const extractedQs = await extractQuestionsFromText(text, (partialQs) => {
+        partialCount = partialQs?.length || 0;
         setQuestions(partialQs);
       });
       
@@ -43,13 +49,13 @@ export default function CreateQuestionBank() {
         setQuestions(extractedQs);
         toast('Questions extracted successfully!', 'success');
       } else {
-        toast('Could not find any questions in the file.', 'error');
-        setStep(1);
+        setProcessError('The AI could not find any questions in that file. Try a clearer file, or add questions manually below.');
+        setStep(partialCount > 0 ? 2 : 1);
       }
     } catch (err) {
       console.error(err);
-      toast('Failed to process file: ' + err.message, 'error');
-      setStep(1);
+      setProcessError('The AI service did not respond. This is usually temporary.');
+      setStep(partialCount > 0 ? 2 : 1);
     }
     
     setProcessing(false);
@@ -109,6 +115,16 @@ export default function CreateQuestionBank() {
           >
             {processing ? <><Loader size={18} className="spin-icon" /> Processing...</> : 'Extract Questions'}
           </button>
+
+          {processError && (
+            <GenerationError
+              title="Couldn't extract questions"
+              message={processError}
+              onRetry={file ? processFile : undefined}
+              retrying={processing}
+              className="qb-extract-error"
+            />
+          )}
         </div>
       )}
 
@@ -120,6 +136,16 @@ export default function CreateQuestionBank() {
               {processing ? <Loader size={16} className="spin-icon" /> : <Check size={16} />} Save Question Bank
             </button>
           </div>
+
+          {processError && !processing && (
+            <GenerationError
+              title="Extraction stopped early"
+              message={processError}
+              onRetry={file ? processFile : undefined}
+              retrying={processing}
+              className="qb-extract-error"
+            />
+          )}
           
           <div className="questions-list">
             {questions.map((q, idx) => (

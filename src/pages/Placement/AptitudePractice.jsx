@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, Clock, Loader, RefreshCw, CheckCircle2, XCircle, BookOpen, Target, Sparkles } from 'lucide-react';
 import './Placement.css';
 import './AptitudePractice.css';
@@ -21,6 +22,7 @@ export default function AptitudePractice() {
   const [subcategory, setSubcategory] = useState(saved?.subcategory || 'Quantitative Aptitude');
   const [difficulty, setDifficulty] = useState(saved?.difficulty || 'Medium');
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
 
   // Quiz state
   const [questions, setQuestions] = useState(saved?.questions || []);
@@ -62,6 +64,7 @@ export default function AptitudePractice() {
 
   const generateQuestions = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const messages = generateAptitudeQuestionsPrompt(subcategory, difficulty, 5);
       const responseText = await callOpenRouter(messages);
@@ -81,11 +84,11 @@ export default function AptitudePractice() {
         setQuizDone(false);
         toast('Questions generated!', 'success');
       } else {
-        toast('Failed to generate questions. Try again.', 'error');
+        setGenerateError('The AI response was incomplete. Try again to generate the questions.');
       }
     } catch (err) {
       console.error(err);
-      toast('Error: ' + err.message, 'error');
+      setGenerateError('The AI service did not respond. This is usually temporary.');
     }
     setGenerating(false);
   };
@@ -195,6 +198,16 @@ export default function AptitudePractice() {
           {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate 5 Questions</>}
         </button>
       </div>
+
+      {generateError && !generating && (
+        <GenerationError
+          title="Couldn't generate questions"
+          message={generateError}
+          onRetry={generateQuestions}
+          retrying={generating}
+          className="placement-generate-error"
+        />
+      )}
 
       {questions.length > 0 && !quizDone && (
         <div className="quiz-container">

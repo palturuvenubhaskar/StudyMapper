@@ -5,6 +5,7 @@ import { extractTextFromFile } from '../../core/ocr/fileParserService';
 import { saveSyllabus } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { v4 as uuidv4 } from 'uuid';
 import { Upload, Type, ArrowLeft, Loader, Plus, Trash2, GripVertical, Check, Edit3, FileText } from 'lucide-react';
 import './CreateSubject.css';
@@ -22,13 +23,25 @@ export default function CreateSubject() {
   const [subjectTitle, setSubjectTitle] = useState('');
   const [units, setUnits] = useState([]); // [{ id, title, topics: [{ id, title }] }]
 
+  // Upload failure + last file, so "Try Again" can re-run the same extraction
+  const [uploadError, setUploadError] = useState(null);
+  const [lastFile, setLastFile] = useState(null);
+
   // Manual input state
   const [manualSubject, setManualSubject] = useState('');
 
   // ---- FILE UPLOAD ----
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    processFile(file);
+  };
+
+  const processFile = async (file) => {
+    if (!file) return;
+    setLastFile(file);
+    setUploadError(null);
+    let partialUnits = [];
 
     try {
       setStep('ocr_processing');
@@ -46,7 +59,7 @@ export default function CreateSubject() {
         result = await extractSyllabusFromImage(base64Image);
         
         if (!result || !result.units || result.units.length === 0) {
-          toast('AI could not parse the syllabus structure. Try manual input.', 'error');
+          setUploadError('The AI could not read a syllabus structure from that file. Try a clearer file or type it manually.');
           setStep('choose');
           return;
         }
@@ -87,16 +100,17 @@ export default function CreateSubject() {
                 return { id: unitId, title: pu.title || `Unit ${i + 1}`, topics: newTopics };
              });
              currentUnits = newUnits;
+             partialUnits = newUnits;
              setUnits(newUnits);
           }
         });
       }
-      
-      setAiProcessing(false);
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Something went wrong during extraction.', 'error');
-      setStep('choose');
+      setUploadError('The AI service did not respond. This is usually temporary.');
+      setStep(partialUnits.length > 0 ? 'review' : 'choose');
+    } finally {
+      setAiProcessing(false);
     }
   };
 
@@ -243,6 +257,15 @@ export default function CreateSubject() {
           <h1>Create a New Subject</h1>
           <p>Upload a syllabus file or image for AI extraction, or type your syllabus manually.</p>
         </div>
+        {uploadError && (
+          <GenerationError
+            title="Couldn't read that file"
+            message={uploadError}
+            onRetry={lastFile ? () => processFile(lastFile) : undefined}
+            retrying={aiProcessing}
+            className="create-upload-error"
+          />
+        )}
         <div className="create-options">
           <label className="glass-card create-option" htmlFor="file-upload">
             <Upload size={40} />
@@ -309,7 +332,7 @@ export default function CreateSubject() {
   // step === 'review'
   return (
     <div className="create-page">
-      <button className="btn btn-ghost back-btn" onClick={() => setStep('choose')}>
+      <button className="btn btn-ghost back-btn" onClick={() => { setUploadError(null); setStep('choose'); }}>
         <ArrowLeft size={18} /> Start Over
       </button>
 
@@ -332,6 +355,16 @@ export default function CreateSubject() {
           </button>
         </div>
       </div>
+
+      {uploadError && (
+        <GenerationError
+          title="Couldn't finish reading that file"
+          message={uploadError}
+          onRetry={lastFile ? () => processFile(lastFile) : undefined}
+          retrying={aiProcessing}
+          className="create-upload-error"
+        />
+      )}
 
       <div className="review-units">
         {units.map((unit, ui) => (

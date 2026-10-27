@@ -8,6 +8,7 @@ import { buildAIContext } from '../../core/api/aiContextHelper';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '../ToastProvider/ToastProvider';
 import GeneratingState from '../GeneratingState/GeneratingState';
+import GenerationError from '../GenerationError/GenerationError';
 import MermaidRenderer from '../MarkdownRenderer/MermaidRenderer';
 
 const REMARK_PLUGINS = [remarkGfm];
@@ -52,8 +53,10 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [attachment, setAttachment] = useState(null);
+  const [sendError, setSendError] = useState(null);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const lastRequestRef = useRef(null);
   const location = useLocation();
   const toast = useToast();
 
@@ -112,17 +115,30 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
       setInput('');
     }
     setAttachment(null);
+
+    let currentContext = null;
+    try {
+      currentContext = await buildAIContext(location);
+    } catch (err) {
+      console.error('Failed to build AI context:', err);
+    }
+
+    const apiHistory = messages.slice(-10).map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+    apiHistory.push({ role: 'user', content: userContent });
+
+    await runAssistant({ apiHistory, currentContext, sessionId: currentSessionId });
+  };
+
+  const runAssistant = async ({ apiHistory, currentContext, sessionId: targetSessionId }) => {
+    lastRequestRef.current = { apiHistory, currentContext, sessionId: targetSessionId };
     setIsGenerating(true);
     setStreamingText('');
+    setSendError(null);
 
     try {
-      const currentContext = await buildAIContext(location);
-      const apiHistory = messages.slice(-10).map(m => ({
-        role: m.role,
-        content: m.content
-      }));
-      apiHistory.push({ role: 'user', content: userContent });
-
       let lastStreamUpdate = 0;
       const fullResponse = await callAIAssistantStream(apiHistory, currentContext, (chunk) => {
         const now = Date.now();
@@ -131,15 +147,19 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
         setStreamingText(chunk);
       });
 
-      const newAsstMsg = await addAIMessage(currentSessionId, 'assistant', fullResponse);
+      const newAsstMsg = await addAIMessage(targetSessionId, 'assistant', fullResponse);
       setMessages(prev => [...prev, newAsstMsg]);
     } catch (err) {
       console.error(err);
-      toast('AI Assistant Error: ' + err.message, 'error');
+      setSendError('The AI service did not respond. Your message is saved — try again.');
     }
 
     setIsGenerating(false);
     setStreamingText('');
+  };
+
+  const handleRetrySend = () => {
+    if (lastRequestRef.current) runAssistant(lastRequestRef.current);
   };
 
   const handleKeyDown = (e) => {
@@ -199,6 +219,17 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
                   <GeneratingState inline label="Thinking" hint="Checking your notes and recent activity." />
                 )}
               </div>
+            </div>
+          )}
+          {sendError && !isGenerating && (
+            <div className="ai-chat-error">
+              <GenerationError
+                compact
+                title="Couldn't get a reply"
+                message={sendError}
+                onRetry={handleRetrySend}
+                retrying={isGenerating}
+              />
             </div>
           )}
           <div ref={chatEndRef} />

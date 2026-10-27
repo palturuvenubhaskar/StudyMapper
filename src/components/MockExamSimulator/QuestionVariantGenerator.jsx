@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { generateQuestionVariant } from '../../core/api/aiService';
 import * as repository from '../../data/repository';
 import { CopyPlus, Loader2 } from 'lucide-react';
+import GenerationError from '../GenerationError/GenerationError';
 import './MockExam.css';
 
 const QuestionVariantGenerator = ({ originalQuestion, onVariantGenerated }) => {
@@ -33,7 +34,7 @@ const QuestionVariantGenerator = ({ originalQuestion, onVariantGenerated }) => {
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to generate a variant. Please try again.");
+      setError("The AI service did not respond. This is usually temporary.");
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,16 @@ const QuestionVariantGenerator = ({ originalQuestion, onVariantGenerated }) => {
         {loading ? <Loader2 size={16} className="spin-icon" /> : <CopyPlus size={16} />}
         {loading ? 'Generating...' : 'Generate Similar Question'}
       </button>
-      {error && <span className="variant-error">{error}</span>}
+      {error && !loading && (
+        <GenerationError
+          compact
+          title="Couldn't create a variant"
+          message={error}
+          onRetry={handleGenerate}
+          retrying={loading}
+          className="variant-error"
+        />
+      )}
     </div>
   );
 };

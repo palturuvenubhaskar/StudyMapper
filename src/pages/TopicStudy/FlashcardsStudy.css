@@ -16,6 +16,10 @@
   margin-bottom: 32px;
 }
 
+.flashcards-generate-error {
+  margin-bottom: 24px;
+}
+
 .flashcards-title {
   margin: 0;
   display: flex;

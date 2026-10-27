@@ -5,6 +5,7 @@ import { callOpenRouterStream, getQuestionAnswerPrompt } from '../../core/api/ai
 import { db } from '../../data/db';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState, { GeneratingDots } from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, Play, FileText, CheckCircle2, Edit2, Check, X, Download } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
@@ -57,6 +58,7 @@ export default function QuestionBankView() {
   const [activeQId, setActiveQId] = useState(null);
   const [streamingStreamText, setStreamingStreamText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [answerErrors, setAnswerErrors] = useState({});
   const activeQRef = useRef(null);
 
 
@@ -89,6 +91,7 @@ export default function QuestionBankView() {
     setActiveQId(question.id);
     setIsStreaming(true);
     setStreamingStreamText('');
+    setAnswerErrors(prev => ({ ...prev, [question.id]: null }));
 
     try {
       const messages = getQuestionAnswerPrompt(question.text, question.marks, subject?.title || '', detailLevel);
@@ -108,7 +111,7 @@ export default function QuestionBankView() {
       toast('Answer generated successfully', 'success');
     } catch (err) {
       console.error(err);
-      toast('Failed to generate answer: ' + err.message, 'error');
+      setAnswerErrors(prev => ({ ...prev, [question.id]: 'The AI service did not respond. This is usually temporary.' }));
     }
 
     setIsStreaming(false);
@@ -280,6 +283,15 @@ export default function QuestionBankView() {
                       </MarkdownRenderer>
                     </div>
                   </div>
+                )}
+
+                {!isActive && answerErrors[selectedQuestion.id] && (
+                  <GenerationError
+                    title="Couldn't generate an answer"
+                    message={answerErrors[selectedQuestion.id]}
+                    onRetry={() => generateAnswer(selectedQuestion, selectedQuestion.detailPreference || 'simple')}
+                    retrying={isStreaming && activeQId === selectedQuestion.id}
+                  />
                 )}
               </div>
             );

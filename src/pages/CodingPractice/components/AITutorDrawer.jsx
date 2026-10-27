@@ -1,9 +1,10 @@
 import { X, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRenderer';
 import GeneratingState from '../../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../../components/GenerationError/GenerationError';
 import remarkGfm from 'remark-gfm';
 
-export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyzing, mode }) {
+export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyzing, mode, error, onRetry }) {
   if (!isOpen) return null;
 
   return (
@@ -33,10 +34,19 @@ export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyz
           {isAnalyzing && !streamContent && (
             <GeneratingState inline label="Thinking" hint="Reading your code and the problem." />
           )}
+
+          {error && !isAnalyzing && (
+            <GenerationError
+              compact
+              title={mode === 'explain-error' ? "Couldn't explain the failure" : "Couldn't review your code"}
+              message={error}
+              onRetry={onRetry}
+            />
+          )}
           
           <div className="markdown-body" style={{ fontSize: '14px' }}>
             <MarkdownRenderer remarkPlugins={[remarkGfm]}>
-              {streamContent || (isAnalyzing ? '' : 'No analysis available.')}
+              {streamContent || (isAnalyzing || error ? '' : 'No analysis available.')}
             </MarkdownRenderer>
             {isAnalyzing && streamContent && <span className="cursor-blink">|</span>}
           </div>

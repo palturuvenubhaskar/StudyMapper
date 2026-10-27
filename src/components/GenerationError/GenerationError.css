@@ -1,0 +1,85 @@
+.generation-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.06), transparent 70%),
+    var(--bg-surface);
+  text-align: left;
+}
+
+.generation-error-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.generation-error-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.generation-error-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.generation-error-message {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.generation-error-retry {
+  flex-shrink: 0;
+}
+
+/* Parent layouts (e.g. .empty-state) can force muted colors on every svg. */
+.generation-error .generation-error-icon svg,
+.generation-error .generation-error-retry svg {
+  color: inherit;
+}
+
+.generation-error--compact {
+  padding: 10px 12px;
+  gap: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.generation-error--compact .generation-error-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.generation-error--compact .generation-error-title {
+  font-size: 0.8125rem;
+}
+
+.generation-error--compact .generation-error-message {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .generation-error {
+    flex-wrap: wrap;
+  }
+
+  .generation-error-retry {
+    width: 100%;
+  }
+}

@@ -59,6 +59,25 @@ describe('AI Service Fallback Tests', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
+  it('falls back when a model returns an empty response', async () => {
+    // A 200 with no text is a silent failure — it must not be returned as success.
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '   ' } }] })
+    });
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'Success after empty response' } }]
+      })
+    });
+
+    const response = await callOpenRouter([{ role: 'user', content: 'test' }]);
+    expect(response).toBe('Success after empty response');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('throws an error if all models fail', async () => {
     // Mock all fetches to fail
     global.fetch.mockImplementation(() => Promise.resolve({

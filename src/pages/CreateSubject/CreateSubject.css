@@ -17,6 +17,10 @@
   margin-bottom: 8px;
 }
 
+.create-upload-error {
+  margin-bottom: 24px;
+}
+
 .create-options {
   display: grid;
   grid-template-columns: 1fr 1fr;

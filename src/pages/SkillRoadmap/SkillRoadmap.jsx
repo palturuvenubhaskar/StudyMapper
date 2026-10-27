@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getStudentProfile, saveStudentProfile, getRoadmapForProfile, createRoadmap, getSkillsForRoadmap, updateRoadmapSkill, deleteRoadmapSkill, addRoadmapSkill, deleteRoadmap } from '../../data/repository';
 import { callOpenRouter, generateRoadmapPrompt, extractJson } from '../../core/api/aiService';
 import { ALL_ROADMAPS } from './data/roadmapCatalog';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import ProfileSetup from './ProfileSetup';
 import RoadmapBrowser from './RoadmapBrowser';
 import RoadmapDetail from './RoadmapDetail';
@@ -28,6 +29,8 @@ export default function SkillRoadmap() {
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
+  const lastProfileFormRef = useRef(null);
 
   const [addingSkill, setAddingSkill] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
@@ -75,7 +78,9 @@ export default function SkillRoadmap() {
 
   // === Custom AI Roadmap handlers (preserved from original) ===
   const handleProfileSubmit = async (formData) => {
+    lastProfileFormRef.current = formData;
     setGenerating(true);
+    setGenerateError(null);
     try {
       const profileId = await saveStudentProfile(formData);
       const profileObj = { ...formData, id: profileId };
@@ -97,11 +102,11 @@ export default function SkillRoadmap() {
         setSkills(sk);
         toast('Roadmap generated!', 'success');
       } else {
-        toast('AI failed to generate roadmap. Try again.', 'error');
+        setGenerateError('The AI response was incomplete. Try again to build your roadmap.');
       }
     } catch (err) {
       console.error(err);
-      toast('Error: ' + err.message, 'error');
+      setGenerateError('The AI service did not respond. This is usually temporary.');
     }
     setGenerating(false);
   };
@@ -206,7 +211,18 @@ export default function SkillRoadmap() {
       </div>
 
       {!profile || !roadmap ? (
-        <ProfileSetup onSubmit={handleProfileSubmit} loading={generating} existingProfile={profile} />
+        <>
+          {generateError && !generating && (
+            <GenerationError
+              title="Couldn't generate your roadmap"
+              message={generateError}
+              onRetry={lastProfileFormRef.current ? () => handleProfileSubmit(lastProfileFormRef.current) : undefined}
+              retrying={generating}
+              className="roadmap-generate-error"
+            />
+          )}
+          <ProfileSetup onSubmit={handleProfileSubmit} loading={generating} existingProfile={profile} />
+        </>
       ) : (
         <>
           {/* Progress bar */}

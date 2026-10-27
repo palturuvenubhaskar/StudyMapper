@@ -59,7 +59,10 @@ export const callOpenRouter = async (messages) => {
       }
 
       const data = await response.json();
-      return data.choices?.[0]?.message?.content || null;
+      const content = data.choices?.[0]?.message?.content;
+      // A 200 with no text is a silent failure — treat it as a model failure so we fall back.
+      if (!content || !content.trim()) throw new Error('Model returned an empty response');
+      return content;
     } catch (error) {
       clearTimeout(timeoutId);
       console.warn(`Model ${model} failed, trying next...`, error);
@@ -110,7 +113,10 @@ export const callOpenRouterVision = async (base64Image, prompt) => {
       }
 
       const data = await response.json();
-      return data.choices?.[0]?.message?.content || null;
+      const content = data.choices?.[0]?.message?.content;
+      // A 200 with no text is a silent failure — treat it as a model failure so we fall back.
+      if (!content || !content.trim()) throw new Error('Vision model returned an empty response');
+      return content;
     } catch (error) {
       clearTimeout(timeoutId);
       console.warn(`Vision model ${model} failed, trying next...`, error);
@@ -183,6 +189,10 @@ export const callOpenRouterStream = async (messages, onChunk) => {
           }
         }
       }
+
+      // An empty stream means the model produced nothing — fall back to the next model.
+      // Nothing was emitted through onChunk, so re-streaming cannot duplicate content.
+      if (!fullText.trim()) throw new Error('Model returned an empty stream');
 
       return fullText; // Success! Break out of the loop by returning
     } catch (error) {

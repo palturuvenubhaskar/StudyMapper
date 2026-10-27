@@ -12,6 +12,7 @@ import {
 import { callOpenRouter, generateFlashcardsPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, ArrowRight, RotateCcw, Loader, Copy, Trash2, Play, BrainCircuit } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +29,7 @@ export default function FlashcardsStudy() {
   const [flashcards, setFlashcards] = useState([]);
   
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
   const [loading, setLoading] = useState(true);
   
   const [isReviewing, setIsReviewing] = useState(false);
@@ -56,6 +58,7 @@ export default function FlashcardsStudy() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setGenerateError(null);
     try {
       const existingContent = await getLatestTopicContent(topicId);
       const contentString = existingContent ? existingContent.generated_json : topic.title;
@@ -100,7 +103,7 @@ export default function FlashcardsStudy() {
       }
     } catch (err) {
       console.error(err);
-      toast("Failed to generate flashcards. Please try again.", "error");
+      setGenerateError('The AI service did not respond. This is usually temporary.');
     }
     setIsGenerating(false);
   };
@@ -155,6 +158,16 @@ export default function FlashcardsStudy() {
           )}
         </div>
       </div>
+
+      {generateError && !isGenerating && (
+        <GenerationError
+          title="Couldn't generate flashcards"
+          message={generateError}
+          onRetry={handleGenerate}
+          retrying={isGenerating}
+          className="flashcards-generate-error"
+        />
+      )}
 
       {!deck && !isGenerating && (
         <div className="empty-state">

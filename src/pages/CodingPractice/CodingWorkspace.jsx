@@ -36,6 +36,7 @@ export default function CodingWorkspace() {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingStream, setGeneratingStream] = useState('');
+  const [generationError, setGenerationError] = useState(null);
   const generationStartedRef = useRef(false);
   
   // AI Tutor State
@@ -43,6 +44,7 @@ export default function CodingWorkspace() {
   const [aiMode, setAiMode] = useState('review'); // 'review' or 'explain-error'
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiStreamContent, setAiStreamContent] = useState('');
+  const [aiError, setAiError] = useState(null);
 
   // Submission State
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -69,6 +71,7 @@ export default function CodingWorkspace() {
     generationStartedRef.current = true;
     setIsGenerating(true);
     setGeneratingStream('');
+    setGenerationError(null);
 
     try {
       const messages = generateCodingProblemPrompt(
@@ -130,13 +133,13 @@ export default function CodingWorkspace() {
         setProblem(prev => ({ ...prev, ...updates }));
         toast('Problem generated!', 'success');
       } else {
-        toast('Failed to parse problem. Try regenerating.', 'error');
+        setGenerationError('The AI response was incomplete. Try again to build this problem.');
         await updateCodingProblem(pRecord.id, { status: 'unsolved' });
         setProblem(prev => ({ ...prev, status: 'unsolved' }));
       }
     } catch (err) {
       console.error('Generation failed:', err);
-      toast('Generation failed: ' + err.message, 'error');
+      setGenerationError('The AI service did not respond. This is usually temporary.');
       await updateCodingProblem(pRecord.id, { status: 'unsolved' });
       setProblem(prev => ({ ...prev, status: 'unsolved' }));
     }
@@ -305,6 +308,12 @@ export default function CodingWorkspace() {
     }
   };
 
+  const handleRetryGeneration = () => {
+    if (!problem) return;
+    generationStartedRef.current = false;
+    streamGenerateProblem(problem);
+  };
+
   const handleAskAI = async (mode = 'review') => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
     
@@ -312,6 +321,7 @@ export default function CodingWorkspace() {
     setAiDrawerOpen(true);
     setAiAnalyzing(true);
     setAiStreamContent('');
+    setAiError(null);
 
     try {
       let messages;
@@ -336,7 +346,7 @@ export default function CodingWorkspace() {
       
     } catch (err) {
       console.error(err);
-      toast('Failed to contact AI: ' + err.message, 'error');
+      setAiError('The AI service did not respond. This is usually temporary.');
     }
     setAiAnalyzing(false);
   };
@@ -402,7 +412,7 @@ export default function CodingWorkspace() {
             <div className="mobile-tab-content">
               {activeTab === 'problem' && (
                 <div className="pane-left-content" style={{ height: '100%' }}>
-                  <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} />
+                  <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} generationError={generationError} onRetry={handleRetryGeneration} />
                 </div>
               )}
               {activeTab === 'code' && (
@@ -438,7 +448,7 @@ export default function CodingWorkspace() {
             {/* Left Pane: Problem Description */}
             <Panel defaultSize={45} minSize={30}>
               <div className="pane-left-content">
-                <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} />
+                <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} generationError={generationError} onRetry={handleRetryGeneration} />
               </div>
             </Panel>
 
@@ -484,6 +494,8 @@ export default function CodingWorkspace() {
           streamContent={aiStreamContent}
           isAnalyzing={aiAnalyzing}
           mode={aiMode}
+          error={aiError}
+          onRetry={() => handleAskAI(aiMode)}
         />
         
         {/* Submission Modal Overlay */}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
 import { generateHRInterviewPrompt, evaluateHRAnswerPrompt, callOpenRouterStream, callOpenRouter, extractJson } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Loader, RefreshCw, Send, MessageSquare, BookOpen, Target, Sparkles } from 'lucide-react';
@@ -20,6 +21,8 @@ export default function HRInterview() {
 
   const [profile, setProfile] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
+  const [feedbackErrors, setFeedbackErrors] = useState({});
   const [questions, setQuestions] = useState(saved?.questions || []);
   const [answers, setAnswers] = useState(saved?.answers || {});
   const [feedback, setFeedback] = useState(saved?.feedback || {});
@@ -48,6 +51,7 @@ export default function HRInterview() {
 
   const generateQuestions = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const messages = generateHRInterviewPrompt(profile?.career_goal || 'Software Engineer');
       const responseText = await callOpenRouter(messages);
@@ -62,13 +66,14 @@ export default function HRInterview() {
         setQuestions(saved);
         setAnswers({});
         setFeedback({});
+        setFeedbackErrors({});
         toast('HR questions generated!', 'success');
       } else {
-        toast('Failed to generate questions.', 'error');
+        setGenerateError('The AI response was incomplete. Try again to generate the questions.');
       }
     } catch (err) {
       console.error(err);
-      toast('Error: ' + err.message, 'error');
+      setGenerateError('The AI service did not respond. This is usually temporary.');
     }
     setGenerating(false);
   };
@@ -79,6 +84,7 @@ export default function HRInterview() {
 
     setStreamingId(q.id);
     setStreamingText('');
+    setFeedbackErrors(prev => ({ ...prev, [q.id]: null }));
     try {
       const messages = evaluateHRAnswerPrompt(q.question, answer);
       const fullText = await callOpenRouterStream(messages, (textSoFar) => {
@@ -88,7 +94,7 @@ export default function HRInterview() {
       await updatePlacementQuestion(q.id, { user_answer: answer });
     } catch (err) {
       console.error(err);
-      toast('Failed to get feedback', 'error');
+      setFeedbackErrors(prev => ({ ...prev, [q.id]: 'The AI service did not respond. Your answer is saved — try the feedback again.' }));
     }
     setStreamingId(null);
   };
@@ -162,6 +168,16 @@ export default function HRInterview() {
         {profile && <span className="badge badge-accent career-badge">Career: {profile.career_goal}</span>}
       </div>
 
+      {generateError && !generating && (
+        <GenerationError
+          title="Couldn't generate HR questions"
+          message={generateError}
+          onRetry={generateQuestions}
+          retrying={generating}
+          className="placement-generate-error"
+        />
+      )}
+
       <div className="hr-questions-list">
         {questions.map((q, idx) => (
           <div key={q.id} className="glass-card hr-question-card">
@@ -197,6 +213,16 @@ export default function HRInterview() {
                   {streamingId === q.id && <span className="cursor-blink">|</span>}
                 </div>
               </div>
+            )}
+
+            {feedbackErrors[q.id] && streamingId !== q.id && (
+              <GenerationError
+                compact
+                title="Couldn't get feedback"
+                message={feedbackErrors[q.id]}
+                onRetry={() => getAIFeedback(q)}
+                retrying={streamingId === q.id}
+              />
             )}
           </div>
         ))}

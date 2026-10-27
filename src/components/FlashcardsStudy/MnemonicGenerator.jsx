@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { generateFlashcardMnemonic } from '../../core/api/aiService';
 import { Lightbulb } from 'lucide-react';
 import GeneratingState from '../GeneratingState/GeneratingState';
+import GenerationError from '../GenerationError/GenerationError';
 import MarkdownRenderer from '../MarkdownRenderer/MarkdownRenderer';
 
 const MnemonicGenerator = ({ flashcard }) => {
@@ -17,7 +18,7 @@ const MnemonicGenerator = ({ flashcard }) => {
       setMnemonic(generated);
     } catch (err) {
       console.error(err);
-      setError("Failed to generate memory hook.");
+      setError("The AI service did not respond. This is usually temporary.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,15 @@ const MnemonicGenerator = ({ flashcard }) => {
         />
       )}
 
-      {error && <div style={{ color: '#ef4444' }}>{error}</div>}
+      {error && !loading && (
+        <GenerationError
+          compact
+          title="Couldn't write a memory hook"
+          message={error}
+          onRetry={handleGenerate}
+          retrying={loading}
+        />
+      )}
 
       {mnemonic && !loading && (
         <div className="mnemonic-result" style={{

@@ -5,6 +5,7 @@ import { getLatestTopicContent, saveTopicContent, recordTopicOpened, isTopicBook
 import { callOpenRouterStream, getTopicNotesPrompt, extractJson, generatePodcastScriptPrompt, generateQuickQuizPrompt, generateConceptWebPrompt } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download, Star, Volume2, Mic, CheckSquare, GitBranch, Pause, Square, Play, X } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
@@ -125,6 +126,8 @@ export default function TopicStudy() {
   // Streaming
   const [streaming, setStreaming] = useState(false);
   const [streamParsed, setStreamParsed] = useState(null);
+  const [generateError, setGenerateError] = useState(null);
+  const previousContentRef = useRef({ content: null, parsed: null });
 
   const [bookmarked, setBookmarked] = useState(false);
 
@@ -146,15 +149,18 @@ export default function TopicStudy() {
   const [podcastScript, setPodcastScript] = useState('');
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const [showPodcast, setShowPodcast] = useState(false);
+  const [podcastError, setPodcastError] = useState(null);
   
   const [quickQuiz, setQuickQuiz] = useState(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [showQuizResult, setShowQuizResult] = useState(false);
+  const [quizError, setQuizError] = useState(null);
 
   const [conceptWeb, setConceptWeb] = useState('');
   const [isGeneratingConceptWeb, setIsGeneratingConceptWeb] = useState(false);
   const [showConceptWeb, setShowConceptWeb] = useState(false);
+  const [conceptWebError, setConceptWebError] = useState(null);
 
   const studyStartTime = useRef(Date.now());
 
@@ -223,8 +229,19 @@ export default function TopicStudy() {
     }
   };
 
+  const restorePreviousContent = () => {
+    const previous = previousContentRef.current;
+    if (previous?.content) {
+      setContent(previous.content);
+      setParsedContent(previous.parsed);
+    }
+    setStreamParsed(null);
+  };
+
   const handleGenerate = async (regenerate = false) => {
     if (!subject || !topic) return;
+    previousContentRef.current = { content, parsed: parsedContent };
+    setGenerateError(null);
     setStreaming(true);
     setStreamParsed(null);
     setParsedContent(null);
@@ -277,11 +294,13 @@ export default function TopicStudy() {
 
         toast(regenerate ? 'Topic regenerated!' : 'Notes generated!', 'success');
       } else {
-        toast('AI response could not be parsed. Try regenerating.', 'error');
+        setGenerateError('The AI response was incomplete. Try again to finish generating these notes.');
+        restorePreviousContent();
       }
     } catch (err) {
       console.error(err);
-      toast('Generation failed: ' + err.message, 'error');
+      setGenerateError('The AI service did not respond. This is usually temporary.');
+      restorePreviousContent();
     }
     setStreaming(false);
   };
@@ -377,12 +396,14 @@ export default function TopicStudy() {
     if (!content) return;
     setShowPodcast(true);
     setIsGeneratingPodcast(true);
+    setPodcastError(null);
     setPodcastScript('');
     try {
       const prompt = generatePodcastScriptPrompt(topic?.title, content);
       await callOpenRouterStream(prompt, setPodcastScript);
     } catch (err) {
-      toast('Podcast generation failed.', 'error');
+      console.error(err);
+      setPodcastError('The AI service did not respond. Your notes are safe — try the script again.');
     }
     setIsGeneratingPodcast(false);
   };
@@ -392,6 +413,7 @@ export default function TopicStudy() {
     setShowQuizResult(false);
     setQuizAnswers({});
     setQuickQuiz(null);
+    setQuizError(null);
     setIsGeneratingQuiz(true);
     try {
       const prompt = generateQuickQuizPrompt(topic?.title, content);
@@ -401,10 +423,11 @@ export default function TopicStudy() {
       if (Array.isArray(parsed)) {
         setQuickQuiz(parsed);
       } else {
-        toast('Quiz format invalid.', 'error');
+        setQuizError('The AI response was incomplete. Try again to build the quiz.');
       }
     } catch (err) {
-      toast('Quiz generation failed.', 'error');
+      console.error(err);
+      setQuizError('The AI service did not respond. This is usually temporary.');
     }
     setIsGeneratingQuiz(false);
   };
@@ -421,6 +444,7 @@ export default function TopicStudy() {
     if (!content) return;
     setShowConceptWeb(true);
     setIsGeneratingConceptWeb(true);
+    setConceptWebError(null);
     setConceptWeb('');
     try {
       const prompt = generateConceptWebPrompt(topic?.title, content);
@@ -430,8 +454,12 @@ export default function TopicStudy() {
         const cleaned = t.replace(/```mermaid\n?/g, '').replace(/```/g, '');
         setConceptWeb(cleaned);
       });
+      if (!mmText.trim()) {
+        setConceptWebError('The AI response was empty. Try again to map this topic.');
+      }
     } catch (err) {
-      toast('Concept Web generation failed.', 'error');
+      console.error(err);
+      setConceptWebError('The AI service did not respond. This is usually temporary.');
     }
     setIsGeneratingConceptWeb(false);
   };
@@ -566,6 +594,15 @@ export default function TopicStudy() {
           <StickyNote size={64} />
           <h3>{topic?.title}</h3>
           <p>No notes generated yet. Click below to generate AI-powered study notes for this topic.</p>
+          {generateError && (
+            <GenerationError
+              title="Couldn't generate notes"
+              message={generateError}
+              onRetry={() => handleGenerate(false)}
+              retrying={streaming}
+              style={{ maxWidth: '520px' }}
+            />
+          )}
           <div style={{ display: 'flex', gap: '16px' }}>
             <button className="btn btn-primary btn-lg" onClick={() => handleGenerate(false)}>Generate Notes</button>
             <button className="btn btn-secondary btn-lg" onClick={() => navigate(`/topic/${topicId}/flashcards`)}><Layers size={18} /> Flashcards</button>
@@ -736,6 +773,15 @@ export default function TopicStudy() {
         </div>
       )}
 
+      {generateError && !streaming && (
+        <GenerationError
+          title="Couldn't regenerate notes"
+          message={generateError}
+          onRetry={() => handleGenerate(true)}
+          className="topic-generate-error"
+        />
+      )}
+
       {/* Notes panel */}
       {showNotes && !streaming && (
         <div className="glass-card notes-panel">
@@ -789,6 +835,16 @@ export default function TopicStudy() {
         </div>
       )}
 
+      {quizError && !isGeneratingQuiz && (
+        <GenerationError
+          compact
+          title="Couldn't build the quiz"
+          message={quizError}
+          onRetry={handleGenerateQuickQuiz}
+          className="topic-generate-error"
+        />
+      )}
+
       {/* Podcast Panel */}
       {showPodcast && (
         <div className="glass-card podcast-panel" style={{ marginTop: '2rem' }}>
@@ -798,6 +854,15 @@ export default function TopicStudy() {
           </div>
           {isGeneratingPodcast && !podcastScript && (
             <GeneratingState label="Writing the podcast script" hint="Turning this topic into a two-host conversation." />
+          )}
+          {podcastError && !isGeneratingPodcast && (
+            <GenerationError
+              compact
+              title="Couldn't write the podcast script"
+              message={podcastError}
+              onRetry={handleGeneratePodcast}
+              retrying={isGeneratingPodcast}
+            />
           )}
           <div className="markdown-body">
             <MarkdownRenderer>{podcastScript}</MarkdownRenderer>
@@ -814,6 +879,15 @@ export default function TopicStudy() {
           </div>
           {isGeneratingConceptWeb && !conceptWeb && (
             <GeneratingState label="Mapping the concept web" hint="Connecting the key ideas in this topic." />
+          )}
+          {conceptWebError && !isGeneratingConceptWeb && (
+            <GenerationError
+              compact
+              title="Couldn't build the concept web"
+              message={conceptWebError}
+              onRetry={handleGenerateConceptWeb}
+              retrying={isGeneratingConceptWeb}
+            />
           )}
           {conceptWeb && (
             <div className="mindmap-container">

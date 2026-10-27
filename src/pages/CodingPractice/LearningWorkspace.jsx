@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getLearningLessonById, updateLearningLesson } from '../../data/repository';
 import { analyzeCodingSolutionPrompt, callOpenRouterStream, generateLearningLessonPrompt, extractJson } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../components/GenerationError/GenerationError';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Play, Loader, Code2, BookOpen } from 'lucide-react';
@@ -23,10 +24,12 @@ export default function LearningWorkspace() {
   // Generation state
   const [generatingLesson, setGeneratingLesson] = useState(false);
   const [streamedTheory, setStreamedTheory] = useState('');
+  const [lessonError, setLessonError] = useState(null);
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState('');
   const [streamingAnalysis, setStreamingAnalysis] = useState('');
+  const [analysisError, setAnalysisError] = useState(null);
   const [activeTab, setActiveTab] = useState('theory'); // 'theory' or 'problem'
 
   // Stack the panes on narrow screens instead of squeezing them side by side
@@ -38,14 +41,64 @@ export default function LearningWorkspace() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const isMountedRef = useRef(true);
+
+  const generateLesson = useCallback(async (l) => {
+    if (!l) return;
+    setGeneratingLesson(true);
+    setLessonError(null);
+    setStreamedTheory('');
+
+    try {
+      const messages = generateLearningLessonPrompt(l.language, l.topic);
+      const finalResponse = await callOpenRouterStream(messages, (chunkText) => {
+        // Try to extract just the theory part for a nice streaming view
+        const theoryMatch = chunkText.match(/"theory":\s*"([\s\S]*?)(?:",\s*"problem_statement"|"$)/);
+        if (theoryMatch && theoryMatch[1]) {
+          // Replace escaped newlines with actual newlines for markdown rendering
+          setStreamedTheory(theoryMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
+        } else {
+          setStreamedTheory("");
+        }
+      });
+
+      const parsed = extractJson(finalResponse);
+      if (parsed && parsed.title && parsed.theory) {
+        const updated = {
+          title: parsed.title,
+          theory: parsed.theory,
+          problem_statement: parsed.problem_statement || 'No exercise provided.',
+          sample_input: parsed.sample_input || '',
+          sample_output: parsed.sample_output || '',
+          hints: parsed.hints || '',
+          status: 'attempted' // Generation complete, ready to be attempted
+        };
+        await updateLearningLesson(lessonId, updated);
+        setLesson(prev => ({ ...(prev || l), ...updated }));
+        toast('Lesson generated successfully!', 'success');
+      } else {
+        setLessonError('The AI response was incomplete. Try again to finish this lesson.');
+        await updateLearningLesson(lessonId, { status: 'attempted' });
+        setLesson(prev => prev ? { ...prev, status: 'attempted' } : prev);
+      }
+    } catch (err) {
+      console.error(err);
+      setLessonError('The AI service did not respond. This is usually temporary.');
+      await updateLearningLesson(lessonId, { status: 'attempted' });
+      setLesson(prev => prev ? { ...prev, status: 'attempted' } : prev);
+    } finally {
+      setGeneratingLesson(false);
+    }
+  }, [lessonId, toast]);
+
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
 
     (async () => {
       const l = await getLearningLessonById(lessonId);
-      if (!l) { if (isMounted) navigate('/coding'); return; }
+      if (!l) { if (isMountedRef.current) navigate('/coding'); return; }
       
-      if (isMounted) {
+      if (isMountedRef.current) {
         setLesson(l);
         setCode(l.user_code || '');
         setAnalysis(l.ai_analysis || '');
@@ -54,62 +107,19 @@ export default function LearningWorkspace() {
 
       // If the lesson is marked as generating, kick off the stream
       if (l.status === 'generating') {
-        if (isMounted) setGeneratingLesson(true);
-        
-        try {
-          const messages = generateLearningLessonPrompt(l.language, l.topic);
-          let rawJsonString = "";
-          
-          const finalResponse = await callOpenRouterStream(messages, (chunkText) => {
-            if (!isMounted) return;
-            rawJsonString = chunkText;
-            
-            // Try to extract just the theory part for a nice streaming view
-            const theoryMatch = chunkText.match(/"theory":\s*"([\s\S]*?)(?:",\s*"problem_statement"|"$)/);
-            if (theoryMatch && theoryMatch[1]) {
-               // Replace escaped newlines with actual newlines for markdown rendering
-               setStreamedTheory(theoryMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
-            } else {
-               setStreamedTheory("");
-            }
-          });
-
-          if (!isMounted) return;
-
-          const parsed = extractJson(finalResponse);
-          if (parsed && parsed.title && parsed.theory) {
-            const updated = {
-              title: parsed.title,
-              theory: parsed.theory,
-              problem_statement: parsed.problem_statement || 'No exercise provided.',
-              sample_input: parsed.sample_input || '',
-              sample_output: parsed.sample_output || '',
-              hints: parsed.hints || '',
-              status: 'attempted' // Generation complete, ready to be attempted
-            };
-            await updateLearningLesson(lessonId, updated);
-            setLesson({ ...l, ...updated });
-            toast('Lesson generated successfully!', 'success');
-          } else {
-            throw new Error("Failed to parse the generated lesson format.");
-          }
-        } catch (err) {
-          console.error(err);
-          if (isMounted) toast('Error generating lesson: ' + err.message, 'error');
-        } finally {
-          if (isMounted) setGeneratingLesson(false);
-        }
+        generateLesson(l);
       }
     })();
 
-    return () => { isMounted = false; };
-  }, [lessonId, navigate]);
+    return () => { isMountedRef.current = false; };
+  }, [lessonId, navigate, generateLesson]);
 
   const handleSubmit = async () => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
     setAnalyzing(true);
     setStreamingAnalysis('');
     setAnalysis('');
+    setAnalysisError(null);
 
     try {
       await updateLearningLesson(lessonId, { user_code: code });
@@ -128,7 +138,7 @@ export default function LearningWorkspace() {
       toast(isSolved ? 'Solution looks correct!' : 'Analysis complete', isSolved ? 'success' : 'info');
     } catch (err) {
       console.error(err);
-      toast('Failed to analyze: ' + err.message, 'error');
+      setAnalysisError('The AI service did not respond. Your code is saved — try the review again.');
     }
     setAnalyzing(false);
   };
@@ -191,6 +201,15 @@ export default function LearningWorkspace() {
                 </div>
                 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                  {lessonError && !generatingLesson && (
+                    <GenerationError
+                      title="Couldn't generate this lesson"
+                      message={lessonError}
+                      onRetry={() => generateLesson(lesson)}
+                      retrying={generatingLesson}
+                      className="lesson-generation-error"
+                    />
+                  )}
                   {generatingLesson ? (
                     <div className="markdown-body">
                       {streamedTheory ? (
@@ -260,6 +279,16 @@ export default function LearningWorkspace() {
               </div>
 
               {/* Analysis */}
+              {analysisError && !analyzing && (
+                <div className="pane-right-bottom" style={{ flexShrink: 0, marginBottom: '24px' }}>
+                  <GenerationError
+                    title="Couldn't review your solution"
+                    message={analysisError}
+                    onRetry={handleSubmit}
+                    retrying={analyzing}
+                  />
+                </div>
+              )}
               {(analyzing || analysis) && (
                 <div className="pane-right-bottom" style={{ minHeight: '400px', flexShrink: 0, marginBottom: '24px' }}>
                   <div className="glass-card analysis-panel" style={{ height: '100%' }}>

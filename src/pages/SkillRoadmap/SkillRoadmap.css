@@ -916,6 +916,11 @@
   margin: 0 24px 24px;
 }
 
+.roadmap-generate-error {
+  max-width: 640px;
+  margin: 0 24px 20px;
+}
+
 .progress-info {
   display: flex;
   justify-content: space-between;

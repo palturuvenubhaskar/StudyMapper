@@ -1,5 +1,6 @@
 import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRenderer';
 import { GeneratingDots } from '../../../components/GeneratingState/GeneratingState';
+import GenerationError from '../../../components/GenerationError/GenerationError';
 import remarkGfm from 'remark-gfm';
 import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb, FileText } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -53,7 +54,7 @@ function Section({ title, hasContent, isGenerating, children, skeletonLines = 3,
 }
 
 /* ── Main ProblemPanel ────────────────────────────────────── */
-export default function ProblemPanel({ problem, isGenerating = false }) {
+export default function ProblemPanel({ problem, isGenerating = false, generationError = null, onRetry }) {
   const [expandedExamples, setExpandedExamples] = useState(new Set([0]));
 
   const toggleExample = (idx) => {
@@ -195,6 +196,16 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ─── Generation failed ─── */}
+        {generationError && !isGenerating && (
+          <GenerationError
+            title="Couldn't generate this problem"
+            message={generationError}
+            onRetry={onRetry}
+            className="problem-generation-error"
+          />
         )}
 
         {/* ─── Problem Header ─── */}

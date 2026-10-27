@@ -332,6 +332,10 @@
   font-size: 0.95rem;
 }
 
+.topic-generate-error {
+  margin-bottom: 20px;
+}
+
 /* Notes panel */
 .notes-panel {
   padding: 20px;

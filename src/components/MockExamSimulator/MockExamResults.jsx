@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { analyzeMockExamPerformance } from '../../core/api/aiService';
 import MarkdownRenderer from '../MarkdownRenderer/MarkdownRenderer';
 import GeneratingState from '../GeneratingState/GeneratingState';
-import { CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import GenerationError from '../GenerationError/GenerationError';
+import { CheckCircle, ArrowLeft } from 'lucide-react';
 import * as repository from '../../data/repository';
 import './MockExam.css';
 
@@ -16,36 +17,39 @@ const MockExamResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const analyzeResults = async () => {
-      const state = location.state;
-      if (!state || !state.questions || !state.answers) {
-        setError('Missing exam data to analyze.');
-        setLoading(false);
-        return;
-      }
+  const analyzeResults = useCallback(async () => {
+    const state = location.state;
+    if (!state || !state.questions || !state.answers) {
+      setError('Missing exam data to analyze.');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { questions, answers } = state;
-        const result = await analyzeMockExamPerformance(questions, answers);
-        setAnalysis(result);
-        
-        // Save the AI analysis back to the mock exam record
-        if (examId) {
-          await repository.db.mock_exams.update(parseInt(examId), {
-            ai_analysis: result
-          });
-        }
-      } catch (err) {
-        console.error("Analysis failed", err);
-        setError('Failed to generate AI analysis. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    setError(null);
 
-    analyzeResults();
+    try {
+      const { questions, answers } = state;
+      const result = await analyzeMockExamPerformance(questions, answers);
+      setAnalysis(result);
+      
+      // Save the AI analysis back to the mock exam record
+      if (examId) {
+        await repository.db.mock_exams.update(parseInt(examId), {
+          ai_analysis: result
+        });
+      }
+    } catch (err) {
+      console.error("Analysis failed", err);
+      setError('The AI service did not respond. This is usually temporary.');
+    } finally {
+      setLoading(false);
+    }
   }, [examId, location.state]);
+
+  useEffect(() => {
+    analyzeResults();
+  }, [analyzeResults]);
 
   const questions = location.state?.questions || [];
   const answers = location.state?.answers || {};
@@ -71,10 +75,12 @@ const MockExamResults = () => {
               />
             </div>
           ) : error ? (
-            <div className="analysis-error">
-              <AlertTriangle size={24} className="icon-warning" />
-              <p>{error}</p>
-            </div>
+            <GenerationError
+              title="Couldn't analyze this exam"
+              message={error}
+              onRetry={location.state?.questions ? analyzeResults : undefined}
+              retrying={loading}
+            />
           ) : (
             <div className="analysis-content">
               <MarkdownRenderer content={analysis} />
