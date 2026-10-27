@@ -54,13 +54,18 @@
   cursor: pointer;
   pointer-events: auto;
   transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast);
-  z-index: 10000;
+  z-index: 900; /* below modals (1000) and toasts, above page content */
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
 }
 
 .ai-fab:hover {
   transform: scale(1.1);
   background: linear-gradient(135deg, var(--accent-primary), #818cf8);
+}
+
+/* The consent dialog is modal enough: don't let the FAB cover its buttons */
+body:has(.cookie-banner) .ai-fab {
+  display: none !important;
 }
 
 /* Side panel layout by default */
@@ -446,6 +451,7 @@
     right: 0;
     width: 100% !important;
     height: 100vh !important;
+    height: 100dvh !important;
     z-index: 9999;
     margin-left: 0;
   }
@@ -454,7 +460,11 @@
   }
   .ai-sidebar {
     height: 100vh !important;
+    height: 100dvh !important;
     border-radius: 0;
+  }
+  .ai-input-area {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
   .ai-fullscreen-btn {
     display: none !important;

@@ -95,3 +95,19 @@
   text-align: center;
   color: var(--text-muted);
 }
+
+@media (max-width: 768px) {
+  .command-palette-overlay {
+    padding: 8vh 12px 12px;
+  }
+
+  .command-palette {
+    max-height: calc(100dvh - 8vh - 12px);
+  }
+
+  .command-results {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+}

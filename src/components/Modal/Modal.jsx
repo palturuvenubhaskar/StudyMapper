@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import './Modal.css';
 
+// Multiple modals can be open at once; only unlock when the last one closes.
+let openModalCount = 0;
+
 export function Modal({ isOpen, onClose, title, children, variant = 'default', size = 'md' }) {
   const overlayRef = useRef(null);
   const contentRef = useRef(null);
@@ -25,12 +28,14 @@ export function Modal({ isOpen, onClose, title, children, variant = 'default', s
     );
     focusable?.[0]?.focus();
 
-    document.body.style.overflow = 'hidden';
+    openModalCount += 1;
+    document.body.classList.add('modal-open');
 
     return () => {
       document.removeEventListener('keydown', handleEsc);
       document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
+      openModalCount = Math.max(0, openModalCount - 1);
+      if (openModalCount === 0) document.body.classList.remove('modal-open');
     };
   }, [isOpen, onClose]);
 

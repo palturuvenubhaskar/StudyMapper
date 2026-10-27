@@ -159,7 +159,7 @@ export default function HRInterview() {
         <button className="btn-generate" onClick={generateQuestions} disabled={generating}>
           {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate HR Questions</>}
         </button>
-        {profile && <span className="badge badge-accent" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>Career: {profile.career_goal}</span>}
+        {profile && <span className="badge badge-accent career-badge">Career: {profile.career_goal}</span>}
       </div>
 
       <div className="hr-questions-list">

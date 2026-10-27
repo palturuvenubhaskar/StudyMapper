@@ -9,7 +9,7 @@ export default function AITutorDrawer({ isOpen, onClose, streamContent, isAnalyz
   return (
     <div 
       style={{ 
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '450px', 
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(450px, 100vw)', maxWidth: '100%',
         background: 'var(--bg-surface)', borderLeft: '1px solid var(--border-strong)', 
         boxShadow: '-4px 0 24px rgba(0,0,0,0.5)', zIndex: 1000, 
         display: 'flex', flexDirection: 'column' 

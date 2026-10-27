@@ -64,14 +64,15 @@ export default function RoadmapFlowchart({ roadmap, nodeProgress, onNodeClick, o
   const nodeMap = {};
   for (const n of nodes) nodeMap[n.id] = n;
 
-  // Pan handlers
-  const handleMouseDown = useCallback((e) => {
-    if (e.target.closest('.fc-node')) return;
+  // Pan handlers (pointer events cover mouse, touch and pen)
+  const handlePointerDown = useCallback((e) => {
+    if (e.target.closest('.fc-node, .fc-zoom-controls, .fc-floating-tutor, .fc-embedded-legend')) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     setIsPanning(true);
     setPanStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
   }, [transform]);
 
-  const handleMouseMove = useCallback((e) => {
+  const handlePointerMove = useCallback((e) => {
     if (!isPanning) return;
     setTransform(prev => ({
       ...prev,
@@ -80,8 +81,32 @@ export default function RoadmapFlowchart({ roadmap, nodeProgress, onNodeClick, o
     }));
   }, [isPanning, panStart]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback((e) => {
     setIsPanning(false);
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
+
+  // Zoom around the centre of the viewport so the graph stays in view
+  const zoomBy = useCallback((delta) => {
+    setTransform(prev => {
+      const scale = Math.min(2, Math.max(0.5, Math.round((prev.scale + delta) * 10) / 10));
+      if (scale === prev.scale) return prev;
+      const rect = containerRef.current?.getBoundingClientRect();
+      const cx = rect ? rect.width / 2 : 0;
+      const cy = rect ? rect.height / 2 : 0;
+      const ratio = scale / prev.scale;
+      return {
+        scale,
+        x: cx - (cx - prev.x) * ratio,
+        y: cy - (cy - prev.y) * ratio,
+      };
+    });
+  }, []);
+
+  const resetView = useCallback(() => {
+    setTransform({ x: 0, y: 0, scale: 1 });
   }, []);
 
 
@@ -346,10 +371,10 @@ export default function RoadmapFlowchart({ roadmap, nodeProgress, onNodeClick, o
     <div
       className="fc-container"
       ref={containerRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
 
       <svg
@@ -372,6 +397,14 @@ export default function RoadmapFlowchart({ roadmap, nodeProgress, onNodeClick, o
           {nodes.map(renderNode)}
         </g>
       </svg>
+
+      {/* Zoom controls */}
+      <div className="fc-zoom-controls">
+        <button type="button" onClick={() => zoomBy(-0.2)} aria-label="Zoom out" title="Zoom out">−</button>
+        <span>{Math.round(transform.scale * 100)}%</span>
+        <button type="button" onClick={() => zoomBy(0.2)} aria-label="Zoom in" title="Zoom in">+</button>
+        <button type="button" onClick={resetView} aria-label="Reset view" title="Reset view">⟲</button>
+      </div>
 
       {/* Embedded Legend */}
       <div className="fc-embedded-legend">

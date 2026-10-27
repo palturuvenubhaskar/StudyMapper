@@ -15,6 +15,7 @@
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   z-index: 10;
+  touch-action: pan-y;
 }
 
 .swipe-card.dragging {
@@ -47,9 +48,10 @@
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   border: 1px solid var(--border-strong);
+  overflow-y: auto;
 }
 
 .swipe-card-back {
@@ -69,6 +71,7 @@
   color: #1e293b;
   word-wrap: break-word;
   max-width: 100%;
+  margin: auto 0;
 }
 
 .card-hint {
@@ -109,4 +112,20 @@
   0% { opacity: 0.6; }
   50% { opacity: 1; }
   100% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+  .swipe-card-container {
+    height: min(500px, 60dvh);
+    min-height: 300px;
+  }
+
+  .swipe-card-front,
+  .swipe-card-back {
+    padding: 1.5rem;
+  }
+
+  .card-content {
+    font-size: 1.25rem;
+  }
 }

@@ -250,6 +250,17 @@
   background: rgba(239, 68, 68, 0.1) !important;
 }
 
+/* Touch devices have no hover: keep the delete action visible and tappable */
+@media (hover: none) {
+  .qb-delete-btn {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-surface-active);
+    border: 1px solid var(--border-strong);
+  }
+}
+
 /* Delete Confirmation Modal */
 .delete-modal-overlay {
   position: fixed;

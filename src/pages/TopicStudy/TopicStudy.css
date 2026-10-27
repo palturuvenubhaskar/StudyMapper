@@ -237,7 +237,42 @@
 
   .topic-header-card {
     padding: 16px;
-    gap: 12px;
+    gap: 14px;
+  }
+
+  /* Nav row: back/crumb on one line, difficulty + bookmark on the next */
+  .topic-nav-row {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .topic-nav-left {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .topic-nav-right {
+    flex: 1 1 100%;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .difficulty-badge {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 40px;
+    padding: 4px 14px;
+    justify-content: space-between;
+  }
+
+  .star-btn {
+    padding: 5px;
+  }
+
+  .bookmark-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
   }
 
   .topic-main-title,
@@ -245,18 +280,39 @@
     font-size: 1.45rem;
   }
 
+  /* Action toolbar: two equal buttons per row, icon buttons pinned right */
   .topic-action-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
-  .toolbar-left,
+  .toolbar-left {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .toolbar-left > .btn:not(.btn-icon) {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 40px;
+  }
+
+  .toolbar-left > .btn-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
   .toolbar-right {
-    justify-content: flex-start;
+    width: 100%;
   }
 
   .toolbar-right .regenerate-btn {
     width: 100%;
+    min-height: 44px;
     justify-content: center;
   }
 }
@@ -440,6 +496,8 @@
   border-collapse: collapse;
   margin: 16px 0;
   font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
 }
 
 .section-body th,

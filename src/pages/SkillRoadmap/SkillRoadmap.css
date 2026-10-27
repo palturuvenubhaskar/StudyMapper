@@ -589,6 +589,7 @@
 .fc-container {
   position: relative;
   overflow: hidden;
+  touch-action: none;
   background:
     radial-gradient(
       circle at 1px 1px,
@@ -643,6 +644,13 @@
 .fc-zoom-controls button:hover {
   background: var(--bg-surface-hover);
   color: var(--text-primary);
+}
+
+@media (pointer: coarse) {
+  .fc-zoom-controls button {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .fc-zoom-controls span {
@@ -1195,6 +1203,7 @@
   border: 1px solid #333;
   box-shadow: var(--shadow-lg);
   cursor: pointer;
+  max-width: 100%;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -1272,13 +1281,13 @@
 
   .rd-node-panel {
     position: fixed;
-    bottom: 90px;
+    bottom: calc(100px + env(safe-area-inset-bottom));
     left: 16px;
     right: 16px;
     width: auto;
     z-index: 1000;
     border-radius: var(--radius-2xl);
-    max-height: 70vh;
+    max-height: calc(100dvh - 200px);
     box-shadow: var(--shadow-glass);
     top: auto;
     border-bottom: 1px solid var(--border-strong);
@@ -1320,8 +1329,7 @@
   .rb-grid { 
     grid-template-columns: repeat(2, 1fr) !important; 
     gap: 12px;
-  }
-  .rb-card {
+  }  .rb-card {
     padding: 12px 14px;
     justify-content: center;
   }
@@ -1334,4 +1342,14 @@
   .roadmap-canvas { overflow-x: auto; overflow-y: hidden; }
   .rb-filters { flex-direction: column !important; width: 100%; align-items: stretch !important; gap: 12px !important; margin-top: 16px; }
   .rb-filters > div { width: 100% !important; }
+}
+
+@media (max-width: 480px) {
+  .rb-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fc-tutor-btn .text-gray-300 {
+    display: none;
+  }
 }

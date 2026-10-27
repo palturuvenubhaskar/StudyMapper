@@ -181,7 +181,7 @@
 
 .weekly-schedule {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -320,6 +320,20 @@
   .calendar-day { padding: 4px !important; min-height: 60px !important; }
   .kanban-board { flex-direction: column !important; }
   .kanban-column { width: 100% !important; }
+
+  .planner-top-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .config-card,
+  .actions-card {
+    width: 100%;
+  }
+
+  .premium-planner-card {
+    padding: 20px;
+  }
 }
 
 /* Premium Form Elements */

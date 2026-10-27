@@ -129,6 +129,15 @@
   font-size: 0.7rem;
 }
 
+@media (max-width: 768px) {
+  .unit-reorder .btn,
+  .topic-reorder .btn {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
+}
+
 .unit-title-input {
   font-weight: 600;
   font-size: 1.05rem;

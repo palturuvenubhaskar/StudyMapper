@@ -182,7 +182,7 @@ export default function FlashcardsStudy() {
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{deck.title}</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Spaced Repetition Active Recall</p>
 
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem', textAlign: 'center' }}>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '2rem', textAlign: 'center' }}>
               <div className="stat-box" style={{ padding: '1rem', background: 'var(--bg-hover)', borderRadius: '8px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text)' }}>{flashcards.length}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Cards</div>

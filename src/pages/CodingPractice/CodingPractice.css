@@ -924,6 +924,9 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8125rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .test-cases-table th {
@@ -1052,85 +1055,171 @@
    ================================ */
 
 .generating-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 24px;
-  padding: 14px 18px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid #818cf8;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background:
+    radial-gradient(140% 180% at 0% 0%, var(--accent-brand-soft) 0%, transparent 62%),
+    var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
+/* ── Live badge: gradient orb with a breathing glyph and a halo ── */
 .generating-banner-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #818cf8, #6366f1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
+  border-radius: 12px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.55), transparent 58%),
+    linear-gradient(140deg, #38bdf8 0%, #6366f1 100%);
+  box-shadow:
+    0 8px 18px -8px rgba(56, 189, 248, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
+.generating-banner-icon svg {
+  animation: generating-icon-breathe 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 1px 4px rgba(15, 23, 42, 0.35));
+}
+
+.generating-banner-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  pointer-events: none;
+  animation: generating-icon-halo 2.6s ease-out infinite;
+}
+
+@keyframes generating-icon-halo {
+  0% { opacity: 0.55; transform: scale(0.92); }
+  70%, 100% { opacity: 0; transform: scale(1.14); }
+}
+
+@keyframes generating-icon-breathe {
+  0%, 100% { transform: scale(0.92) rotate(-4deg); }
+  50% { transform: scale(1.08) rotate(4deg); }
+}
+
+/* ── Copy: title row, progress, current step ── */
 .generating-banner-content {
   flex: 1;
   min-width: 0;
 }
 
-.generating-banner-title {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-primary);
-  margin-bottom: 8px;
+.generating-banner-head {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.generating-banner-title {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.generating-banner-head .generating-state-dots {
+  margin-top: -1px;
+}
+
+.generating-banner-count {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-brand-soft);
+  color: var(--accent-brand);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.generating-banner-count-total {
+  opacity: 0.55;
+  font-weight: 600;
 }
 
 .generating-progress-track {
-  height: 5px;
-  border-radius: 5px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-strong);
   overflow: hidden;
-  background: var(--border);
-  position: relative;
 }
 
 .generating-progress-fill {
-  height: 100%;
-  border-radius: 5px;
-  background: linear-gradient(90deg, #818cf8, #6366f1);
-  transition: width 0.6s ease;
   position: relative;
-  z-index: 1;
-}
-
-.generating-progress-shimmer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.15) 50%,
-    transparent 100%
-  );
-  animation: shimmerSlide 1.8s infinite;
+  min-width: 6px; /* keeps a visible start nub at 0% */
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
-@keyframes shimmerSlide {
+.generating-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-100%);
+  animation: generating-sheen 1.6s ease-in-out infinite;
+}
+
+@keyframes generating-sheen {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
 .generating-banner-status {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  margin-top: 6px;
+  margin-top: 8px;
+  font-size: 0.75rem;
   font-weight: 500;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .generating-banner {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .generating-banner-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+}
+
+/* Very narrow screens: the orb already signals activity, drop the dots
+   so the title and counter keep a single line. */
+@media (max-width: 400px) {
+  .generating-banner-head .generating-state-dots {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generating-banner-icon svg,
+  .generating-banner-icon::after,
+  .generating-progress-fill::after {
+    animation: none;
+  }
 }
 
 /* ================================
@@ -1709,5 +1798,16 @@
   .pane-right-bottom {
     border-radius: var(--radius-lg);
     height: 100% !important;
+  }
+
+  .code-toolbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .code-toolbar-left,
+  .code-toolbar-right {
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
 }

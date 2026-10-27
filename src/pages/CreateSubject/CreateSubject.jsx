@@ -267,7 +267,7 @@ export default function CreateSubject() {
           {!aiProcessing ? (
             <>
               <GeneratingState size="lg" label="Reading your file" hint={`${ocrProgress}% complete`} />
-              <div className="progress-bar" style={{ width: '300px' }}>
+              <div className="progress-bar" style={{ width: '100%', maxWidth: '300px' }}>
                 <div className="progress-bar-fill" style={{ width: `${ocrProgress}%` }}></div>
               </div>
             </>

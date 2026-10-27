@@ -116,7 +116,7 @@ const ReviewSession = ({ deckId, onFinish }) => {
             flashcard={currentCard} 
             onSwipe={handleSwipe} 
           />
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
             <button className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleSwipe('left')}>
               Don't Know (Left)
             </button>

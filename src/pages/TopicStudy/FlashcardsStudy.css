@@ -193,3 +193,19 @@
   color: var(--text-muted);
   margin-bottom: 16px;
 }
+
+@media (max-width: 768px) {
+  .flashcards-container {
+    padding: 16px;
+  }
+
+  .flashcards-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .flashcards-header > * {
+    min-width: 0;
+  }
+}

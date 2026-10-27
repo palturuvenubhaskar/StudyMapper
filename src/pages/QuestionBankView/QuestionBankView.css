@@ -312,9 +312,34 @@
 }
 
 @media (max-width: 768px) {
-  .qb-view-container { padding: 16px; }
-  .qb-view-hero { flex-direction: column; padding: 24px; align-items: flex-start; }
+  .qb-view-page { padding: 16px; }
+
+  /* Question list stacks above the detail pane instead of eating the width */
+  .qb-split-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    gap: 16px;
+  }
+
+  .qb-sidebar-list {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: 40vh;
+    padding-right: 0;
+  }
+
+  .qb-main-detail {
+    width: 100%;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .qb-main-detail .empty-state {
+    height: auto;
+    padding: 40px 16px;
+  }
+
   .test-workspace { flex-direction: column !important; }
-  .qb-view-main, .qb-view-sidebar { width: 100% !important; border-left: none; padding: 0 !important; }
   .flashcards-grid, .questions-grid { grid-template-columns: 1fr !important; }
 }

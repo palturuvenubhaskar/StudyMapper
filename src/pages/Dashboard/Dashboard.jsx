@@ -100,7 +100,7 @@ export default function Dashboard() {
       {loading ? (
         <div className="dashboard-grid" style={{ padding: '2rem' }}>
           <div className="skeleton" style={{ height: '140px', marginBottom: '24px' }}></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '24px', marginBottom: '40px' }}>
              <div className="skeleton" style={{ height: '120px' }}></div>
              <div className="skeleton" style={{ height: '120px' }}></div>
           </div>
@@ -181,7 +181,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '24px', marginBottom: '40px' }}>
              {/* Jump Back In */}
              <button
                 type="button"

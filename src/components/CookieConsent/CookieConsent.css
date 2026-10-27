@@ -262,47 +262,69 @@
 
 @media (max-width: 768px) {
   .cookie-banner {
-    bottom: 16px;
+    bottom: calc(96px + env(safe-area-inset-bottom)); /* clear the mobile nav dock */
     left: 16px;
     right: 16px;
     padding: 16px;
     border-radius: var(--radius-lg);
+    max-height: calc(100dvh - 128px);
+    overflow-y: auto;
   }
 
   .cookie-banner-content {
     flex-direction: column;
-    text-align: center;
-    gap: 16px;
+    text-align: left;
+    gap: 12px;
   }
-  
+
   .cookie-icon {
-    margin: 0 auto;
+    display: none;
+  }
+
+  .cookie-text {
+    padding-right: 44px; /* keep the text clear of the close button */
   }
 
   .cookie-actions {
     width: 100%;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  
+
   .cookie-btn {
     width: 100%;
     justify-content: center;
+    white-space: normal;
+  }
+
+  .cookie-btn-primary {
+    grid-column: 1 / -1;
+    order: -1;
   }
 
   .cookie-category {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
   }
-  
+
+  .cookie-category-info {
+    min-width: 0;
+  }
+
   .cookie-toggle {
-    align-self: flex-end;
-    margin-top: -30px;
+    align-self: flex-start;
+    margin-top: 0;
+    flex-shrink: 0;
   }
   
   .cookie-close {
     position: absolute;
     top: 8px;
     right: 8px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }

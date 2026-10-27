@@ -29,6 +29,15 @@ export default function LearningWorkspace() {
   const [streamingAnalysis, setStreamingAnalysis] = useState('');
   const [activeTab, setActiveTab] = useState('theory'); // 'theory' or 'problem'
 
+  // Stack the panes on narrow screens instead of squeezing them side by side
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -158,7 +167,7 @@ export default function LearningWorkspace() {
       </div>
 
       <div className="split-pane">
-        <PanelGroup orientation="horizontal">
+        <PanelGroup orientation={isMobile ? 'vertical' : 'horizontal'}>
           
           {/* Left Pane: Theory and Problem Statement */}
           <Panel defaultSize={45} minSize={30}>
@@ -230,7 +239,7 @@ export default function LearningWorkspace() {
             </div>
           </Panel>
 
-          <PanelResizeHandle style={{ width: '16px', background: 'transparent', cursor: 'col-resize' }} />
+          {!isMobile && <PanelResizeHandle style={{ width: '16px', background: 'transparent', cursor: 'col-resize' }} />}
 
           {/* Right Pane: Code editor */}
           <Panel defaultSize={55} minSize={40}>

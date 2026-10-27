@@ -182,6 +182,7 @@ html {
   width: 100%;
   max-width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -193,6 +194,7 @@ body {
   width: 100%;
   max-width: 100%;
   height: 100vh;
+  height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -203,6 +205,7 @@ body {
   width: 100%;
   max-width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   min-width: 0;
 }
@@ -270,6 +273,7 @@ option {
   flex-direction: row;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   padding: 16px;
   overflow: hidden;
   position: relative;
@@ -628,6 +632,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  pointer-events: none; /* never block taps on the UI underneath */
 }
 
 .toast {
@@ -664,6 +669,18 @@ textarea {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: calc(96px + env(safe-area-inset-bottom)); /* clear the mobile nav dock */
+    left: 16px;
+    right: 16px;
+  }
+
+  .toast {
+    width: 100%;
   }
 }
 
@@ -730,6 +747,7 @@ textarea {
     margin-bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
   }
 
   .main-content-wrapper {
@@ -740,6 +758,13 @@ textarea {
     padding-bottom: 100px; /* Space for floating Mobile Nav dock */
   }
 
+  /* iOS zooms the page when a focused field is under 16px */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
   /* Prevent flex-height collapse for all page containers on mobile */
   .main-content-wrapper > * {
     height: auto !important;
@@ -747,6 +772,12 @@ textarea {
     overflow-y: visible !important;
     min-height: 100%; /* Ensure they at least take up the screen if content is short */
   }
+}
+
+/* Scroll lock for modals: freeze whichever element actually scrolls */
+body.modal-open .content-container,
+body.modal-open .main-content-wrapper {
+  overflow: hidden !important;
 }
 
 /* --- Skeleton Loaders --- */

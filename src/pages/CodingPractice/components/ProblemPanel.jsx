@@ -74,7 +74,19 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
   /* Count completed sections for progress */
   // Use legacy fields or new json fields
   const sections = ['statement', 'constraints', 'examples', 'hints'];
-  const completedCount = sections.filter(s => has(s) || (s === 'examples' && (has('examples_json') || has('sample_input'))) || (s === 'hints' && has('hints_json'))).length;
+  const sectionLabels = {
+    statement: 'problem statement',
+    constraints: 'constraints',
+    examples: 'examples',
+    hints: 'hints',
+  };
+  const isSectionDone = (s) =>
+    has(s) ||
+    (s === 'examples' && (has('examples_json') || has('sample_input'))) ||
+    (s === 'hints' && has('hints_json'));
+
+  const completedCount = sections.filter(isSectionDone).length;
+  const pendingSection = sections.find(s => !isSectionDone(s));
   const progress = isGenerating ? (completedCount / sections.length) * 100 : 100;
 
   const difficultyColors = {
@@ -151,21 +163,35 @@ export default function ProblemPanel({ problem, isGenerating = false }) {
       <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
         {/* ─── Generating banner ─── */}
         {isGenerating && (
-          <div className="generating-banner">
-            <div className="generating-banner-icon">
-              <Sparkles size={18} color="#fff" className="spin-icon" />
+          <div className="generating-banner" role="status" aria-live="polite">
+            <div className="generating-banner-icon" aria-hidden="true">
+              <Sparkles size={17} strokeWidth={2.2} />
             </div>
+
             <div className="generating-banner-content">
-              <div className="generating-banner-title">
-                Generating Problem
+              <div className="generating-banner-head">
+                <span className="generating-banner-title">Generating problem</span>
                 <GeneratingDots size="sm" />
+                <span className="generating-banner-count">
+                  {completedCount}<span className="generating-banner-count-total">/{sections.length}</span>
+                </span>
               </div>
-              <div className="generating-progress-track">
+
+              <div
+                className="generating-progress-track"
+                role="progressbar"
+                aria-label="Problem generation progress"
+                aria-valuemin={0}
+                aria-valuemax={sections.length}
+                aria-valuenow={completedCount}
+              >
                 <div className="generating-progress-fill" style={{ width: `${progress}%` }} />
-                <div className="generating-progress-shimmer" />
               </div>
+
               <div className="generating-banner-status">
-                {completedCount} of {sections.length} sections ready
+                {pendingSection
+                  ? `Writing ${sectionLabels[pendingSection]}…`
+                  : 'Finishing up…'}
               </div>
             </div>
           </div>
