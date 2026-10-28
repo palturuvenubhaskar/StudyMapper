@@ -9,7 +9,6 @@ import GenerationError from '../../components/GenerationError/GenerationError';
 import { ArrowLeft, Play, FileText, CheckCircle2, Edit2, Check, X, Download } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import remarkGfm from 'remark-gfm';
-import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
 import QuestionVariantGenerator from '../../components/MockExamSimulator/QuestionVariantGenerator';
 import './QuestionBankView.css';
 
@@ -24,16 +23,6 @@ const STREAMING_COMPONENTS = {
           <code className={className} {...props}>{children}</code>
         </pre>
       );
-    }
-    return <code className={className} {...props}>{children}</code>;
-  }
-};
-
-const ANSWER_COMPONENTS = {
-  code({ inline, className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || '');
-    if (!inline && match && match[1] === 'mermaid') {
-      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
     }
     return <code className={className} {...props}>{children}</code>;
   }
@@ -277,7 +266,6 @@ export default function QuestionBankView() {
                     <div className="markdown-body">
                       <MarkdownRenderer 
                         remarkPlugins={REMARK_PLUGINS}
-                        components={ANSWER_COMPONENTS}
                       >
                         {selectedQuestion.answer}
                       </MarkdownRenderer>

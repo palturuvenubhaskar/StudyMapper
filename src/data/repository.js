@@ -441,11 +441,27 @@ export const getCodingProblem = (id) => db.coding_problems.get(id);
 
 export const updateCodingProblem = (id, changes) => db.coding_problems.update(id, changes);
 
-export const getCodingProblems = (profileId) =>
-  db.coding_problems.where('profile_id').equals(profileId).reverse().sortBy('created_at');
+// Problems created before a student profile exists are stored under 'guest'.
+// Always include those so a later profile never hides earlier work.
+const getCodingOwnerIds = (profileId) =>
+  !profileId || profileId === 'guest' ? ['guest'] : [profileId, 'guest'];
+
+const byNewest = (a, b) =>
+  String(b.created_at || '').localeCompare(String(a.created_at || ''));
+
+export const getCodingProblems = async (profileId) => {
+  const problems = await db.coding_problems
+    .where('profile_id')
+    .anyOf(getCodingOwnerIds(profileId))
+    .toArray();
+  return problems.sort(byNewest);
+};
 
 export const getCodingStats = async (profileId) => {
-  const problems = await db.coding_problems.where('profile_id').equals(profileId).toArray();
+  const problems = await db.coding_problems
+    .where('profile_id')
+    .anyOf(getCodingOwnerIds(profileId))
+    .toArray();
   const solved = problems.filter(p => p.status === 'solved');
   const topics = {};
   for (const p of problems) {

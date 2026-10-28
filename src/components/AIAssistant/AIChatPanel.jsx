@@ -9,19 +9,8 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '../ToastProvider/ToastProvider';
 import GeneratingState from '../GeneratingState/GeneratingState';
 import GenerationError from '../GenerationError/GenerationError';
-import MermaidRenderer from '../MarkdownRenderer/MermaidRenderer';
 
 const REMARK_PLUGINS = [remarkGfm];
-
-const MARKDOWN_COMPONENTS = {
-  code({ inline, className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || '');
-    if (!inline && match && match[1] === 'mermaid') {
-      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
-    }
-    return <code className={className} {...props}>{children}</code>;
-  }
-};
 
 const ChatMessage = memo(function ChatMessage({ message }) {
   return (
@@ -38,7 +27,7 @@ const ChatMessage = memo(function ChatMessage({ message }) {
           </div>
         ) : (
           <div className="markdown-body">
-            <MarkdownRenderer remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+            <MarkdownRenderer remarkPlugins={REMARK_PLUGINS}>
               {message.content}
             </MarkdownRenderer>
           </div>
@@ -207,10 +196,7 @@ export default function AIChatPanel({ sessionId, setSessionId, onSessionUpdated,
               <div className="ai-message-bubble">
                 {streamingText ? (
                   <div className="markdown-body">
-                    <MarkdownRenderer
-                      remarkPlugins={REMARK_PLUGINS}
-                      components={MARKDOWN_COMPONENTS}
-                    >
+                    <MarkdownRenderer remarkPlugins={REMARK_PLUGINS}>
                       {streamingText}
                     </MarkdownRenderer>
                     <span className="cursor-blink" style={{ display: 'inline-block', width: '8px', height: '16px', background: '#e2e2e2', marginLeft: '4px', animation: 'blink 1s step-start infinite' }}></span>

@@ -35,17 +35,6 @@ const SECTION_MAP = [
   ['summary', 'Summary'],
 ];
 
-const SECTION_COMPONENTS = {
-  p: 'p',
-  code({ inline, className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || '');
-    if (!inline && match && match[1] === 'mermaid') {
-      return <MermaidRenderer chart={String(children).replace(/\n$/, '')} />;
-    }
-    return <code className={className} {...props}>{children}</code>;
-  }
-};
-
 const INLINE_COMPONENTS = { p: 'span' };
 
 // Try to parse partial JSON by closing open brackets/braces
@@ -540,7 +529,7 @@ export default function TopicStudy() {
         {!isCollapsed && (
           <div className="section-body">
             {typeof data === 'string' && (
-              <MarkdownRenderer components={SECTION_COMPONENTS}>
+              <MarkdownRenderer>
                 {normalizeMarkdown(data)}
               </MarkdownRenderer>
             )}

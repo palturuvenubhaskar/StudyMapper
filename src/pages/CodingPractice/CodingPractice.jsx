@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, getCodingStats, getCodingProblems, saveCodingProblem, getLearningTrack, createLearningTrack, getLearningLesson, saveLearningLesson } from '../../data/repository';
 import { generateLearningLessonPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
@@ -109,6 +109,7 @@ export default function CodingPractice() {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ total: 0, solved: 0, topics: {} });
   const [recentProblems, setRecentProblems] = useState([]);
+  const [showAllProblems, setShowAllProblems] = useState(false);
   
   // Practice state
   const [language, setLanguage] = useState('Python');
@@ -124,18 +125,32 @@ export default function CodingPractice() {
   const [activeLessonIdx, setActiveLessonIdx] = useState(0);
   const [trackLoading, setTrackLoading] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const p = await getStudentProfile();
-      setProfile(p);
-      if (p) {
-        const s = await getCodingStats(p.id);
-        setStats(s);
-        const problems = await getCodingProblems(p.id);
-        setRecentProblems(problems.slice(0, 10));
-      }
-    })();
+  // Load the profile plus every problem the student has generated. Guest
+  // problems are included so earlier work never disappears after onboarding.
+  const loadPracticeHistory = useCallback(async () => {
+    const p = await getStudentProfile();
+    // Keep the same object when the profile has not changed so the learning
+    // track effect does not reload on every window focus.
+    setProfile(prev => (prev?.id === p?.id ? prev : p));
+    const ownerId = p?.id || 'guest';
+    const [s, problems] = await Promise.all([
+      getCodingStats(ownerId),
+      getCodingProblems(ownerId),
+    ]);
+    setStats(s);
+    setRecentProblems(problems);
   }, []);
+
+  useEffect(() => {
+    loadPracticeHistory();
+  }, [loadPracticeHistory]);
+
+  // Problems generated in the workspace should be visible when we come back.
+  useEffect(() => {
+    const refresh = () => loadPracticeHistory();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [loadPracticeHistory]);
 
   // Load learning track when tab or language changes
   useEffect(() => {
@@ -241,6 +256,8 @@ export default function CodingPractice() {
 
   const difficultyColor = (d) => d === 'Easy' ? 'var(--success)' : d === 'Medium' ? 'var(--warning)' : 'var(--danger)';
 
+  const visibleProblems = showAllProblems ? recentProblems : recentProblems.slice(0, 10);
+
   return (
     <div className="coding-hub">
 
@@ -343,11 +360,11 @@ export default function CodingPractice() {
           )}
 
           {/* Recent Problems */}
-          {recentProblems.length > 0 && (
-            <div style={{ marginTop: '24px' }}>
-              <h3 style={{ marginBottom: '16px' }}>Recent Problems</h3>
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={{ marginBottom: '16px' }}>Recent Problems</h3>
+            {recentProblems.length > 0 ? (
               <div className="recent-problems-list">
-                {recentProblems.map(p => (
+                {visibleProblems.map(p => (
                   <div key={p.id} className="glass-card recent-problem-card" onClick={() => navigate(`/coding/workspace/${p.id}`)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                       <span className="badge" style={{ background: `${difficultyColor(p.difficulty)}20`, color: difficultyColor(p.difficulty) }}>{p.difficulty}</span>
@@ -363,8 +380,21 @@ export default function CodingPractice() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="glass-card" style={{ padding: '24px', color: 'var(--text-muted)' }}>
+                Problems you generate will appear here so you can reopen them later.
+              </div>
+            )}
+            {recentProblems.length > 10 && (
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: '12px' }}
+                onClick={() => setShowAllProblems(value => !value)}
+              >
+                {showAllProblems ? 'Show less' : `Show all ${recentProblems.length} problems`}
+              </button>
+            )}
+          </div>
         </>
       ) : (
         <div className="learning-track-container" style={{ marginTop: '24px' }}>

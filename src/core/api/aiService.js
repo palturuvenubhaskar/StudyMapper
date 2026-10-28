@@ -434,7 +434,7 @@ Return ONLY a valid JSON object matching this schema exactly. For any missing/in
   "introduction": "Simple explanation: What it is, why it is important, where it is used.",
   "core_concepts": "Markdown string: Break into logical sections with headings. Explain technical terms when they first appear.",
   "how_it_works": "Markdown string: Step-by-step process using numbered points. Skip if not applicable.",
-  "diagram": "Markdown string: ALWAYS ATTEMPT to generate a Mermaid diagram if the topic has any visual architecture, workflow, hierarchy, or flowchart. MUST be inside a markdown code block with 'mermaid' language (e.g. \`\`\`mermaid\\ngraph TD\\n...\\n\`\`\`). CRITICAL: Quote node labels containing special characters or spaces (e.g., id[\"Label (Extra Info)\"]).",
+  "diagram": "Markdown string: ALWAYS ATTEMPT to generate a Mermaid diagram if the topic has any visual architecture, workflow, hierarchy, or flowchart. Use 'flowchart TD' (or 'flowchart LR' for wide flows) inside a fenced markdown code block labelled 'mermaid'. CRITICAL: Put every node label in double quotes (e.g., A["Start"] --> B["Next step"]) and never use parentheses, square brackets, or unescaped quotes inside a label. Use <br/> instead of newlines inside labels. Do NOT output raw Mermaid without the fence.",
   "real_life_analogy": "One simple everyday analogy.",
   "real_world_example": "One practical example in real life, industry, or technology.",
   "applications": ["Application 1: one-line explanation", "Application 2: one-line explanation"],
@@ -895,7 +895,7 @@ export const generateQuickQuizPrompt = (topicTitle, contentString) => [
 ];
 
 export const generateConceptWebPrompt = (topicTitle, contentString) => [
-  { role: 'system', content: `You are an AI mindmap generator. Generate a valid Mermaid.js mindmap summarizing the content. Start with "mindmap\\n  root(Topic)" and use proper indentation and parentheses/brackets.` },
+  { role: 'system', content: `You are a Mermaid.js mindmap generator. Return ONLY one fenced mermaid code block. Use valid mindmap syntax: the first line is "mindmap", the second is "  root((Topic))", then each child on its own line with consistent indentation. Never use arrows (-->), colons, or brackets inside node text. Keep every label short and plain.` },
   { role: 'user', content: `Topic: ${topicTitle}\n\nContent:\n${contentString}\n\nGenerate the Mermaid mindmap block only (wrapped in \`\`\`mermaid\n...\n\`\`\`).` }
 ];
 

@@ -10,7 +10,10 @@ import {
   addBookmark,
   getAllBookmarks,
   getSubjectsProgress,
-  searchAll
+  searchAll,
+  saveCodingProblem,
+  getCodingProblems,
+  getCodingStats
 } from './repository';
 
 describe('Database Repository Tests', () => {
@@ -110,5 +113,28 @@ describe('Database Repository Tests', () => {
 
     const old = await searchAll('needle');
     expect(old.filter(r => r.type === 'topic-content')).toHaveLength(0);
+  });
+
+  it('keeps guest coding problems visible after a profile is created', async () => {
+    const guestProblem = await saveCodingProblem('guest', {
+      title: 'Guest problem',
+      language: 'Python',
+      topic: 'Arrays',
+      difficulty: 'Easy',
+      statement: 'Solve it',
+    });
+    const profileProblem = await saveCodingProblem('student-1', {
+      title: 'Profile problem',
+      language: 'Python',
+      topic: 'Arrays',
+      difficulty: 'Easy',
+      statement: 'Solve it',
+    });
+
+    const problems = await getCodingProblems('student-1');
+    expect(problems.map(p => p.id).sort()).toEqual([guestProblem.id, profileProblem.id].sort());
+
+    const stats = await getCodingStats('student-1');
+    expect(stats.total).toBe(2);
   });
 });
