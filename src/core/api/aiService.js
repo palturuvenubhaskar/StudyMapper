@@ -874,6 +874,46 @@ If there's a significantly better algorithm, explain it with pseudocode.
 Be thorough but encouraging.` }
 ];
 
+/**
+ * Tutor-style review for a lesson exercise. Unlike the competitive-programming
+ * review above, this stays short, concrete, and beginner-friendly, and starts
+ * with a verdict the UI can read back.
+ */
+export const reviewLearningSolutionPrompt = (exercise, code, language) => [
+  {
+    role: 'system',
+    content: 'You are a patient programming tutor reviewing a beginner who just read a short lesson. Reply in concise, encouraging Markdown. Never rewrite the whole solution for them.'
+  },
+  {
+    role: 'user',
+    content: `A beginner is working through the lesson "${exercise.title}" in ${language}.
+
+Exercise:
+${exercise.statement || '(No exercise text was provided.)'}
+
+${exercise.sample_input ? `Sample input:\n${exercise.sample_input}\n` : ''}${exercise.sample_output ? `Expected output:\n${exercise.sample_output}\n` : ''}
+Their code:
+\`\`\`${language.toLowerCase()}
+${code}
+\`\`\`
+
+Review it using exactly these sections:
+
+## Verdict
+Begin this section with one of: ✅ Correct, ⚠️ Almost there, ❌ Not yet — followed by one sentence explaining why.
+
+## What works
+One or two short bullet points.
+
+## Fix this
+The smallest specific change that unblocks them, with a short snippet only if it helps. At most three bullets.
+
+## Try next
+One sentence: a follow-up idea or what to watch for.
+
+Keep the whole review under 220 words and skip complexity analysis unless it is directly useful.` }
+];
+
 export const generateVisualDebugPrompt = (problem, code, language) => [
   { role: 'system', content: `You are a visual debugger. Trace the execution of the user's code step-by-step using the sample input. Output a markdown table with headers: | Step | Line | Variables | Explanation |.` },
   { role: 'user', content: `Problem: ${problem.title}\nSample Input: ${problem.sample_input}\n\nUser Code:\n\`\`\`${language}\n${code}\n\`\`\`\n\nGenerate the execution trace.` }

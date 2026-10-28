@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getStudentProfile, getCodingStats, getCodingProblems, saveCodingProblem, getLearningTrack, createLearningTrack, getLearningLesson, saveLearningLesson } from '../../data/repository';
-import { generateLearningLessonPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen, CheckCircle2, Circle, Lock, Play, RotateCcw, Type, Calculator, GitBranch, Repeat, Box, List, TerminalSquare, Database, Cpu, FileCode, Clock } from 'lucide-react';
+import { Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen, CheckCircle2, Lock, Clock } from 'lucide-react';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
+import { LANGUAGES, getCurriculum } from './data/curriculum';
 import './CodingPractice.css';
-
-const LANGUAGES = ['HTML', 'CSS', 'C', 'C++', 'C#', 'Java', 'Python', 'JavaScript', 'TypeScript', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'R', 'Dart', 'Scala'];
 
 const TOPIC_CATEGORIES = {
   'Fundamentals': [
@@ -54,57 +52,16 @@ Object.entries(TOPIC_CATEGORIES).forEach(([category, topics]) => {
   TOPICS_OPTIONS.push({ label: category, value: '', isGroupHeader: true });
   topics.forEach(t => TOPICS_OPTIONS.push({ label: t, value: t }));
 });
-const CURRICULUMS = {
-  HTML: [
-    { title: 'HTML Basics and Structure', icon: FileCode, time: '5 mins' },
-    { title: 'Headings, Paragraphs, and Text', icon: Type, time: '8 mins' },
-    { title: 'Links and Images', icon: Box, time: '8 mins' },
-    { title: 'Lists (Ordered and Unordered)', icon: List, time: '8 mins' },
-    { title: 'Tables and Data Display', icon: Database, time: '10 mins' },
-    { title: 'Forms and Input Elements', icon: TerminalSquare, time: '12 mins' },
-    { title: 'Semantic HTML Elements', icon: Cpu, time: '10 mins' },
-    { title: 'Audio, Video, and Media', icon: Box, time: '10 mins' },
-    { title: 'HTML Accessibility Basics', icon: CheckCircle2, time: '10 mins' },
-    { title: 'Building a Complete Web Page', icon: Code2, time: '15 mins' }
-  ],
-  CSS: [
-    { title: 'CSS Basics and Selectors', icon: FileCode, time: '5 mins' },
-    { title: 'Colors, Fonts, and Text Styling', icon: Type, time: '8 mins' },
-    { title: 'Box Model (Margin, Padding, Border)', icon: Box, time: '10 mins' },
-    { title: 'Display and Positioning', icon: GitBranch, time: '12 mins' },
-    { title: 'Flexbox Layout', icon: List, time: '15 mins' },
-    { title: 'CSS Grid Layout', icon: Database, time: '15 mins' },
-    { title: 'Responsive Design and Media Queries', icon: TerminalSquare, time: '12 mins' },
-    { title: 'Transitions and Animations', icon: Repeat, time: '12 mins' },
-    { title: 'Pseudo-classes and Pseudo-elements', icon: Calculator, time: '10 mins' },
-    { title: 'Building a Responsive Page', icon: Code2, time: '20 mins' }
-  ],
-  default: [
-    { title: 'Hello World & Program Structure', icon: Code2, time: '5 mins' },
-    { title: 'Variables and Data Types', icon: Type, time: '5 mins' },
-    { title: 'Basic Input & Output', icon: TerminalSquare, time: '5 mins' },
-    { title: 'Basic Operators and Math', icon: Calculator, time: '8 mins' },
-    { title: 'Conditionals (If/Else)', icon: GitBranch, time: '10 mins' },
-    { title: 'Loops (For and While)', icon: Repeat, time: '12 mins' },
-    { title: 'Pattern Printing', icon: Box, time: '10 mins' },
-    { title: 'Functions and Scope', icon: Box, time: '15 mins' },
-    { title: 'Arrays / Lists Basics', icon: List, time: '12 mins' },
-    { title: 'Number Problems & Math Logic', icon: Calculator, time: '12 mins' },
-    { title: 'Strings and Manipulation', icon: TerminalSquare, time: '10 mins' },
-    { title: 'Dictionaries / Maps / Objects', icon: Database, time: '15 mins' },
-    { title: 'Error Handling & Exceptions', icon: FileCode, time: '10 mins' },
-    { title: 'Object-Oriented Basics', icon: Cpu, time: '20 mins' },
-    { title: 'File I/O and Final Project', icon: FileCode, time: '15 mins' }
-  ]
-};
-
-const getCurriculum = (lang) => CURRICULUMS[lang] || CURRICULUMS.default;
 
 export default function CodingPractice() {
   const navigate = useNavigate();
   const toast = useToast();
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState('practice'); // 'practice' or 'learn'
+  // Deep links from a lesson can reopen the learning track on the right language.
+  const requestedTab = searchParams.get('tab');
+  const requestedLanguage = searchParams.get('lang');
+  const [activeTab, setActiveTab] = useState(requestedTab === 'learn' ? 'learn' : 'practice'); // 'practice' or 'learn'
 
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ total: 0, solved: 0, topics: {} });
@@ -118,7 +75,9 @@ export default function CodingPractice() {
   const [generating, setGenerating] = useState(false);
 
   // Learning state
-  const [learnLanguage, setLearnLanguage] = useState('Python');
+  const [learnLanguage, setLearnLanguage] = useState(
+    () => (LANGUAGES.includes(requestedLanguage) ? requestedLanguage : 'Python')
+  );
   const [learningTrack, setLearningTrack] = useState(null);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [generatingLesson, setGeneratingLesson] = useState(false);
@@ -153,6 +112,13 @@ export default function CodingPractice() {
   }, [loadPracticeHistory]);
 
   // Load learning track when tab or language changes
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const lang = searchParams.get('lang');
+    if (tab === 'learn') setActiveTab('learn');
+    if (LANGUAGES.includes(lang)) setLearnLanguage(lang);
+  }, [searchParams]);
+
   useEffect(() => {
     if (activeTab === 'learn') {
       loadLearningTrack();

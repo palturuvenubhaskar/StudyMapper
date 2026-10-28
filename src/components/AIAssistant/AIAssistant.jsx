@@ -5,6 +5,7 @@ import { generateMorningDigest } from '../../core/analytics/morningDigest';
 import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, Maximize2, Minimize2, GraduationCap, AlertCircle, Sparkles } from 'lucide-react';
 import GeneratingState from '../GeneratingState/GeneratingState';
 import AIChatPanel from './AIChatPanel';
+import { consumeAICoachRequest } from './coachBridge';
 import './AIAssistant.css';
 
 export default function AIAssistant({ userId = 'guest', currentTopic = null, currentActivity = 'general' }) {
@@ -79,8 +80,18 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
 
   useEffect(() => {
     const handleToggle = () => setIsOpen(prev => !prev);
+    const handleOpen = () => {
+      consumeAICoachRequest();
+      setIsOpen(true);
+    };
     window.addEventListener('toggle-ai-coach', handleToggle);
-    return () => window.removeEventListener('toggle-ai-coach', handleToggle);
+    window.addEventListener('open-ai-coach', handleOpen);
+    // A page may have asked to open the coach before this lazy chunk loaded.
+    if (consumeAICoachRequest()) setIsOpen(true);
+    return () => {
+      window.removeEventListener('toggle-ai-coach', handleToggle);
+      window.removeEventListener('open-ai-coach', handleOpen);
+    };
   }, []);
 
   useEffect(() => {

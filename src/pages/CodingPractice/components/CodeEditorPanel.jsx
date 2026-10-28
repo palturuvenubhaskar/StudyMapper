@@ -29,7 +29,7 @@ const ALL_LANGUAGES = Object.keys(LANGUAGE_MAP);
 export default function CodeEditorPanel({ 
   code, setCode, language, setLanguage, 
   onRun, isRunning, onReset, onSubmit, isSubmitting,
-  onAskAI
+  onAskAI, mode = 'practice', lockLanguage = false
 }) {
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -55,7 +55,7 @@ export default function CodeEditorPanel({
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (e.shiftKey) {
+        if (e.shiftKey || mode === 'learn') {
           if (onSubmit && !isSubmitting) onSubmit();
         } else {
           if (onRun && !isRunning) onRun();
@@ -64,7 +64,7 @@ export default function CodeEditorPanel({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onRun, onSubmit, isRunning, isSubmitting]);
+  }, [onRun, onSubmit, isRunning, isSubmitting, mode]);
 
   return (
     <div className="code-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -72,30 +72,37 @@ export default function CodeEditorPanel({
       <div className="code-toolbar">
         {/* Left: Language selector */}
         <div className="code-toolbar-left">
-          <div className="lang-selector" ref={dropdownRef}>
-            <button 
-              className="lang-btn"
-              onClick={() => setShowLangDropdown(!showLangDropdown)}
-            >
-              {language || 'Select Language'} <ChevronDown size={12} />
-            </button>
-            {showLangDropdown && (
-              <div className="lang-dropdown">
-                {ALL_LANGUAGES.map(lang => (
-                  <button 
-                    key={lang}
-                    className={`lang-option ${language === lang ? 'active' : ''}`}
-                    onClick={() => {
-                      setLanguage(lang);
-                      setShowLangDropdown(false);
-                    }}
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {lockLanguage ? (
+            <span className="lang-chip">
+              <span className="lang-chip-dot" aria-hidden="true" />
+              {language}
+            </span>
+          ) : (
+            <div className="lang-selector" ref={dropdownRef}>
+              <button 
+                className="lang-btn"
+                onClick={() => setShowLangDropdown(!showLangDropdown)}
+              >
+                {language || 'Select Language'} <ChevronDown size={12} />
+              </button>
+              {showLangDropdown && (
+                <div className="lang-dropdown">
+                  {ALL_LANGUAGES.map(lang => (
+                    <button 
+                      key={lang}
+                      className={`lang-option ${language === lang ? 'active' : ''}`}
+                      onClick={() => {
+                        setLanguage(lang);
+                        setShowLangDropdown(false);
+                      }}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: Actions */}
@@ -103,41 +110,48 @@ export default function CodeEditorPanel({
           <button 
             className="toolbar-btn" 
             onClick={onReset}
-            title="Reset to starter code"
+            title={mode === 'learn' ? 'Clear your code and review' : 'Clear your code'}
+            aria-label="Reset code"
           >
-            <RefreshCw size={14} /> Reset
+            <RefreshCw size={14} /> <span className="toolbar-btn-text">Reset</span>
           </button>
 
           <button 
             className="toolbar-btn toolbar-btn-ai" 
             onClick={() => onAskAI && onAskAI()}
+            title="Ask the AI coach"
+            aria-label="Ask AI"
           >
-            <Sparkles size={14} /> Ask AI
+            <Sparkles size={14} /> <span className="toolbar-btn-text">Ask AI</span>
           </button>
 
           <div className="toolbar-divider" />
 
-          <button 
-            className="toolbar-action-btn toolbar-run-btn" 
-            onClick={onRun}
-            disabled={isRunning || isSubmitting}
-            title="Run visible test cases (Ctrl+Enter)"
-          >
-            {isRunning ? (
-              <><RefreshCw size={14} className="spin-icon" /> Running</>
-            ) : (
-              <><Play size={14} /> Run</>
-            )}
-          </button>
+          {mode !== 'learn' && (
+            <button 
+              className="toolbar-action-btn toolbar-run-btn" 
+              onClick={onRun}
+              disabled={isRunning || isSubmitting}
+              title="Run visible test cases (Ctrl+Enter)"
+            >
+              {isRunning ? (
+                <><RefreshCw size={14} className="spin-icon" /> Running</>
+              ) : (
+                <><Play size={14} /> Run</>
+              )}
+            </button>
+          )}
           
           <button 
-            className="toolbar-action-btn toolbar-submit-btn" 
+            className={`toolbar-action-btn toolbar-submit-btn${mode === 'learn' ? ' is-learn-cta' : ''}`}
             onClick={onSubmit}
             disabled={isRunning || isSubmitting}
-            title="Submit all test cases (Ctrl+Shift+Enter)"
+            title={mode === 'learn' ? 'Get AI feedback on your code (Ctrl+Enter)' : 'Submit all test cases (Ctrl+Shift+Enter)'}
           >
             {isSubmitting ? (
-              <><RefreshCw size={14} className="spin-icon" /> Submitting</>
+              <><RefreshCw size={14} className="spin-icon" /> {mode === 'learn' ? 'Reviewing' : 'Submitting'}</>
+            ) : mode === 'learn' ? (
+              <><Sparkles size={14} /> Check my code</>
             ) : (
               <><Send size={14} /> Submit</>
             )}
