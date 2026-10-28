@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSubjects, getSubjectsProgress, getAllQuestionBanks } from '../../data/repository';
 import { db } from '../../data/db';
-import { Search, ChevronRight, Play, BookOpen, FileText, Plus, Award, Activity } from 'lucide-react';
+import { Search, Play, BookOpen, FileText, Plus, Award, Activity } from 'lucide-react';
 import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
 import PomodoroTimer from '../../components/PomodoroTimer/PomodoroTimer';
 import './Dashboard.css';
@@ -14,10 +14,19 @@ function getGreeting() {
   return 'evening';
 }
 
+function getProgressCaption(progress) {
+  if (progress <= 0) return 'No topics studied yet';
+  if (progress < 25) return 'Just getting started';
+  if (progress < 50) return 'Building momentum';
+  if (progress < 75) return 'Halfway there';
+  if (progress < 100) return 'Almost there';
+  return 'Every topic studied';
+}
+
 export default function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   const [qbanks, setQbanks] = useState([]);
-  const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0 });
+  const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0, resumeProgress: 0 });
   const [analytics, setAnalytics] = useState({ weekData: [], mockAvg: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -38,11 +47,13 @@ export default function Dashboard() {
     setQbanks(allQbanks);
 
     const progress = await getSubjectsProgress(subs.map(s => s.id));
-    const totalProgressSum = Object.values(progress).reduce((sum, p) => sum + p, 0);
+    const progressValues = Object.values(progress);
+    const totalProgressSum = progressValues.reduce((sum, p) => sum + p, 0);
 
     setStats({
       totalUnits: subs.length,
-      avgProgress: subs.length > 0 ? Math.round(totalProgressSum / subs.length) : 0
+      avgProgress: subs.length > 0 ? Math.round(totalProgressSum / subs.length) : 0,
+      resumeProgress: subs.length > 0 ? progress[subs[0].id] ?? 0 : 0,
     });
 
     // Load Analytics Data
@@ -80,6 +91,17 @@ export default function Dashboard() {
   useEffect(() => { loadSubjects(); }, []);
 
   const maxStudyMinutes = Math.max(...analytics.weekData.map(d => d.minutes), 60);
+  const resumeSubject = subjects[0];
+  const resumeProgress = resumeSubject ? stats.resumeProgress : 0;
+  const resumeTitle = resumeSubject ? resumeSubject.title : 'Create your first subject';
+  const resumeMeta = !resumeSubject
+    ? 'Your first study map starts here.'
+    : resumeProgress > 0
+      ? `${resumeProgress}% of topics studied`
+      : 'No topics studied yet';
+  const avgProgressCaption = stats.totalUnits === 0
+    ? 'Add a subject to begin'
+    : getProgressCaption(stats.avgProgress);
 
   return (
     <div className="dashboard-content">
@@ -100,9 +122,9 @@ export default function Dashboard() {
       {loading ? (
         <div className="dashboard-grid" style={{ padding: '2rem' }}>
           <div className="skeleton" style={{ height: '140px', marginBottom: '24px' }}></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '24px', marginBottom: '40px' }}>
-             <div className="skeleton" style={{ height: '120px' }}></div>
-             <div className="skeleton" style={{ height: '120px' }}></div>
+          <div className="dashboard-snapshot">
+            <div className="skeleton" style={{ height: '232px' }}></div>
+            <div className="skeleton" style={{ height: '232px' }}></div>
           </div>
         </div>
       ) : (
@@ -181,64 +203,70 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '24px', marginBottom: '40px' }}>
-             {/* Jump Back In */}
-             <button
-                type="button"
-                className="surface-card premium-card jump-card card-button"
-                onClick={() => navigate(subjects.length > 0 ? `/subject/${subjects[0].id}` : '/create')}
-             >
-                <span className="hover-glow" aria-hidden="true"></span>
-                <span className="jump-card-content">
-                   <span className="jump-icon-box">
-                      <Play size={28} style={{ marginLeft: '4px' }} fill="currentColor" aria-hidden="true" />
-                   </span>
-                   <span>
-                      <span className="jump-eyebrow">Jump back in</span>
-                      <span className="jump-title">{subjects.length > 0 ? subjects[0].title : 'Create a subject'}</span>
-                   </span>
+          <section className="dashboard-snapshot" aria-label="Learning snapshot">
+            {/* Resume card */}
+            <button
+              type="button"
+              className="resume-card card-button"
+              onClick={() => navigate(resumeSubject ? `/subject/${resumeSubject.id}` : '/create')}
+              aria-label={resumeSubject ? `Continue learning ${resumeSubject.title}, ${resumeProgress}% studied` : 'Create your first subject'}
+            >
+              {resumeSubject && (
+                <span className="resume-initial" aria-hidden="true">
+                  {resumeSubject.title.trim().charAt(0).toUpperCase()}
                 </span>
-                <ChevronRight size={24} className="jump-chevron" aria-hidden="true" />
-             </button>
-             
-             {/* Stats Cards */}
-             <div className="stats-grid">
-                <div className="surface-card premium-card stat-card">
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Total Subjects</div>
-                         <div className="stat-value tabular-nums">
-                            {stats.totalUnits}
-                         </div>
-                      </div>
-                      <div className="stat-icon-box" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
-                         <BookOpen size={24} />
-                      </div>
-                   </div>
-                </div>
-                
-                <div className="surface-card premium-card stat-card">
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Avg Progress</div>
-                         <div className="stat-value tabular-nums">
-                            {stats.avgProgress}%
-                         </div>
-                      </div>
-                      <div className="stat-icon-box" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
-                         <Award size={24} />
-                      </div>
-                   </div>
-                   <div className="stat-progress-track" style={{ marginTop: '16px' }}>
-                      <div className="stat-progress-bar" style={{ width: `${stats.avgProgress}%`, background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }}></div>
-                   </div>
-                </div>
-             </div>
-             
-             {/* Gamification Dashboard */}
-             <div style={{ gridColumn: '1 / -1' }}>
-               <GamificationDashboard userId="guest" />
-             </div>
+              )}
+              <span className="resume-kicker">
+                <span className="resume-signal" aria-hidden="true" />
+                {resumeSubject ? 'Continue learning' : 'Start here'}
+              </span>
+              <span className="resume-main">
+                <span className="resume-copy">
+                  <span className="resume-title" title={resumeTitle}>{resumeTitle}</span>
+                  <span className="resume-meta">{resumeMeta}</span>
+                </span>
+                <span className="resume-action" aria-hidden="true">
+                  <Play size={20} fill="currentColor" />
+                </span>
+              </span>
+              <span className="resume-footer">
+                <span className="resume-progress-track" aria-hidden="true">
+                  <span className="resume-progress-fill" style={{ width: `${resumeProgress}%` }} />
+                </span>
+                <span className="resume-progress-value tabular-nums">{resumeProgress}%</span>
+              </span>
+            </button>
+
+            {/* Average progress */}
+            <div className="metric-card surface-card">
+              <div className="metric-top">
+                <span className="metric-label">Avg progress</span>
+                <Award size={18} className="metric-icon metric-icon--amber" aria-hidden="true" />
+              </div>
+              <div className="metric-readout">
+                <span className="metric-value tabular-nums">
+                  {stats.avgProgress}<span className="metric-value-suffix">%</span>
+                </span>
+              </div>
+              <div className="metric-progress">
+                <span className="metric-progress-track" aria-hidden="true">
+                  <span
+                    className="metric-progress-fill"
+                    style={{
+                      width: `${stats.avgProgress}%`,
+                      minWidth: stats.avgProgress > 0 ? '6px' : '0',
+                    }}
+                  />
+                </span>
+                <p className="metric-caption">{avgProgressCaption}</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Gamification Dashboard */}
+          <div>
+            <GamificationDashboard userId="guest" />
+          </div>
 
              {/* Analytics Dashboard */}
              <div className="surface-card premium-card analytics-panel">
@@ -289,7 +317,6 @@ export default function Dashboard() {
                </div>
              </div>
 
-           </div>
          </div>
        )}
     </div>
