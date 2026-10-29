@@ -6,7 +6,7 @@ import { callOpenRouterStream, getTopicNotesPrompt, extractJson, generatePodcast
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GeneratingState from '../../components/GeneratingState/GeneratingState';
 import GenerationError from '../../components/GenerationError/GenerationError';
-import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronUp, Loader, Layers, Copy, Download, Star, Volume2, Mic, CheckSquare, GitBranch, Pause, Square, Play, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Bookmark, BookmarkCheck, StickyNote, Plus, Trash2, Save, ChevronDown, ChevronRight, Loader, Layers, Copy, Star, Volume2, Mic, CheckSquare, GitBranch, Pause, Square, Play, X, Clock, BookOpen, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer/MarkdownRenderer';
 import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
 import YouTubeLinker from '../../components/YouTubeLinker/YouTubeLinker';
@@ -36,6 +36,29 @@ const SECTION_MAP = [
 ];
 
 const INLINE_COMPONENTS = { p: 'span' };
+
+// Sections that carry a different reading weight get their own accent.
+const SECTION_TONES = {
+  key_points: 'is-key',
+  summary: 'is-summary',
+  advantages: 'is-positive',
+  disadvantages: 'is-caution',
+};
+
+const hasSectionContent = (value) => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
+
+const countWords = (value) => {
+  if (!value) return 0;
+  if (typeof value === 'string') return value.trim().split(/\s+/).filter(Boolean).length;
+  if (Array.isArray(value)) return value.reduce((total, item) => total + countWords(item), 0);
+  if (typeof value === 'object') return Object.values(value).reduce((total, item) => total + countWords(item), 0);
+  return 0;
+};
 
 // Try to parse partial JSON by closing open brackets/braces
 const tryParsePartialJson = (raw) => {
@@ -130,6 +153,7 @@ export default function TopicStudy() {
   // Collapsed sections
   const [collapsedSections, setCollapsedSections] = useState(new Set());
   const [readingProgress, setReadingProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState(null);
 
   // Phase 9 Features
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
@@ -153,17 +177,40 @@ export default function TopicStudy() {
 
   const studyStartTime = useRef(Date.now());
 
+  // Use whichever data we have: final parsed or streaming partial
+  const displayData = parsedContent || streamParsed;
+  const visibleSections = displayData
+    ? SECTION_MAP.filter(([key]) => hasSectionContent(displayData[key]))
+    : [];
+  const readMinutes = Math.max(1, Math.round(countWords(displayData) / 200));
+  const progressPercent = Math.round(readingProgress);
+
+  // Reading progress: this page scrolls inside the app shell, not on the window.
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTotal = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      if (scrollTotal > 0) {
-        const scrolled = (document.documentElement.scrollTop / scrollTotal) * 100;
-        setReadingProgress(scrolled);
+    const measure = () => {
+      const nodes = [
+        document.scrollingElement,
+        document.querySelector('.main-content-wrapper'),
+        document.querySelector('.content-container'),
+      ];
+      let ratio = 0;
+      for (const node of nodes) {
+        if (!node) continue;
+        const scrollable = node.scrollHeight - node.clientHeight;
+        if (scrollable > 8 && node.scrollTop > 0) {
+          ratio = Math.max(ratio, node.scrollTop / scrollable);
+        }
       }
+      setReadingProgress(Math.min(100, Math.max(0, ratio * 100)));
     };
-    window.addEventListener('scroll', handleScroll);
+
+    measure();
+    document.addEventListener('scroll', measure, { capture: true, passive: true });
+    window.addEventListener('resize', measure);
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', measure, { capture: true });
+      window.removeEventListener('resize', measure);
       // Log duration when leaving the page
       if (topicId) {
         const durationSeconds = Math.floor((Date.now() - studyStartTime.current) / 1000);
@@ -171,6 +218,42 @@ export default function TopicStudy() {
       }
     };
   }, [topicId]);
+
+  // Keep the outline rail in sync with whichever section is in view.
+  useEffect(() => {
+    const updateActive = () => {
+      const nodes = document.querySelectorAll('#topic-content-export .content-section');
+      if (!nodes.length) {
+        setActiveSection(null);
+        return;
+      }
+      const shellTop = document.querySelector('.main-content-wrapper')?.getBoundingClientRect().top ?? 0;
+      const threshold = shellTop + 150;
+      const scroller = document.querySelector('.main-content-wrapper') || document.scrollingElement;
+      const atBottom = scroller
+        ? scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4
+        : false;
+      let current = nodes[0].getAttribute('data-section-key');
+      nodes.forEach((node) => {
+        if (node.getBoundingClientRect().top <= threshold) {
+          current = node.getAttribute('data-section-key');
+        }
+      });
+      if (atBottom) {
+        current = nodes[nodes.length - 1].getAttribute('data-section-key');
+      }
+      setActiveSection(current);
+    };
+
+    updateActive();
+    document.addEventListener('scroll', updateActive, { capture: true, passive: true });
+    window.addEventListener('resize', updateActive);
+
+    return () => {
+      document.removeEventListener('scroll', updateActive, { capture: true });
+      window.removeEventListener('resize', updateActive);
+    };
+  }, [displayData, collapsedSections]);
 
   const loadTopicData = async () => {
     setLoading(true);
@@ -335,6 +418,18 @@ export default function TopicStudy() {
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
+    });
+  };
+
+  const jumpToSection = (key) => {
+    setCollapsedSections(prev => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    requestAnimationFrame(() => {
+      document.getElementById(`topic-section-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
@@ -516,18 +611,33 @@ export default function TopicStudy() {
   };
 
   // Render a section card (same for streaming and final)
-  const renderSection = (key, title, data) => {
+  const renderSection = (key, title, data, index) => {
     if (!data) return null;
     const isCollapsed = collapsedSections.has(key);
+    const tone = SECTION_TONES[key] || '';
 
     return (
-      <div className="content-section glass-card" key={key}>
-        <div className="section-header" onClick={() => toggleSection(key)}>
-          <h3>{title}</h3>
-          {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        </div>
+      <section
+        id={`topic-section-${key}`}
+        data-section-key={key}
+        className={`content-section ${tone}`}
+        key={key}
+      >
+        <button
+          type="button"
+          className="section-header"
+          onClick={() => toggleSection(key)}
+          aria-expanded={!isCollapsed}
+          aria-controls={`topic-section-body-${key}`}
+        >
+          <span className="section-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <h3 className="section-title">{title}</h3>
+          <span className={`section-toggle ${isCollapsed ? '' : 'is-open'}`} aria-hidden="true">
+            <ChevronDown size={16} />
+          </span>
+        </button>
         {!isCollapsed && (
-          <div className="section-body">
+          <div className="section-body" id={`topic-section-body-${key}`}>
             {typeof data === 'string' && (
               <MarkdownRenderer>
                 {normalizeMarkdown(data)}
@@ -554,18 +664,19 @@ export default function TopicStudy() {
             )}
           </div>
         )}
-      </div>
+      </section>
     );
   };
 
   if (loading) {
     return (
-      <div className="topic-study" style={{ padding: '2rem' }}>
-        <div className="skeleton skeleton-title"></div>
-        <div className="skeleton skeleton-text"></div>
-        <div className="skeleton skeleton-text"></div>
-        <div className="skeleton skeleton-text short"></div>
-        <div style={{ marginTop: '2rem' }}>
+      <div className="topic-study is-plain">
+        <div className="ts-hero ts-skeleton-hero">
+          <div className="skeleton skeleton-title"></div>
+          <div className="skeleton skeleton-text"></div>
+          <div className="skeleton skeleton-text short"></div>
+        </div>
+        <div className="ts-skeleton-body">
           <div className="skeleton skeleton-title" style={{ width: '40%' }}></div>
           <div className="skeleton skeleton-text"></div>
           <div className="skeleton skeleton-text"></div>
@@ -577,23 +688,27 @@ export default function TopicStudy() {
   // No content, not streaming
   if (!content && !streaming) {
     return (
-      <div className="topic-study">
-        <button className="btn btn-ghost back-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /> Back</button>
-        <div className="empty-state">
-          <StickyNote size={64} />
-          <h3>{topic?.title}</h3>
-          <p>No notes generated yet. Click below to generate AI-powered study notes for this topic.</p>
+      <div className="topic-study is-plain">
+        <div className="ts-empty">
+          <button type="button" className="ts-back ts-empty-back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={15} aria-hidden="true" />
+            <span>Back</span>
+          </button>
+          <span className="ts-empty-icon" aria-hidden="true"><Sparkles size={20} /></span>
+          {subject?.name && <span className="ts-eyebrow">{subject.name}</span>}
+          <h1 className="ts-empty-title">{topic?.title}</h1>
+          <p>No notes yet. Generate a structured set of AI study notes for this topic, then come back to revise it anytime.</p>
           {generateError && (
             <GenerationError
               title="Couldn't generate notes"
               message={generateError}
               onRetry={() => handleGenerate(false)}
               retrying={streaming}
-              style={{ maxWidth: '520px' }}
+              style={{ maxWidth: '520px', width: '100%' }}
             />
           )}
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <button className="btn btn-primary btn-lg" onClick={() => handleGenerate(false)}>Generate Notes</button>
+          <div className="ts-empty-actions">
+            <button className="btn btn-primary btn-lg" onClick={() => handleGenerate(false)}>Generate notes</button>
             <button className="btn btn-secondary btn-lg" onClick={() => navigate(`/topic/${topicId}/flashcards`)}><Layers size={18} /> Flashcards</button>
           </div>
         </div>
@@ -601,351 +716,438 @@ export default function TopicStudy() {
     );
   }
 
-  // Use whichever data we have: final parsed or streaming partial
-  const displayData = parsedContent || streamParsed;
-
   return (
     <div className="topic-study">
-      <div className="reading-progress-bar" style={{ width: `${readingProgress}%` }}></div>
-      <header className="topic-header-card glass-card">
-        {/* Navigation & Context Row */}
-        <div className="topic-nav-row">
-          <div className="topic-nav-left">
-            <button className="btn btn-ghost btn-sm back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-            {subject?.name && (
-              <span className="topic-subject-crumb">
-                <span className="crumb-divider">/</span>
-                <span className="crumb-name">{subject.name}</span>
-              </span>
-            )}
-          </div>
+      <div className="reading-progress-bar" style={{ width: `${readingProgress}%` }} aria-hidden="true"></div>
 
-          <div className="topic-nav-right">
-            <div className="difficulty-badge" title="Set difficulty rating">
-              <span className="difficulty-label">Difficulty:</span>
-              <div className="difficulty-stars">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    className="star-btn"
-                    onClick={() => handleRateDifficulty(star)}
-                    aria-label={`Rate difficulty ${star} of 5`}
-                  >
-                    <Star
-                      size={13}
-                      fill={(topic?.difficulty_rating || 0) >= star ? "#f59e0b" : "transparent"}
-                      color={(topic?.difficulty_rating || 0) >= star ? "#f59e0b" : "var(--text-muted)"}
-                    />
-                  </button>
-                ))}
-              </div>
+      <div className="ts-main">
+        <header className="ts-hero">
+          <div className="ts-hero-top">
+            <div className="ts-crumbs">
+              <button type="button" className="ts-back" onClick={() => navigate(-1)}>
+                <ArrowLeft size={15} aria-hidden="true" />
+                <span>Back</span>
+              </button>
+              {subject?.name && (
+                <span className="ts-crumb-path">
+                  <span className="ts-crumb-sep" aria-hidden="true">/</span>
+                  <span className="ts-crumb-name">{subject.name}</span>
+                </span>
+              )}
             </div>
 
             <button
-              className={`btn btn-ghost btn-icon bookmark-btn ${bookmarked ? 'is-bookmarked' : ''}`}
+              type="button"
+              className={`ts-icon-btn ${bookmarked ? 'is-on' : ''}`}
               onClick={toggleBookmark}
-              title={bookmarked ? "Remove bookmark" : "Bookmark topic"}
-              aria-label="Bookmark topic"
+              title={bookmarked ? 'Remove bookmark' : 'Bookmark topic'}
+              aria-pressed={bookmarked}
+              aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark topic'}
             >
-              {bookmarked ? (
-                <BookmarkCheck size={18} fill="var(--success)" color="var(--success)" />
-              ) : (
-                <Bookmark size={18} />
-              )}
+              {bookmarked ? <BookmarkCheck size={17} fill="currentColor" /> : <Bookmark size={17} />}
             </button>
           </div>
-        </div>
 
-        {/* Title & Metadata Row */}
-        <div className="topic-title-section">
-          <h1 className="topic-main-title">{displayData?.topic_title || topic?.title}</h1>
+          <div className="ts-hero-copy">
+            {subject?.name && <span className="ts-eyebrow">{subject.name}</span>}
+            <h1 className="ts-title">{displayData?.topic_title || topic?.title}</h1>
+
+            <div className="ts-meta">
+              <span className="ts-meta-item">
+                <BookOpen size={14} aria-hidden="true" />
+                {visibleSections.length} {visibleSections.length === 1 ? 'section' : 'sections'}
+              </span>
+              <span className="ts-meta-item">
+                <Clock size={14} aria-hidden="true" />
+                {readMinutes} min read
+              </span>
+              <span className="ts-meta-sep" aria-hidden="true" />
+              <span className="ts-difficulty">
+                <span className="ts-difficulty-label">Difficulty</span>
+                <span className="ts-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className="star-btn"
+                      onClick={() => handleRateDifficulty(star)}
+                      aria-label={`Rate difficulty ${star} of 5`}
+                    >
+                      <Star
+                        size={14}
+                        fill={(topic?.difficulty_rating || 0) >= star ? '#f59e0b' : 'transparent'}
+                        color={(topic?.difficulty_rating || 0) >= star ? '#f59e0b' : 'var(--text-muted)'}
+                      />
+                    </button>
+                  ))}
+                </span>
+              </span>
+            </div>
+          </div>
 
           {prerequisites.length > 0 && (
-            <div className="topic-prerequisites">
-              <span className="prereq-label">Prerequisites:</span>
-              <div className="prereq-tags">
+            <div className="ts-prereqs">
+              <span className="ts-prereq-label">Prerequisites</span>
+              <div className="ts-prereq-list">
                 {prerequisites.map((pr) => (
                   <button
                     key={pr.id}
+                    type="button"
                     className="prereq-tag"
                     onClick={() => navigate(`/topic/${pr.id}`)}
                     title={`Go to ${pr.title}`}
                   >
-                    {pr.title}
+                    <span>{pr.title}</span>
+                    <ChevronRight size={12} aria-hidden="true" />
                   </button>
                 ))}
               </div>
             </div>
           )}
-        </div>
 
-        {/* Action Toolbar */}
-        <div className="topic-action-toolbar">
-          <div className="toolbar-left">
-            {!streaming && (
-              <>
-                <button
-                  className={`btn btn-sm ${showNotes ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setShowNotes(!showNotes)}
-                >
-                  <StickyNote size={14} />
-                  <span>Notes ({notes.length})</span>
-                </button>
-
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => navigate(`/topic/${topicId}/flashcards`)}
-                >
-                  <Layers size={14} />
-                  <span>Flashcards</span>
-                </button>
-
-                {isTTSPlaying ? (
-                  <button className="btn btn-primary btn-sm" onClick={handleTTSPause}>
-                    <Pause size={14} />
-                    <span>Pause</span>
-                  </button>
-                ) : isTTSPaused ? (
-                  <button className="btn btn-primary btn-sm" onClick={handleTTSPlay}>
-                    <Play size={14} />
-                    <span>Resume</span>
-                  </button>
-                ) : (
-                  <button className="btn btn-secondary btn-sm" onClick={handleTTSPlay}>
-                    <Volume2 size={14} />
-                    <span>Listen</span>
-                  </button>
-                )}
-
-                {(isTTSPlaying || isTTSPaused) && (
-                  <button
-                    className="btn btn-ghost btn-icon btn-sm"
-                    onClick={handleTTSStop}
-                    title="Stop audio playback"
-                  >
-                    <Square size={13} fill="currentColor" />
-                  </button>
-                )}
-
-                <button
-                  className="btn btn-ghost btn-icon btn-sm"
-                  onClick={handleCopyContent}
-                  title="Copy notes to clipboard"
-                  aria-label="Copy notes"
-                >
-                  <Copy size={15} />
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="toolbar-right">
-            <button
-              className="btn btn-secondary btn-sm regenerate-btn"
-              onClick={() => handleGenerate(true)}
-              disabled={streaming}
-            >
-              {streaming ? <Loader size={14} className="spin-icon" /> : <RefreshCw size={14} />}
-              <span>{streaming ? 'Generating...' : 'Regenerate'}</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {streaming && (
-        <div className="stream-indicator-bar">
-          <GeneratingState inline label="Generating notes" hint="Sections appear as they're ready." />
-        </div>
-      )}
-
-      {generateError && !streaming && (
-        <GenerationError
-          title="Couldn't regenerate notes"
-          message={generateError}
-          onRetry={() => handleGenerate(true)}
-          className="topic-generate-error"
-        />
-      )}
-
-      {/* Notes panel */}
-      {showNotes && !streaming && (
-        <div className="glass-card notes-panel">
-          <h3><StickyNote size={16} /> Personal Notes</h3>
-          <div className="note-input-row">
-            <textarea className="textarea" placeholder="Write a personal note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} />
-            <button className="btn btn-primary btn-sm" onClick={handleAddNote}><Plus size={14} /> Add</button>
-          </div>
-          {notes.map(note => (
-            <div key={note.id} className="note-item">
-              {editingNote === note.id ? (
-                <div className="note-edit-row">
-                  <textarea className="textarea" value={editNoteText} onChange={(e) => setEditNoteText(e.target.value)} rows={2} />
-                  <button className="btn btn-primary btn-sm" onClick={() => handleUpdateNote(note.id)}><Save size={14} /></button>
-                </div>
-              ) : (
+          <div className="ts-toolbar">
+            <div className="ts-toolbar-main">
+              {!streaming && (
                 <>
-                  <p>{note.content}</p>
-                  <div className="note-actions">
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setEditingNote(note.id); setEditNoteText(note.content); }}>Edit</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteNote(note.id)}><Trash2 size={12} /></button>
-                  </div>
+                  <button
+                    type="button"
+                    className={`ts-tool ${showNotes ? 'is-on' : ''}`}
+                    onClick={() => setShowNotes(!showNotes)}
+                  >
+                    <StickyNote size={14} aria-hidden="true" />
+                    <span>Notes</span>
+                    <span className="ts-tool-count">{notes.length}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="ts-tool"
+                    onClick={() => navigate(`/topic/${topicId}/flashcards`)}
+                  >
+                    <Layers size={14} aria-hidden="true" />
+                    <span>Flashcards</span>
+                  </button>
+
+                  {isTTSPlaying ? (
+                    <button type="button" className="ts-tool is-on" onClick={handleTTSPause}>
+                      <Pause size={14} aria-hidden="true" />
+                      <span>Pause</span>
+                    </button>
+                  ) : isTTSPaused ? (
+                    <button type="button" className="ts-tool is-on" onClick={handleTTSPlay}>
+                      <Play size={14} aria-hidden="true" />
+                      <span>Resume</span>
+                    </button>
+                  ) : (
+                    <button type="button" className="ts-tool" onClick={handleTTSPlay}>
+                      <Volume2 size={14} aria-hidden="true" />
+                      <span>Listen</span>
+                    </button>
+                  )}
+
+                  {(isTTSPlaying || isTTSPaused) && (
+                    <button
+                      type="button"
+                      className="ts-tool is-icon"
+                      onClick={handleTTSStop}
+                      title="Stop audio playback"
+                      aria-label="Stop audio playback"
+                    >
+                      <Square size={12} fill="currentColor" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="ts-tool is-icon"
+                    onClick={handleCopyContent}
+                    title="Copy notes to clipboard"
+                    aria-label="Copy notes"
+                  >
+                    <Copy size={15} aria-hidden="true" />
+                  </button>
                 </>
               )}
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Content sections — same layout for streaming and final */}
-      <div className="content-sections" id="topic-content-export">
-        {displayData && SECTION_MAP.map(([key, title]) =>
-          renderSection(key, title, displayData[key])
+            <button
+              type="button"
+              className="ts-tool is-regenerate"
+              onClick={() => handleGenerate(true)}
+              disabled={streaming}
+            >
+              {streaming ? <Loader size={14} className="spin-icon" /> : <RefreshCw size={14} aria-hidden="true" />}
+              <span>{streaming ? 'Generating…' : 'Regenerate'}</span>
+            </button>
+          </div>
+        </header>
+
+        {streaming && (
+          <div className="stream-indicator-bar">
+            <GeneratingState inline label="Generating notes" hint="Sections appear as they're ready." />
+          </div>
         )}
-      </div>
 
-      {!streaming && displayData && (
-        <div className="phase9-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={handleGenerateConceptWeb} disabled={isGeneratingConceptWeb}>
-            {isGeneratingConceptWeb ? <Loader size={16} className="spin-icon"/> : <GitBranch size={16} />} 
-            Generate Concept Web
-          </button>
-          <button className="btn btn-secondary" onClick={handleGeneratePodcast} disabled={isGeneratingPodcast}>
-            {isGeneratingPodcast ? <Loader size={16} className="spin-icon"/> : <Mic size={16} />} 
-            Generate Podcast Script
-          </button>
-          <button className="btn btn-primary" onClick={handleGenerateQuickQuiz} disabled={isGeneratingQuiz}>
-            {isGeneratingQuiz ? <Loader size={16} className="spin-icon"/> : <CheckSquare size={16} />} 
-            Take Quick Quiz
-          </button>
-        </div>
-      )}
+        {generateError && !streaming && (
+          <GenerationError
+            title="Couldn't regenerate notes"
+            message={generateError}
+            onRetry={() => handleGenerate(true)}
+            className="topic-generate-error"
+          />
+        )}
 
-      {quizError && !isGeneratingQuiz && (
-        <GenerationError
-          compact
-          title="Couldn't build the quiz"
-          message={quizError}
-          onRetry={handleGenerateQuickQuiz}
-          className="topic-generate-error"
-        />
-      )}
-
-      {/* Podcast Panel */}
-      {showPodcast && (
-        <div className="glass-card podcast-panel" style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>🎙️ Podcast Script</h2>
-            <button className="btn btn-ghost btn-icon" onClick={() => setShowPodcast(false)}><X size={16}/></button>
-          </div>
-          {isGeneratingPodcast && !podcastScript && (
-            <GeneratingState label="Writing the podcast script" hint="Turning this topic into a two-host conversation." />
-          )}
-          {podcastError && !isGeneratingPodcast && (
-            <GenerationError
-              compact
-              title="Couldn't write the podcast script"
-              message={podcastError}
-              onRetry={handleGeneratePodcast}
-              retrying={isGeneratingPodcast}
-            />
-          )}
-          <div className="markdown-body">
-            <MarkdownRenderer>{podcastScript}</MarkdownRenderer>
-          </div>
-        </div>
-      )}
-
-      {/* Concept Web Panel */}
-      {showConceptWeb && (
-        <div className="glass-card concept-web-panel" style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>🕸️ Concept Web</h2>
-            <button className="btn btn-ghost btn-icon" onClick={() => setShowConceptWeb(false)}><X size={16}/></button>
-          </div>
-          {isGeneratingConceptWeb && !conceptWeb && (
-            <GeneratingState label="Mapping the concept web" hint="Connecting the key ideas in this topic." />
-          )}
-          {conceptWebError && !isGeneratingConceptWeb && (
-            <GenerationError
-              compact
-              title="Couldn't build the concept web"
-              message={conceptWebError}
-              onRetry={handleGenerateConceptWeb}
-              retrying={isGeneratingConceptWeb}
-            />
-          )}
-          {conceptWeb && (
-            <div className="mindmap-container">
-              <MermaidRenderer chart={conceptWeb} />
+        {/* Notes panel */}
+        {showNotes && !streaming && (
+          <div className="ts-panel notes-panel">
+            <div className="ts-panel-head">
+              <h3><StickyNote size={16} aria-hidden="true" /> Personal notes</h3>
+              <span className="ts-pill">{notes.length}</span>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Quick Quiz Panel */}
-      {quickQuiz && (
-        <div className="glass-card quiz-panel" style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>🧠 Quick Quiz</h2>
-            <button className="btn btn-ghost btn-icon" onClick={() => setQuickQuiz(null)}><X size={16}/></button>
-          </div>
-          <div className="quiz-questions">
-            {quickQuiz.map((q, i) => (
-              <div key={i} className="quiz-question" style={{ marginBottom: '1.5rem' }}>
-                <p style={{ fontWeight: 'bold' }}>{i + 1}. {q.question}</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  {q.options.map((opt, j) => {
-                    const isSelected = quizAnswers[i] === opt;
-                    const isCorrect = opt === q.answer;
-                    const showStatus = showQuizResult;
-                    
-                    let btnClass = "btn btn-outline";
-                    if (isSelected && !showStatus) btnClass = "btn btn-primary";
-                    if (showStatus) {
-                      if (isCorrect) btnClass = "btn btn-success";
-                      else if (isSelected && !isCorrect) btnClass = "btn btn-danger";
-                    }
-
-                    return (
-                      <button 
-                        key={j} 
-                        className={btnClass}
-                        style={{ textAlign: 'left', justifyContent: 'flex-start', height: 'auto', padding: '0.75rem' }}
-                        onClick={() => !showQuizResult && handleQuizSelect(i, opt)}
-                        disabled={showQuizResult}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-                {showQuizResult && (
-                  <div className="quiz-explanation" style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    <strong>Explanation:</strong> {q.explanation}
+            <div className="note-input-row">
+              <textarea className="textarea" placeholder="Write a personal note…" value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} />
+              <button type="button" className="btn btn-primary btn-sm" onClick={handleAddNote}><Plus size={14} /> Add</button>
+            </div>
+            {notes.length === 0 && (
+              <p className="ts-panel-hint">Notes you add here stay with this topic while you revise.</p>
+            )}
+            {notes.map(note => (
+              <div key={note.id} className="note-item">
+                {editingNote === note.id ? (
+                  <div className="note-edit-row">
+                    <textarea className="textarea" value={editNoteText} onChange={(e) => setEditNoteText(e.target.value)} rows={2} />
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => handleUpdateNote(note.id)}><Save size={14} /></button>
                   </div>
+                ) : (
+                  <>
+                    <p>{note.content}</p>
+                    <div className="note-actions">
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEditingNote(note.id); setEditNoteText(note.content); }}>Edit</button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDeleteNote(note.id)}><Trash2 size={12} /></button>
+                    </div>
+                  </>
                 )}
               </div>
             ))}
           </div>
-          {!showQuizResult && Object.keys(quizAnswers).length === quickQuiz.length && (
-            <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1rem' }} onClick={handleQuizSubmit}>Submit Answers</button>
-          )}
-          {showQuizResult && (
-            <div style={{ marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>
-              You scored {quickQuiz.filter((q, i) => quizAnswers[i] === q.answer).length} / {quickQuiz.length}!
-            </div>
+        )}
+
+        {/* Content sections — same layout for streaming and final */}
+        <div className="content-sections" id="topic-content-export">
+          {displayData && visibleSections.map(([key, title], index) =>
+            renderSection(key, title, displayData[key], index)
           )}
         </div>
-      )}
 
-      {displayData?.video_queries && displayData.video_queries.length > 0 && (
-        <YouTubeLinker queries={displayData.video_queries} />
-      )}
+        {!streaming && displayData && (
+          <section className="ts-next">
+            <div className="ts-next-head">
+              <span className="ts-eyebrow">Keep going</span>
+              <h2 className="ts-next-title">Turn these notes into practice</h2>
+            </div>
+            <div className="ts-next-grid">
+              <button type="button" className="ts-next-card is-primary" onClick={handleGenerateQuickQuiz} disabled={isGeneratingQuiz}>
+                <span className="ts-next-icon" aria-hidden="true">
+                  {isGeneratingQuiz ? <Loader size={18} className="spin-icon" /> : <CheckSquare size={18} />}
+                </span>
+                <span className="ts-next-body">
+                  <strong>Quick quiz</strong>
+                  <span>Five questions on what you just read.</span>
+                </span>
+                <ChevronRight size={16} className="ts-next-arrow" aria-hidden="true" />
+              </button>
 
+              <button type="button" className="ts-next-card" onClick={handleGenerateConceptWeb} disabled={isGeneratingConceptWeb}>
+                <span className="ts-next-icon" aria-hidden="true">
+                  {isGeneratingConceptWeb ? <Loader size={18} className="spin-icon" /> : <GitBranch size={18} />}
+                </span>
+                <span className="ts-next-body">
+                  <strong>Concept web</strong>
+                  <span>See how the key ideas connect.</span>
+                </span>
+                <ChevronRight size={16} className="ts-next-arrow" aria-hidden="true" />
+              </button>
+
+              <button type="button" className="ts-next-card" onClick={handleGeneratePodcast} disabled={isGeneratingPodcast}>
+                <span className="ts-next-icon" aria-hidden="true">
+                  {isGeneratingPodcast ? <Loader size={18} className="spin-icon" /> : <Mic size={18} />}
+                </span>
+                <span className="ts-next-body">
+                  <strong>Podcast script</strong>
+                  <span>Hear this topic as a conversation.</span>
+                </span>
+                <ChevronRight size={16} className="ts-next-arrow" aria-hidden="true" />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {quizError && !isGeneratingQuiz && (
+          <GenerationError
+            compact
+            title="Couldn't build the quiz"
+            message={quizError}
+            onRetry={handleGenerateQuickQuiz}
+            className="topic-generate-error"
+          />
+        )}
+
+        {/* Podcast Panel */}
+        {showPodcast && (
+          <div className="ts-panel podcast-panel">
+            <div className="ts-panel-head">
+              <h2>Podcast script</h2>
+              <button type="button" className="ts-icon-btn is-small" onClick={() => setShowPodcast(false)} aria-label="Close podcast script">
+                <X size={16} />
+              </button>
+            </div>
+            {isGeneratingPodcast && !podcastScript && (
+              <GeneratingState label="Writing the podcast script" hint="Turning this topic into a two-host conversation." />
+            )}
+            {podcastError && !isGeneratingPodcast && (
+              <GenerationError
+                compact
+                title="Couldn't write the podcast script"
+                message={podcastError}
+                onRetry={handleGeneratePodcast}
+                retrying={isGeneratingPodcast}
+              />
+            )}
+            <div className="markdown-body">
+              <MarkdownRenderer>{podcastScript}</MarkdownRenderer>
+            </div>
+          </div>
+        )}
+
+        {/* Concept Web Panel */}
+        {showConceptWeb && (
+          <div className="ts-panel concept-web-panel">
+            <div className="ts-panel-head">
+              <h2>Concept web</h2>
+              <button type="button" className="ts-icon-btn is-small" onClick={() => setShowConceptWeb(false)} aria-label="Close concept web">
+                <X size={16} />
+              </button>
+            </div>
+            {isGeneratingConceptWeb && !conceptWeb && (
+              <GeneratingState label="Mapping the concept web" hint="Connecting the key ideas in this topic." />
+            )}
+            {conceptWebError && !isGeneratingConceptWeb && (
+              <GenerationError
+                compact
+                title="Couldn't build the concept web"
+                message={conceptWebError}
+                onRetry={handleGenerateConceptWeb}
+                retrying={isGeneratingConceptWeb}
+              />
+            )}
+            {conceptWeb && (
+              <div className="mindmap-container">
+                <MermaidRenderer chart={conceptWeb} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick Quiz Panel */}
+        {quickQuiz && (
+          <div className="ts-panel quiz-panel">
+            <div className="ts-panel-head">
+              <h2>Quick quiz</h2>
+              <button type="button" className="ts-icon-btn is-small" onClick={() => setQuickQuiz(null)} aria-label="Close quiz">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="quiz-questions">
+              {quickQuiz.map((q, i) => (
+                <div key={i} className="quiz-question">
+                  <p className="quiz-question-text">{i + 1}. {q.question}</p>
+                  <div className="quiz-options">
+                    {q.options.map((opt, j) => {
+                      const isSelected = quizAnswers[i] === opt;
+                      const isCorrect = opt === q.answer;
+                      const showStatus = showQuizResult;
+                      const state = showStatus
+                        ? (isCorrect ? 'is-correct' : isSelected ? 'is-wrong' : '')
+                        : (isSelected ? 'is-selected' : '');
+
+                      return (
+                        <button
+                          key={j}
+                          type="button"
+                          className={`quiz-option ${state}`}
+                          onClick={() => !showQuizResult && handleQuizSelect(i, opt)}
+                          disabled={showQuizResult}
+                        >
+                          <span className="quiz-option-letter" aria-hidden="true">{String.fromCharCode(65 + j)}</span>
+                          <span className="quiz-option-text">{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {showQuizResult && (
+                    <p className="quiz-explanation">
+                      <strong>Why:</strong> {q.explanation}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {!showQuizResult && Object.keys(quizAnswers).length === quickQuiz.length && (
+              <button type="button" className="btn btn-primary btn-lg quiz-submit" onClick={handleQuizSubmit}>Submit answers</button>
+            )}
+            {showQuizResult && (
+              <p className="quiz-score">
+                You scored <strong>{quickQuiz.filter((q, i) => quizAnswers[i] === q.answer).length}</strong> / {quickQuiz.length}
+              </p>
+            )}
+          </div>
+        )}
+
+        {displayData?.video_queries && displayData.video_queries.length > 0 && (
+          <YouTubeLinker queries={displayData.video_queries} />
+        )}
+      </div>
+
+      <aside className="ts-rail" aria-label="Reading outline">
+        <div className="ts-rail-card">
+          <div className="ts-rail-head">
+            <span>Reading progress</span>
+            <strong className="ts-rail-value">{progressPercent}%</strong>
+          </div>
+          <div
+            className="ts-progress-track"
+            role="progressbar"
+            aria-label="Reading progress"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <span className="ts-progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <p className="ts-rail-note">{readMinutes} min · {visibleSections.length} sections</p>
+        </div>
+
+        {visibleSections.length > 0 && (
+          <nav className="ts-toc">
+            <p className="ts-toc-title">On this page</p>
+            <ul>
+              {visibleSections.map(([key, title], index) => (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className={`ts-toc-link ${activeSection === key ? 'is-active' : ''}`}
+                    onClick={() => jumpToSection(key)}
+                    aria-current={activeSection === key ? 'true' : undefined}
+                  >
+                    <span className="ts-toc-num">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="ts-toc-text">{title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+      </aside>
     </div>
   );
 }
