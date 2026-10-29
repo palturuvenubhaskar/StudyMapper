@@ -1,13 +1,26 @@
 import { db } from '../../data/db';
 import { v4 as uuidv4 } from 'uuid';
 
+const DAY_MS = 1000 * 60 * 60 * 24;
+
 /**
- * Helper to calculate number of days between two dates
+ * Parses a date string as a local calendar day so the day count does not
+ * drift by one in timezones behind UTC.
  */
-const getDaysBetween = (start, end) => {
-  const diffTime = Math.abs(end - start);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const parseDateOnly = (value) => {
+  const date =
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T00:00:00`)
+      : new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
+
+/**
+ * Whole calendar days between two dates.
+ */
+const getDaysBetween = (start, end) =>
+  Math.round((parseDateOnly(end) - parseDateOnly(start)) / DAY_MS);
 
 /**
  * Distributes topics across available days.
@@ -18,8 +31,8 @@ const getDaysBetween = (start, end) => {
  * If no difficulty rating, default to 1 block.
  */
 export const generateAdaptivePlan = async (userId, examDateString, subjectIds) => {
-  const today = new Date();
-  const examDate = new Date(examDateString);
+  const today = parseDateOnly(new Date());
+  const examDate = parseDateOnly(examDateString);
   const daysAvailable = getDaysBetween(today, examDate);
   
   if (daysAvailable <= 0) throw new Error("Exam date must be in the future");
@@ -27,7 +40,7 @@ export const generateAdaptivePlan = async (userId, examDateString, subjectIds) =
   const planId = uuidv4();
   const schedule = {}; // { dayIndex: [ { topic, durationMinutes } ] }
   
-  for (let i = 0; i <= daysAvailable; i++) {
+  for (let i = 0; i < daysAvailable; i++) {
     schedule[i] = [];
   }
 
@@ -63,7 +76,7 @@ export const generateAdaptivePlan = async (userId, examDateString, subjectIds) =
     for (let b = 0; b < blocks; b++) {
       // Space them out by 2 days if multiple blocks, unless we run out of days
       let targetDay = currentDay + (b * 2); 
-      if (targetDay > daysAvailable) targetDay = daysAvailable;
+      if (targetDay >= daysAvailable) targetDay = daysAvailable - 1;
       
       schedule[targetDay].push({
         topic_id: topic.id,
@@ -96,8 +109,8 @@ export const triggerPanicMode = async (planId, completedTopicIds = []) => {
   const plan = await db.study_plans.get(planId);
   if (!plan) throw new Error("Plan not found");
 
-  const examDate = new Date(plan.exam_date);
-  const today = new Date();
+  const examDate = parseDateOnly(plan.exam_date);
+  const today = parseDateOnly(new Date());
   let daysAvailable = getDaysBetween(today, examDate);
   if (daysAvailable <= 0) daysAvailable = 1; // cram it all today
 
@@ -126,7 +139,7 @@ export const triggerPanicMode = async (planId, completedTopicIds = []) => {
   }
 
   const newSchedule = {};
-  for (let i = 0; i <= daysAvailable; i++) {
+  for (let i = 0; i < daysAvailable; i++) {
     newSchedule[i] = [];
   }
 
