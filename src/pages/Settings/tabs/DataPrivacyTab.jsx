@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Download, Trash2, Cookie } from 'lucide-react';
+import { Database, Download, Trash2, Cookie, ShieldCheck } from 'lucide-react';
 import { db } from '../../../data/db';
 import { ConfirmDialog } from '../../../components/ConfirmDialog/ConfirmDialog';
 
@@ -31,34 +31,81 @@ export function DataPrivacyTab() {
 
   return (
     <div className="settings-tab">
-      <h2><Database size={20} /> Data & Privacy</h2>
+      <header className="set-head">
+        <div className="set-head-copy">
+          <h2>Data & privacy</h2>
+          <p>Everything you create in StudyMapper is stored on this device first.</p>
+        </div>
+        <span className="set-status">
+          <ShieldCheck size={13} />
+          Local first
+        </span>
+      </header>
 
-      <div className="settings-section">
-        <h3>Export Your Data</h3>
-        <p>Download a complete copy of all your study data in JSON format.</p>
-        <button onClick={handleExportJSON} className="btn btn-secondary">
-          <Download size={16} />
-          Export All Data (JSON)
-        </button>
-      </div>
+      <section className="set-panel">
+        <div className="set-panel-head">
+          <h3>Your study data</h3>
+          <p>Take a copy with you or reset what is stored on this browser.</p>
+        </div>
 
-      <div className="settings-section">
-        <h3>Cookie Preferences</h3>
-        <p>Manage your cookie consent settings at any time.</p>
-        <button onClick={() => window.dispatchEvent(new CustomEvent('openCookiePrefs'))} className="btn btn-secondary">
-          <Cookie size={16} />
-          Manage Cookies
-        </button>
-      </div>
+        <div className="set-rows">
+          <div className="set-row">
+            <span className="set-row-icon">
+              <Download size={17} />
+            </span>
+            <div className="set-row-copy">
+              <span className="set-row-label">Export everything</span>
+              <span className="set-row-description">
+                Subjects, notes, flashcards, question banks and progress as a JSON file.
+              </span>
+            </div>
+            <button type="button" className="btn btn-secondary btn-sm set-row-action" onClick={handleExportJSON}>
+              Export JSON
+            </button>
+          </div>
 
-      <div className="settings-section danger-zone">
-        <h3>Clear Local Data</h3>
-        <p>Remove all study data from this device. This does not affect your cloud backup if enabled.</p>
-        <button onClick={() => setShowClearDialog(true)} className="btn btn-danger">
-          <Trash2 size={16} />
-          Clear All Local Data
-        </button>
-      </div>
+          <div className="set-row">
+            <span className="set-row-icon">
+              <Cookie size={17} />
+            </span>
+            <div className="set-row-copy">
+              <span className="set-row-label">Cookie preferences</span>
+              <span className="set-row-description">
+                Review which optional cookies and analytics this browser allows.
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm set-row-action"
+              onClick={() => window.dispatchEvent(new CustomEvent('openCookiePrefs'))}
+            >
+              Manage cookies
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="set-panel set-panel-danger">
+        <div className="set-panel-head">
+          <h3>
+            <Database size={16} />
+            Clear local data
+          </h3>
+          <p>
+            Remove every subject, note, flashcard and question bank from this device. Cloud backups and your
+            account stay untouched.
+          </p>
+        </div>
+        <div className="set-panel-foot">
+          <span className="set-foot-note">Export a copy first if you may need this data later.</span>
+          <div className="set-actions">
+            <button type="button" className="btn btn-danger" onClick={() => setShowClearDialog(true)}>
+              <Trash2 size={16} />
+              Clear local data
+            </button>
+          </div>
+        </div>
+      </section>
 
       <ConfirmDialog
         isOpen={showClearDialog}
