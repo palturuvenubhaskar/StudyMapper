@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentProfile, createPlacementSession, savePlacementQuestions, updatePlacementQuestion } from '../../data/repository';
+import { db } from '../../data/db';
 import { generateAptitudeQuestionsPrompt, extractJson, callOpenRouter } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import GenerationError from '../../components/GenerationError/GenerationError';
@@ -37,6 +38,33 @@ export default function AptitudePractice() {
   const [testScope, setTestScope] = useState(saved?.testScope || 'all');
   const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
   const [weakTopicsCount, setWeakTopicsCount] = useState(0);
+  const resultSavedRef = useRef(false);
+
+  // Persist the finished attempt so the Placement Prep hub can show real
+  // test counts and average scores. Keyed by session id, so revisiting the
+  // results screen updates the same record instead of adding a duplicate.
+  useEffect(() => {
+    if (!quizDone || questions.length === 0) {
+      resultSavedRef.current = false;
+      return;
+    }
+    if (resultSavedRef.current) return;
+    resultSavedRef.current = true;
+
+    const correct = questions.filter((q) => q.is_correct).length;
+    db.placement_test_results
+      .put({
+        id: sessionId || questions[0]?.session_id || `aptitude-${Date.now()}`,
+        user_id: profile?.id || 'guest',
+        category: 'aptitude',
+        subcategory,
+        score: correct,
+        total_questions: questions.length,
+        correct_answers: correct,
+        created_at: new Date().toISOString(),
+      })
+      .catch((err) => console.error('Failed to save placement test result:', err));
+  }, [quizDone, questions, sessionId, profile?.id, subcategory]);
 
   // Keep a ref of current state for cleanup
   const stateRef = useRef({});
