@@ -137,15 +137,16 @@ ${code}
   };
 
   const runTests = async (code, testCases, language = 'Python', onProgress) => {
+    const isPython = language.toLowerCase() === 'python';
+
+    // Never leave the UI stuck on "running" if the runtime is not ready.
+    if (isPython && !pyodide) return;
+
     setStatus('running');
     setResults([]);
     const startTime = performance.now();
     let allPassed = true;
     const currentResults = [];
-
-    const isPython = language.toLowerCase() === 'python';
-
-    if (isPython && !pyodide) return;
 
     for (const testCase of testCases) {
       const tStart = performance.now();

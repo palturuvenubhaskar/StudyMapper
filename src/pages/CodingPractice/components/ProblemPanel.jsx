@@ -2,7 +2,7 @@ import MarkdownRenderer from '../../../components/MarkdownRenderer/MarkdownRende
 import { GeneratingDots } from '../../../components/GeneratingState/GeneratingState';
 import GenerationError from '../../../components/GenerationError/GenerationError';
 import remarkGfm from 'remark-gfm';
-import { ChevronDown, ChevronRight, Loader, Sparkles, Zap, CheckCircle2, Clock, Database, Lightbulb, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, Sparkles, Zap, Clock, Database, FileText } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { HintsSection } from './HintsSection';
 
@@ -34,18 +34,15 @@ function SkeletonBlock({ lines = 3 }) {
 }
 
 /* ── Section wrapper: shows content OR skeleton OR nothing ─ */
-function Section({ title, hasContent, isGenerating, children, skeletonLines = 3, className = "problem-section" }) {
-  const done = hasContent && !isGenerating;
+function Section({ title, hasContent, isGenerating, children, skeletonLines = 3 }) {
   return (
-    <div className={className} style={{ position: 'relative' }}>
-      <div className="section-header" style={{ justifyContent: 'flex-start' }}>
-        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-          {title}
-        </h3>
+    <div className="practice-section">
+      <div className="practice-section-head">
+        <h3 className="practice-section-title">{title}</h3>
       </div>
 
       {hasContent ? (
-        <div style={{ animation: 'fadeSlideIn 0.4s ease' }}>{children}</div>
+        <div className="practice-section-content">{children}</div>
       ) : isGenerating ? (
         <SkeletonBlock lines={skeletonLines} />
       ) : null}
@@ -90,13 +87,7 @@ export default function ProblemPanel({ problem, isGenerating = false, generation
   const pendingSection = sections.find(s => !isSectionDone(s));
   const progress = isGenerating ? (completedCount / sections.length) * 100 : 100;
 
-  const difficultyColors = {
-    Easy: { bg: 'var(--success-soft)', text: 'var(--success)', border: 'var(--success-soft)' },
-    Medium: { bg: 'var(--warning-soft)', text: 'var(--warning)', border: 'var(--warning-soft)' },
-    Hard: { bg: 'var(--danger-soft)', text: 'var(--danger)', border: 'var(--danger-soft)' },
-  };
-
-  const dc = difficultyColors[problem.difficulty] || difficultyColors.Easy;
+  const difficultyClass = (problem.difficulty || 'easy').toLowerCase();
 
   // Handle both legacy string constraints and new array format
   let constraints = [];
@@ -150,18 +141,26 @@ export default function ProblemPanel({ problem, isGenerating = false, generation
   }, [problem]);
 
   return (
-    <div className="problem-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
-      {/* ─── Top Tabs (Description / Submissions) ─── */}
-      <div style={{ display: 'flex', gap: '24px', padding: '16px 24px', borderBottom: '1px solid var(--border-light)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}>
-          <FileText size={16} color="var(--accent-brand)" /> Description
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.875rem', cursor: 'pointer' }}>
-          <Clock size={16} /> Submissions
+    <section className="practice-pane practice-problem" aria-label="Problem details">
+      {/* ─── Pane head: label + problem facts ─── */}
+      <div className="practice-pane-head">
+        <span className="practice-pane-title">
+          <FileText size={15} /> Problem
+        </span>
+        <div className="practice-pane-meta">
+          <span className={`practice-difficulty is-${difficultyClass}`}>
+            {problem.difficulty || 'Easy'}
+          </span>
+          {problem.topic && (
+            <span className="practice-chip">{problem.topic}</span>
+          )}
+          {problem.language && (
+            <span className="practice-chip">{problem.language}</span>
+          )}
         </div>
       </div>
 
-      <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+      <div className="practice-problem-body">
         {/* ─── Generating banner ─── */}
         {isGenerating && (
           <div className="generating-banner" role="status" aria-live="polite">
@@ -208,124 +207,111 @@ export default function ProblemPanel({ problem, isGenerating = false, generation
           />
         )}
 
-        {/* ─── Problem Header ─── */}
-        <div className="problem-header">
-          <h1>{problem.title}</h1>
-        <div className="problem-meta">
-          <span 
-            className="difficulty-pill"
-            style={{ background: dc.bg, color: dc.text, border: `1px solid ${dc.border}` }}
-          >
-            {problem.difficulty}
-          </span>
-          <span className="topic-tag">{problem.topic}</span>
-          {problem.language && (
-            <span className="lang-tag">{problem.language}</span>
-          )}
-        </div>
-      </div>
+        {/* ─── Problem Statement ─── */}
+        <Section title="Problem statement" hasContent={has('statement') || has('description')} isGenerating={isGenerating} skeletonLines={5}>
+          <div className="problem-description markdown-body">
+            <MarkdownRenderer remarkPlugins={[remarkGfm]}>{problem.statement || problem.description}</MarkdownRenderer>
+          </div>
+        </Section>
 
-      {/* ─── Problem Statement ─── */}
-      <Section title="Problem Statement" icon={Zap} hasContent={has('statement') || has('description')} isGenerating={isGenerating} skeletonLines={5}>
-        <div className="problem-description markdown-body">
-          <MarkdownRenderer remarkPlugins={[remarkGfm]}>{problem.statement || problem.description}</MarkdownRenderer>
-        </div>
-      </Section>
+        {/* ─── Examples ─── */}
+        <Section title="Examples" hasContent={examples.length > 0} isGenerating={isGenerating} skeletonLines={4}>
+          {examples.map((ex, idx) => (
+            <div key={idx} className="example-card">
+              <button
+                type="button"
+                className="example-toggle"
+                onClick={() => toggleExample(idx)}
+                aria-expanded={expandedExamples.has(idx)}
+              >
+                {expandedExamples.has(idx) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span>Example {idx + 1}</span>
+              </button>
 
-      {/* ─── Examples ─── */}
-      <Section title="Examples" icon={Zap} hasContent={examples.length > 0} isGenerating={isGenerating} skeletonLines={4}>
-        {examples.map((ex, idx) => (
-          <div key={idx} className="example-card">
-            <button 
-              className="example-toggle"
-              onClick={() => toggleExample(idx)}
-            >
-              {expandedExamples.has(idx) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              <span>Example {idx + 1}:</span>
-            </button>
-
-            {expandedExamples.has(idx) && (
-              <div className="example-content">
-                <div className="io-box">
-                  <label>Input:</label>
-                  <pre>{ex.input}</pre>
-                </div>
-                <div className="io-box">
-                  <label>Output:</label>
-                  <pre>{ex.output || ex.expected_output}</pre>
-                </div>
-                {ex.explanation && (
-                  <div className="example-explanation">
-                    <strong>Explanation:</strong> {ex.explanation}
+              {expandedExamples.has(idx) && (
+                <div className="example-content">
+                  <div className="io-box">
+                    <label>Input</label>
+                    <pre>{ex.input}</pre>
                   </div>
-                )}
-              </div>
+                  <div className="io-box">
+                    <label>Output</label>
+                    <pre>{ex.output || ex.expected_output}</pre>
+                  </div>
+                  {ex.explanation && (
+                    <div className="example-explanation">
+                      <strong>Explanation:</strong> {ex.explanation}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </Section>
+
+        {/* ─── Constraints ─── */}
+        <Section title="Constraints" hasContent={constraints.length > 0} isGenerating={isGenerating} skeletonLines={2}>
+          {constraints.length > 0 && Array.isArray(constraints) && constraints[0].trim().startsWith('-') ? (
+            <div className="problem-description markdown-body">
+              <MarkdownRenderer remarkPlugins={[remarkGfm]}>{typeof problem.constraints === 'string' ? problem.constraints : constraints.join('\n')}</MarkdownRenderer>
+            </div>
+          ) : (
+            <ul className="constraints-list">
+              {constraints.map((c, i) => {
+                const text = c.replace(/^[-*•]\s*/, '');
+                return <li key={i}>{text}</li>;
+              })}
+            </ul>
+          )}
+        </Section>
+
+        {/* ─── Test Cases Preview ─── */}
+        {testCases && testCases.length > 0 && (
+          <div className="practice-section">
+            <div className="practice-section-head">
+              <Zap size={14} />
+              <h3 className="practice-section-title">Test cases</h3>
+            </div>
+            <div className="test-cases-wrap">
+              <table className="test-cases-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Input</th>
+                    <th>Expected output</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {testCases.filter(t => !t.isHidden && !t.is_hidden).map((tc, i) => (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
+                      <td><code>{JSON.stringify(tc.input)}</code></td>
+                      <td><code className="expected">{JSON.stringify(tc.expectedOutput || tc.expected_output || tc.expected)}</code></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Hints ─── */}
+        {(hints.length > 0 || isGenerating) && (
+          <div className="practice-hints">
+            {hints.length === 0 && isGenerating ? (
+              <Section title="Hints" hasContent={false} isGenerating={true} skeletonLines={2} />
+            ) : (
+              <HintsSection hints={hints} problemId={problem.id} />
             )}
           </div>
-        ))}
-      </Section>
-
-      {/* ─── Constraints ─── */}
-      <Section title="Constraints" icon={Zap} hasContent={constraints.length > 0} isGenerating={isGenerating} skeletonLines={2}>
-        {constraints.length > 0 && Array.isArray(constraints) && constraints[0].trim().startsWith('-') ? (
-          <div className="problem-description markdown-body">
-            <MarkdownRenderer remarkPlugins={[remarkGfm]}>{typeof problem.constraints === 'string' ? problem.constraints : constraints.join('\n')}</MarkdownRenderer>
-          </div>
-        ) : (
-          <ul className="constraints-list">
-            {constraints.map((c, i) => {
-              const text = c.replace(/^[-\*•]\s*/, '');
-              return <li key={i}>{text}</li>;
-            })}
-          </ul>
         )}
-      </Section>
 
-      {/* ─── Test Cases Preview ─── */}
-      {testCases && testCases.length > 0 && (
-        <div className="problem-section">
-          <div className="section-header">
-            <Zap size={16} />
-            <span>Test Cases</span>
-          </div>
-          <table className="test-cases-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Input</th>
-                <th>Expected Output</th>
-              </tr>
-            </thead>
-            <tbody>
-              {testCases.filter(t => !t.isHidden && !t.is_hidden).map((tc, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td><code>{JSON.stringify(tc.input)}</code></td>
-                  <td><code className="expected">{JSON.stringify(tc.expectedOutput || tc.expected_output || tc.expected)}</code></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* ─── Limits Footer ─── */}
+        <div className="problem-limits">
+          <span><Clock size={13} /> {problem.timeLimit || problem.time_limit_ms || 2000} ms</span>
+          <span><Database size={13} /> {problem.memoryLimit || problem.memory_limit_mb || 256} MB</span>
         </div>
-      )}
-
-      {/* ─── Hints ─── */}
-      {(hints.length > 0 || isGenerating) && (
-        <div style={{ position: 'relative' }}>
-          {hints.length === 0 && isGenerating ? (
-            <Section title="Hints" icon={Lightbulb} hasContent={false} isGenerating={true} skeletonLines={2} />
-          ) : (
-            <HintsSection hints={hints} problemId={problem.id} />
-          )}
-        </div>
-      )}
-
-      {/* ─── Limits Footer ─── */}
-      <div className="problem-limits">
-        <span><Clock size={14} /> {problem.timeLimit || problem.time_limit_ms || 2000}ms</span>
-        <span><Database size={14} /> {problem.memoryLimit || problem.memory_limit_mb || 256}MB</span>
       </div>
-      </div>
-    </div>
+    </section>
   );
 }

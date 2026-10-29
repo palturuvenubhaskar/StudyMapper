@@ -2,10 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getStudentProfile, getCodingStats, getCodingProblems, saveCodingProblem, getLearningTrack, createLearningTrack, getLearningLesson, saveLearningLesson } from '../../data/repository';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen, CheckCircle2, Lock, Clock } from 'lucide-react';
+import {
+  Code2, Loader, ChevronRight, Zap, Target, TrendingUp, BookOpen,
+  CheckCircle2, Lock, Clock, History, ListOrdered, Check, ArrowRight,
+} from 'lucide-react';
 import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
 import { LANGUAGES, getCurriculum } from './data/curriculum';
 import './CodingPractice.css';
+import './CodingPracticeHub.css';
 
 const TOPIC_CATEGORIES = {
   'Fundamentals': [
@@ -52,6 +56,15 @@ Object.entries(TOPIC_CATEGORIES).forEach(([category, topics]) => {
   TOPICS_OPTIONS.push({ label: category, value: '', isGroupHeader: true });
   topics.forEach(t => TOPICS_OPTIONS.push({ label: t, value: t }));
 });
+
+const difficultyChip = (difficulty) =>
+  `hub-chip is-${typeof difficulty === 'string' ? difficulty.toLowerCase() : 'easy'}`;
+
+const statusMeta = (status) => {
+  if (status === 'solved') return { label: 'Solved', dot: 'is-solved', state: 'is-solved' };
+  if (status === 'generating') return { label: 'Generating', dot: 'is-building', state: '' };
+  return { label: 'Unsolved', dot: '', state: '' };
+};
 
 export default function CodingPractice() {
   const navigate = useNavigate();
@@ -220,225 +233,357 @@ export default function CodingPractice() {
     setGeneratingLesson(false);
   };
 
-  const difficultyColor = (d) => d === 'Easy' ? 'var(--success)' : d === 'Medium' ? 'var(--warning)' : 'var(--danger)';
-
   const visibleProblems = showAllProblems ? recentProblems : recentProblems.slice(0, 10);
+  const successRate = stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0;
+  const topicEntries = Object.entries(stats.topics)
+    .sort((a, b) => (b[1].total - a[1].total) || a[0].localeCompare(b[0]));
+
+  const curriculum = getCurriculum(learnLanguage);
+  const completedCount = completedLessons.length;
+  const nextLesson = curriculum[activeLessonIdx];
+  const nextIsReview = Boolean(nextLesson && completedLessons.includes(nextLesson.title));
 
   return (
-    <div className="coding-hub">
-
-
-      <div className="coding-hero">
-        <div className="hero-glow"></div>
-        <div className="hero-content">
-          <h1 className="hero-title">Coding <span>Practice</span></h1>
-          <p className="hero-subtitle">Master algorithms, data structures, and languages.</p>
+    <div className="hub-page">
+      <header className="hub-head">
+        <div className="hub-head-copy">
+          <span className="hub-eyebrow">Coding practice</span>
+          <h1 className="hub-title">
+            Coding <span className="hub-title-accent">Practice</span>
+          </h1>
+          <p className="hub-subtitle">
+            Generate a fresh problem in any language, or follow a guided track from
+            fundamentals to algorithms.
+          </p>
         </div>
-        
-        <div className="hero-stats-overview">
-          <div className="stat-pill">
-            <Target size={18} color="#818cf8"/>
-            <span>{stats.total}</span> Attempted
+
+        <div className="hub-metrics">
+          <div className="hub-metric">
+            <span className="hub-metric-label">
+              <Target size={12} /> Attempted
+            </span>
+            <span className="hub-metric-value">{stats.total}</span>
           </div>
-          <div className="stat-pill">
-            <Zap size={18} color="#34d399"/>
-            <span>{stats.solved}</span> Solved
+          <div className="hub-metric">
+            <span className="hub-metric-label is-success">
+              <CheckCircle2 size={12} /> Solved
+            </span>
+            <span className="hub-metric-value">{stats.solved}</span>
           </div>
-          <div className="stat-pill">
-            <TrendingUp size={18} color="#fbbf24"/>
-            <span>{stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0}%</span> Success
+          <div className="hub-metric">
+            <span className="hub-metric-label is-amber">
+              <TrendingUp size={12} /> Success
+            </span>
+            <span className="hub-metric-value">
+              {successRate}<span className="hub-metric-unit">%</span>
+            </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="coding-tabs-container">
-        <button 
-          className={`premium-tab ${activeTab === 'practice' ? 'active' : ''}`} 
+      <div className="hub-switch" role="tablist" aria-label="Practice mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'practice'}
+          className={`hub-switch-btn ${activeTab === 'practice' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('practice')}
         >
-          <Code2 size={18} /> Practice Random
+          <Zap size={15} /> Practice random
         </button>
-        <button 
-          className={`premium-tab ${activeTab === 'learn' ? 'active' : ''}`} 
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'learn'}
+          className={`hub-switch-btn ${activeTab === 'learn' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('learn')}
         >
-          <BookOpen size={18} /> Step-by-Step Learning
+          <BookOpen size={15} /> Step-by-step learning
         </button>
       </div>
 
-      {activeTab === 'practice' ? (
-        <>
-          {/* Generate Problem */}
-          <div className="premium-glass-panel generate-section">
-            <div className="panel-header">
-              <Zap size={20} color="#818cf8" />
-              <h2>Generate a Problem</h2>
-            </div>
-            
-            <div className="premium-generate-controls">
-              <div className="premium-form-group">
-                <label>Language</label>
-                <PremiumSelect 
-                  value={language} 
-                  onChange={e => setLanguage(e.target.value)} 
-                  options={LANGUAGES} 
-                />
-              </div>
-              <div className="premium-form-group">
-                <label>Topic</label>
-                <PremiumSelect 
-                  value={topic} 
-                  onChange={e => setTopic(e.target.value)} 
-                  options={TOPICS_OPTIONS} 
-                />
-              </div>
-              <div className="premium-form-group">
-                <label>Difficulty</label>
-                <PremiumSelect 
-                  value={difficulty} 
-                  onChange={e => setDifficulty(e.target.value)} 
-                  options={['Easy', 'Medium', 'Hard']} 
-                />
-              </div>
-            </div>
-            
-            <button className="btn-premium-action" onClick={generateProblem} disabled={generating}>
-              {generating ? <><Loader size={18} className="spin-icon" /> Synthesizing...</> : <><Code2 size={18} /> Generate Problem</>}
-            </button>
-          </div>
-
-          {/* Topic Breakdown */}
-          {Object.keys(stats.topics).length > 0 && (
-            <div className="glass-card" style={{ padding: '24px', marginTop: '24px' }}>
-              <h3 style={{ marginBottom: '16px' }}>Topic Breakdown</h3>
-              <div className="topic-breakdown">
-                {Object.entries(stats.topics).map(([t, data]) => (
-                  <div key={t} className="topic-row">
-                    <span>{t}</span>
-                    <div className="topic-bar-container">
-                      <div className="topic-bar" style={{ width: `${data.total > 0 ? (data.solved / data.total) * 100 : 0}%` }}></div>
-                    </div>
-                    <span className="badge badge-accent">{data.solved}/{data.total}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Problems */}
-          <div style={{ marginTop: '24px' }}>
-            <h3 style={{ marginBottom: '16px' }}>Recent Problems</h3>
-            {recentProblems.length > 0 ? (
-              <div className="recent-problems-list">
-                {visibleProblems.map(p => (
-                  <div key={p.id} className="glass-card recent-problem-card" onClick={() => navigate(`/coding/workspace/${p.id}`)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                      <span className="badge" style={{ background: `${difficultyColor(p.difficulty)}20`, color: difficultyColor(p.difficulty) }}>{p.difficulty}</span>
-                      <h4>{p.title}</h4>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="badge badge-accent">{p.language}</span>
-                      <span className="badge" style={{ background: p.status === 'solved' ? 'var(--success-soft)' : 'var(--bg-glass)', color: p.status === 'solved' ? 'var(--success)' : 'var(--text-muted)' }}>
-                        {p.status === 'solved' ? 'Solved' : 'Unsolved'}
-                      </span>
-                      <ChevronRight size={16} color="var(--text-muted)" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="glass-card" style={{ padding: '24px', color: 'var(--text-muted)' }}>
-                Problems you generate will appear here so you can reopen them later.
-              </div>
-            )}
-            {recentProblems.length > 10 && (
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ marginTop: '12px' }}
-                onClick={() => setShowAllProblems(value => !value)}
-              >
-                {showAllProblems ? 'Show less' : `Show all ${recentProblems.length} problems`}
-              </button>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="learning-track-container" style={{ marginTop: '24px' }}>
-          <div className="track-header premium-glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '8px' }}>Your Coding Journey</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Master programming step-by-step. Begin by choosing your language.</p>
-            </div>
-            <div className="premium-form-group" style={{ minWidth: '250px', flex: '0 0 auto' }}>
-              <label>Target Language</label>
-              <PremiumSelect 
-                value={learnLanguage} 
-                onChange={e => setLearnLanguage(e.target.value)} 
-                options={LANGUAGES} 
-              />
-            </div>
-          </div>
-
-          <div className="track-progress-container glass-card" style={{ padding: '24px', marginBottom: '32px' }}>
-            <div className="progress-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Track Progress</h3>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {completedLessons.length} of {getCurriculum(learnLanguage).length} completed
-              </span>
-            </div>
-            <div className="topic-bar-container" style={{ height: '12px' }}>
-              <div className="topic-bar" style={{ width: `${(completedLessons.length / getCurriculum(learnLanguage).length) * 100}%` }}></div>
-            </div>
-          </div>
-
-          <div className="lesson-cards-grid">
-            {getCurriculum(learnLanguage).map((lessonData, idx) => {
-              const topicName = lessonData.title;
-              const Icon = lessonData.icon;
-              const time = lessonData.time;
-              const isCompleted = completedLessons.includes(topicName);
-              const isActive = idx === activeLessonIdx && !isCompleted;
-              const isUnlocked = idx <= activeLessonIdx || isCompleted || idx === 0;
-              
-              return (
-                <div 
-                  key={topicName} 
-                  className={`lesson-card ${isCompleted ? 'completed' : isActive ? 'active' : isUnlocked ? 'unlocked' : 'locked'}`}
-                  onClick={() => startLearningLesson(idx, topicName)}
-                >
-                  <div className="lesson-card-header">
-                    <div className="lesson-icon-wrapper">
-                      {isCompleted ? <CheckCircle2 size={24} color="var(--success)" /> : !isUnlocked ? <Lock size={24} color="var(--text-muted)" /> : <Icon size={24} color={isActive ? "var(--accent-brand)" : "var(--text-primary)"} />}
-                    </div>
-                    <span className="lesson-number">Step {idx + 1}</span>
-                  </div>
-                  
-                  <h3 className="lesson-title">{topicName}</h3>
-                  
-                  <div className="lesson-card-footer">
-                    <div className="lesson-meta">
-                      <Clock size={14} /> {time}
-                    </div>
-                    {generatingLesson && isUnlocked && idx === activeLessonIdx ? (
-                       <button className="btn-start-lesson" style={{ opacity: 0.7, cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px' }} disabled>
-                         <Loader size={16} className="spin-icon" /> Generating...
-                       </button>
-                    ) : !isUnlocked ? (
-                       <div className="locked-badge"><Lock size={12} /> Locked</div>
-                    ) : isCompleted ? (
-                       <div className="status-badge success">Review</div>
-                    ) : isActive ? (
-                       <span className="btn-start-lesson">Start Now</span>
-                    ) : (
-                       <div className="status-badge">Unlocked</div>
-                    )}
+      <div className="hub-body">
+        {activeTab === 'practice' ? (
+          <div className="hub-grid hub-grid--practice">
+            <div className="hub-col">
+              <section className="hub-card">
+                <div className="hub-card-head">
+                  <span className="hub-icon"><Zap size={16} /></span>
+                  <div className="hub-card-copy">
+                    <h2>Generate a problem</h2>
+                    <p>Pick a language, topic, and difficulty. Your workspace opens right after.</p>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="hub-fields">
+                  <div className="hub-field">
+                    <label className="hub-field-label" htmlFor="hub-language">Language</label>
+                    <PremiumSelect
+                      value={language}
+                      onChange={e => setLanguage(e.target.value)}
+                      options={LANGUAGES}
+                    />
+                  </div>
+                  <div className="hub-field">
+                    <label className="hub-field-label" htmlFor="hub-topic">Topic</label>
+                    <PremiumSelect
+                      value={topic}
+                      onChange={e => setTopic(e.target.value)}
+                      options={TOPICS_OPTIONS}
+                    />
+                  </div>
+                  <div className="hub-field">
+                    <label className="hub-field-label" htmlFor="hub-difficulty">Difficulty</label>
+                    <PremiumSelect
+                      value={difficulty}
+                      onChange={e => setDifficulty(e.target.value)}
+                      options={['Easy', 'Medium', 'Hard']}
+                    />
+                  </div>
+                </div>
+
+                <div className="hub-generator-actions">
+                  <button className="hub-cta" onClick={generateProblem} disabled={generating}>
+                    {generating
+                      ? <><Loader size={16} className="spin-icon" /> Synthesizing…</>
+                      : <><Code2 size={16} /> Generate problem <ArrowRight size={15} /></>}
+                  </button>
+                  <span className="hub-generator-note">
+                    Tests, hints, and an explanation are written for you.
+                  </span>
+                </div>
+              </section>
+
+              <section className="hub-card">
+                <div className="hub-card-head">
+                  <span className="hub-icon is-emerald"><History size={16} /></span>
+                  <div className="hub-card-copy">
+                    <h2>Recent problems</h2>
+                    <p>
+                      {recentProblems.length > 0
+                        ? `${recentProblems.length} saved ${recentProblems.length === 1 ? 'problem' : 'problems'}. Reopen any of them to keep going.`
+                        : 'Everything you generate is saved here.'}
+                    </p>
+                  </div>
+                  {recentProblems.length > 10 && (
+                    <button
+                      type="button"
+                      className="hub-link-btn"
+                      onClick={() => setShowAllProblems(value => !value)}
+                    >
+                      {showAllProblems ? 'Show less' : `Show all ${recentProblems.length}`}
+                    </button>
+                  )}
+                </div>
+
+                {recentProblems.length > 0 ? (
+                  <ul className="hub-rows">
+                    {visibleProblems.map(p => {
+                      const meta = statusMeta(p.status);
+                      return (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            className="hub-row"
+                            onClick={() => navigate(`/coding/workspace/${p.id}`)}
+                          >
+                            <span className={`hub-row-dot ${meta.dot}`} aria-hidden="true" />
+                            <span className="hub-row-title">{p.title}</span>
+                            <span className={difficultyChip(p.difficulty)}>{p.difficulty}</span>
+                            <span className="hub-chip hub-chip--plain">{p.language}</span>
+                            <span className={`hub-row-state ${meta.state}`}>{meta.label}</span>
+                            <ChevronRight size={15} className="hub-row-chev" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="hub-empty">
+                    <Code2 size={22} />
+                    <p>
+                      <strong>Nothing here yet.</strong> Generate a problem above and it
+                      will show up with its language, difficulty, and status.
+                    </p>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <aside className="hub-col">
+              <section className="hub-card">
+                <div className="hub-card-head">
+                  <span className="hub-icon is-sky"><TrendingUp size={16} /></span>
+                  <div className="hub-card-copy">
+                    <h2>Topic progress</h2>
+                    <p>{stats.total > 0 ? 'Solved problems across the topics you have practised.' : 'Your solved topics will fill up here.'}</p>
+                  </div>
+                  <span className="hub-rate">{successRate}%</span>
+                </div>
+
+                <div className="hub-track" aria-hidden="true">
+                  <div className="hub-track-fill" style={{ width: `${successRate}%` }} />
+                </div>
+
+                {topicEntries.length > 0 ? (
+                  <div className="hub-topics">
+                    {topicEntries.map(([name, data]) => {
+                      const percent = data.total > 0 ? (data.solved / data.total) * 100 : 0;
+                      return (
+                        <div key={name}>
+                          <div className="hub-topic-line">
+                            <span className="hub-topic-name">{name}</span>
+                            <span className="hub-topic-count">{data.solved}/{data.total}</span>
+                          </div>
+                          <div className="hub-topic-track" aria-hidden="true">
+                            <div className="hub-topic-fill" style={{ width: `${percent}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="hub-note">
+                    No problems yet. Generate your first one and this panel starts
+                    tracking solved counts by topic.
+                  </p>
+                )}
+              </section>
+            </aside>
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            <div className="hub-grid">
+              <section className="hub-card">
+                <div className="hub-card-head">
+                  <span className="hub-icon"><BookOpen size={16} /></span>
+                  <div className="hub-card-copy">
+                    <h2>Your coding journey</h2>
+                    <p>One topic at a time, in order. Each step ends with a small problem to solve.</p>
+                  </div>
+                </div>
+
+                <div className="hub-fields hub-fields--single">
+                  <div className="hub-field">
+                    <label className="hub-field-label" htmlFor="hub-learn-language">Target language</label>
+                    <PremiumSelect
+                      value={learnLanguage}
+                      onChange={e => setLearnLanguage(e.target.value)}
+                      options={LANGUAGES}
+                    />
+                  </div>
+                </div>
+
+                <div className="hub-generator-actions">
+                  <button
+                    type="button"
+                    className="hub-cta"
+                    onClick={() => nextLesson && startLearningLesson(activeLessonIdx, nextLesson.title)}
+                    disabled={generatingLesson || !nextLesson}
+                  >
+                    {generatingLesson
+                      ? <><Loader size={16} className="spin-icon" /> Preparing…</>
+                      : <>{nextIsReview ? <Check size={16} /> : <ArrowRight size={16} />}
+                        {nextIsReview ? 'Review last step' : `Start step ${activeLessonIdx + 1}`}</>}
+                  </button>
+                  <span className="hub-generator-note">
+                    {nextLesson ? `Next up: ${nextLesson.title}` : 'Pick a language to begin.'}
+                  </span>
+                </div>
+              </section>
+
+              <section className="hub-card">
+                <div className="hub-card-head">
+                  <span className="hub-icon is-sky"><ListOrdered size={16} /></span>
+                  <div className="hub-card-copy">
+                    <h2>Track progress</h2>
+                    <p>{learnLanguage} curriculum</p>
+                  </div>
+                  <span className="hub-rate">{completedCount}/{curriculum.length}</span>
+                </div>
+
+                <div className="hub-track" aria-hidden="true">
+                  <div
+                    className="hub-track-fill"
+                    style={{ width: `${curriculum.length ? (completedCount / curriculum.length) * 100 : 0}%` }}
+                  />
+                </div>
+
+                <p className="hub-note">
+                  {completedCount === 0
+                    ? 'Step 1 is open. Finish a lesson to unlock the next topic.'
+                    : completedCount === curriculum.length
+                      ? 'Every step in this track is complete. Revisit any lesson to sharpen it.'
+                      : `${curriculum.length - completedCount} ${curriculum.length - completedCount === 1 ? 'step' : 'steps'} left in this track.`}
+                </p>
+              </section>
+            </div>
+
+            <section className="hub-card">
+              <div className="hub-card-head">
+                <span className="hub-icon is-emerald"><ListOrdered size={16} /></span>
+                <div className="hub-card-copy">
+                  <h2>Curriculum steps</h2>
+                  <p>Unlocked as you finish the previous lesson.</p>
+                </div>
+                {trackLoading && (
+                  <span className="hub-loading"><Loader size={12} className="spin-icon" /> Loading</span>
+                )}
+              </div>
+
+              <ul className="hub-steps">
+                {curriculum.map((lessonData, idx) => {
+                  const topicName = lessonData.title;
+                  const isCompleted = completedLessons.includes(topicName);
+                  const isActive = idx === activeLessonIdx && !isCompleted;
+                  const isUnlocked = idx <= activeLessonIdx || isCompleted || idx === 0;
+                  const isBusy = generatingLesson && isUnlocked && idx === activeLessonIdx;
+
+                  return (
+                    <li key={topicName}>
+                      <button
+                        type="button"
+                        className={`hub-step ${isCompleted ? 'is-completed' : isActive ? 'is-active' : isUnlocked ? 'is-unlocked' : 'is-locked'}`}
+                        onClick={() => startLearningLesson(idx, topicName)}
+                        disabled={!isUnlocked || generatingLesson}
+                      >
+                        <span className="hub-step-num">
+                          {isCompleted ? <Check size={13} /> : idx + 1}
+                        </span>
+                        <span className="hub-step-copy">
+                          <span className="hub-step-title">{topicName}</span>
+                          <span className="hub-step-meta">
+                            <Clock size={11} /> {lessonData.time}
+                          </span>
+                        </span>
+                        {isBusy ? (
+                          <span className="hub-step-state">
+                            <Loader size={11} className="spin-icon" /> Preparing
+                          </span>
+                        ) : !isUnlocked ? (
+                          <span className="hub-step-state">
+                            <Lock size={11} /> Locked
+                          </span>
+                        ) : isCompleted ? (
+                          <span className="hub-step-state">
+                            <Check size={11} /> Review
+                          </span>
+                        ) : isActive ? (
+                          <span className="hub-step-state">
+                            Start now <ArrowRight size={11} />
+                          </span>
+                        ) : (
+                          <span className="hub-step-state">Unlocked</span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }

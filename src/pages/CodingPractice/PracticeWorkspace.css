@@ -1,0 +1,1316 @@
+/* ============================
+   PRACTICE WORKSPACE
+   A fixed-height working surface: problem on the left, editor on the right,
+   test results docked under the editor.
+   ============================ */
+
+.practice-workspace {
+  --practice-radius: 18px;
+  --practice-soft-ink: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  --practice-faint-ink: color-mix(in srgb, var(--text-primary) 4%, transparent);
+
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px 18px;
+  overflow: hidden;
+}
+
+.practice-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* The practice editor has its own Ask AI actions; keep the floating coach
+   button from covering the test dock and its collapse control. */
+body:has(.practice-workspace) .ai-fab {
+  display: none !important;
+}
+
+/* ---------- Workspace header ---------- */
+
+.practice-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.practice-back {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.practice-back:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.practice-bar-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.practice-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.practice-crumb-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.practice-crumb-link:hover {
+  color: var(--accent-brand);
+}
+
+.practice-crumb-sep {
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.practice-crumb-link,
+.practice-crumbs > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-crumb-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.practice-heading {
+  margin: 2px 0 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.practice-env {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.practice-env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 16%, transparent);
+}
+
+.practice-env.is-loading .practice-env-dot {
+  background: var(--warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 16%, transparent);
+  animation: practice-pulse 1.5s ease-in-out infinite;
+}
+
+.practice-env.is-error .practice-env-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+@keyframes practice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.practice-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.practice-status.is-success {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.practice-status.is-warning {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 22%, transparent);
+}
+
+.practice-status.is-info {
+  color: var(--accent-brand);
+  background: var(--accent-brand-soft);
+  border-color: color-mix(in srgb, var(--accent-brand) 22%, transparent);
+}
+
+.practice-status.is-neutral {
+  color: var(--text-secondary);
+  background: var(--practice-soft-ink);
+  border-color: var(--border-light);
+}
+
+/* ---------- Split shell ---------- */
+
+.practice-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+.practice-resize {
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.practice-resize-grip {
+  width: 4px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--practice-soft-ink);
+  transition: background var(--transition-fast);
+}
+
+.practice-resize:hover .practice-resize-grip {
+  background: var(--accent-brand);
+}
+
+/* ---------- Problem pane ---------- */
+
+.practice-pane {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--practice-radius);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-md);
+}
+
+.practice-pane-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-glass);
+}
+
+.practice-pane-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.practice-pane-title svg {
+  color: var(--accent-brand);
+}
+
+.practice-pane-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.practice-difficulty {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.practice-difficulty.is-easy {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.practice-difficulty.is-medium {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.practice-difficulty.is-hard {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.practice-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--practice-soft-ink);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.practice-problem-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 24px 32px;
+  scrollbar-gutter: stable;
+}
+
+/* ---------- Problem typography ---------- */
+
+.practice-problem-body .problem-description {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+.practice-problem-body .markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.practice-problem-body .markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.practice-problem-body .markdown-body h1,
+.practice-problem-body .markdown-body h2,
+.practice-problem-body .markdown-body h3 {
+  margin: 1.5em 0 0.55em;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.practice-problem-body .markdown-body h1 { font-size: 1.15rem; }
+.practice-problem-body .markdown-body h2 { font-size: 1.05rem; }
+.practice-problem-body .markdown-body h3 { font-size: 0.9375rem; }
+
+.practice-problem-body .markdown-body p {
+  margin: 0 0 0.85em;
+}
+
+.practice-problem-body .markdown-body ul,
+.practice-problem-body .markdown-body ol {
+  margin: 0 0 0.9em;
+  padding-left: 1.3em;
+}
+
+.practice-problem-body .markdown-body li {
+  margin-bottom: 0.3em;
+}
+
+.practice-problem-body .markdown-body li::marker {
+  color: var(--text-muted);
+}
+
+.practice-problem-body .markdown-body strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.practice-problem-body .markdown-body code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-soft-ink);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+}
+
+.practice-problem-body .markdown-body pre {
+  margin: 0 0 1em;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #0d1526;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.practice-problem-body .markdown-body pre code {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.practice-problem-body .markdown-body table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.practice-problem-body .markdown-body th,
+.practice-problem-body .markdown-body td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  text-align: left;
+}
+
+.practice-problem-body .markdown-body th {
+  background: var(--practice-faint-ink);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---------- Problem sections ---------- */
+
+.practice-section {
+  margin-bottom: 26px;
+}
+
+.practice-section-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--text-muted);
+}
+
+.practice-section-head > svg {
+  flex-shrink: 0;
+}
+
+.practice-section-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.practice-section-content {
+  animation: fadeSlideIn 0.35s ease;
+}
+
+/* Examples */
+
+.practice-problem-body .example-card {
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+  overflow: hidden;
+}
+
+.practice-problem-body .example-toggle {
+  padding: 11px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.practice-problem-body .example-toggle:hover {
+  background: var(--practice-soft-ink);
+}
+
+.practice-problem-body .example-content {
+  padding: 0 14px 14px;
+}
+
+.practice-problem-body .io-box label {
+  margin-bottom: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.practice-problem-body .io-box pre {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.practice-problem-body .example-explanation {
+  margin-top: 9px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.practice-problem-body .example-explanation strong {
+  color: var(--text-primary);
+}
+
+/* Constraints */
+
+.practice-problem-body .constraints-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.practice-problem-body .constraints-list li {
+  position: relative;
+  margin-bottom: 7px;
+  padding-left: 15px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.practice-problem-body .constraints-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-muted);
+}
+
+/* Visible test-case preview */
+
+.practice-problem-body .test-cases-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.practice-problem-body .test-cases-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.practice-problem-body .test-cases-table th {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.practice-problem-body .test-cases-table td {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+.practice-problem-body .test-cases-table tr:last-child td {
+  border-bottom: none;
+}
+
+.practice-problem-body .test-cases-table code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--practice-soft-ink);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.practice-problem-body .test-cases-table code.expected {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+/* Hints */
+
+.practice-problem-body .practice-hints-section {
+  margin-bottom: 26px;
+}
+
+.practice-problem-body .practice-hints-note {
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.practice-problem-body .hint-item {
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+.practice-problem-body .hint-item + .hint-item {
+  margin-top: 8px;
+}
+
+.practice-problem-body .hint-toggle {
+  padding: 10px 13px;
+  font-size: 0.8125rem;
+}
+
+.practice-problem-body .hint-content {
+  padding: 0 13px 13px 37px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* Limits */
+
+.practice-problem-body .problem-limits {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.practice-problem-body .problem-limits span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------- Editor pane ---------- */
+
+.practice-code {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practice-editor {
+  flex: 1 1 auto;
+  min-height: 200px;
+  overflow: hidden;
+  border-radius: var(--practice-radius);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #1e1e1e;
+  box-shadow: var(--shadow-lg);
+}
+
+.practice-editor .code-panel {
+  height: 100%;
+}
+
+.practice-editor .code-toolbar {
+  flex-wrap: wrap;
+  gap: 8px;
+  row-gap: 6px;
+  padding: 9px 12px;
+  background: #1b1b20;
+  border-bottom: 1px solid #2b2b31;
+}
+
+.practice-editor .code-toolbar-right {
+  gap: 4px;
+  margin-left: auto;
+}
+
+.practice-editor .toolbar-btn,
+.practice-editor .toolbar-action-btn {
+  white-space: nowrap;
+}
+
+.practice-editor .toolbar-btn {
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+}
+
+.practice-editor .toolbar-divider {
+  background: #33333a;
+}
+
+.practice-editor .lang-btn {
+  padding: 6px 11px;
+  border-radius: 7px;
+  border-color: #33333a;
+  background: #26262c;
+  color: #e4e4e7;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.practice-editor .lang-btn:hover {
+  background: #2f2f36;
+  border-color: #43434c;
+}
+
+.practice-editor .toolbar-run-btn {
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid #33333a;
+  background: #26262c;
+  color: #e4e4e7;
+}
+
+.practice-editor .toolbar-run-btn:hover:not(:disabled) {
+  background: #2f2f36;
+  border-color: #43434c;
+}
+
+.practice-editor .toolbar-submit-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px rgba(79, 70, 229, 0.9);
+}
+
+.practice-editor .toolbar-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7477f4 0%, #4338ca 100%);
+  color: #fff;
+}
+
+.practice-editor .toolbar-submit-btn:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* ---------- Test results dock ---------- */
+
+.practice-tests {
+  /* Size to the results on screen (idle state stays short, a failed case gets
+     room) instead of reserving one fixed height for every state. */
+  flex: 0 1 auto;
+  min-height: 150px;
+  max-height: min(46vh, 340px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--practice-radius);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-md);
+}
+
+.practice-tests.is-collapsed {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.practice-tests-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+}
+
+.practice-tests-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  box-shadow: 0 6px 14px -8px rgba(99, 102, 241, 0.9);
+}
+
+.practice-tests-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.practice-tests-title {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.practice-tests-sub {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-tests-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.practice-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--accent-brand);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.practice-text-btn:hover {
+  background: var(--accent-brand-soft);
+}
+
+.practice-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.practice-icon-btn:hover {
+  background: var(--practice-soft-ink);
+  color: var(--text-primary);
+}
+
+.practice-icon-btn .is-flipped {
+  transform: rotate(180deg);
+}
+
+.practice-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.practice-verdict.is-pass {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.practice-verdict.is-fail {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.practice-tests-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Case tabs */
+
+.practice-case-tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-light);
+  scrollbar-width: none;
+}
+
+.practice-case-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.practice-case-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.practice-case-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.practice-case-tab[aria-selected='true'] {
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.practice-case-tab.is-pass svg { color: var(--success); }
+.practice-case-tab.is-fail svg { color: var(--danger); }
+
+/* Case detail */
+
+.practice-case-detail {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.practice-io-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 10px;
+}
+
+.practice-io-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-faint-ink);
+}
+
+.practice-io-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.practice-io-block pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.practice-io-empty {
+  font-style: italic;
+  opacity: 0.55;
+}
+
+.practice-io-block.is-pass {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  background: color-mix(in srgb, var(--success) 6%, transparent);
+}
+
+.practice-io-block.is-fail {
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.practice-io-block.is-pass .practice-io-label { color: var(--success); }
+.practice-io-block.is-fail .practice-io-label { color: var(--danger); }
+
+.practice-io-block.is-error {
+  margin-top: 10px;
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.practice-io-block.is-error .practice-io-label { color: var(--danger); }
+
+.practice-case-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.practice-case-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Empty + running states */
+
+.practice-tests-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.practice-tests-empty > svg {
+  opacity: 0.5;
+}
+
+.practice-tests-empty p {
+  max-width: 46ch;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.practice-tests-empty p strong {
+  color: var(--text-primary);
+}
+
+.practice-tests-kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.practice-tests-kbd kbd {
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background: var(--practice-soft-ink);
+  color: var(--text-secondary);
+  font: inherit;
+}
+
+.practice-run-track {
+  width: min(220px, 72%);
+  height: 4px;
+  border-radius: 999px;
+  background: var(--practice-soft-ink);
+  overflow: hidden;
+}
+
+.practice-run-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  transition: width 0.3s ease;
+}
+
+/* ---------- Mobile flow ---------- */
+
+.practice-mobile-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-glass);
+}
+
+.practice-mobile-tab {
+  position: relative;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 8px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.practice-mobile-tab[aria-selected='true'] {
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.practice-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-brand);
+}
+
+.practice-mobile-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practice-mobile-body > .practice-pane,
+.practice-mobile-body > .practice-tests {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1180px) {
+  /* Keep the editor toolbar on one row in the narrow two-pane range. */
+  .practice-editor .toolbar-btn-text {
+    display: none;
+  }
+
+  .practice-problem-body {
+    padding: 20px 20px 28px;
+  }
+}
+
+@media (max-width: 900px) {
+  .practice-workspace {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+    /* Clear the fixed bottom navigation on phones. */
+    padding: 10px 12px 92px;
+    gap: 10px;
+  }
+
+  .practice-bar {
+    padding-top: 0;
+  }
+
+  .practice-heading {
+    font-size: 0.9875rem;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .practice-bar-side {
+    gap: 8px;
+  }
+
+  .practice-env {
+    display: none;
+  }
+
+  .practice-status {
+    padding: 4px 9px;
+    font-size: 0.6875rem;
+  }
+
+  .practice-mobile-body {
+    flex: none;
+  }
+
+  .practice-pane {
+    height: auto;
+  }
+
+  .practice-problem-body {
+    overflow: visible;
+    padding: 18px 18px 26px;
+  }
+
+  .practice-code {
+    height: auto;
+  }
+
+  .practice-editor {
+    flex: none;
+    height: min(58dvh, 430px);
+    min-height: 300px;
+  }
+
+  .practice-tests {
+    flex: none;
+    height: auto;
+    max-height: none;
+  }
+
+  /* The results tab is the whole screen on a phone, so keep it tall enough to
+     read a failing case without hunting for it. */
+  .practice-mobile-body > .practice-tests {
+    min-height: min(64dvh, 520px);
+  }
+
+  .practice-tests-body {
+    overflow: visible;
+  }
+
+  .practice-case-detail {
+    overflow: visible;
+  }
+
+  .practice-tests-empty {
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .practice-crumb-link,
+  .practice-crumb-sep {
+    display: none;
+  }
+
+  .practice-pane-meta .practice-chip:last-child {
+    display: none;
+  }
+
+  .practice-editor .code-toolbar {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    row-gap: 8px;
+  }
+
+  .practice-editor .code-toolbar-left {
+    order: 0;
+  }
+
+  /* Phones stack the primary action, so the secondary labels fit again. */
+  .practice-editor .toolbar-btn-text {
+    display: inline;
+  }
+
+  /* Let the actions sit on the toolbar's own row, with a full-width primary. */
+  .practice-editor .code-toolbar-right {
+    display: contents;
+  }
+
+  .practice-editor .toolbar-btn {
+    order: 1;
+  }
+
+  .practice-editor .toolbar-divider {
+    display: none;
+  }
+
+  .practice-editor .toolbar-run-btn {
+    order: 2;
+  }
+
+  .practice-editor .toolbar-submit-btn {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .practice-editor .toolbar-btn {
+    padding: 6px 7px;
+  }
+
+  .practice-tests-actions .practice-text-btn {
+    display: none;
+  }
+
+  .practice-io-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-case-tab {
+    padding: 4px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-env.is-loading .practice-env-dot {
+    animation: none;
+  }
+}

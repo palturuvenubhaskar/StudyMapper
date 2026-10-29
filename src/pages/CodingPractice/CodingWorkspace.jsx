@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCodingProblem, updateCodingProblem } from '../../data/repository';
-import { analyzeCodingSolutionPrompt, generateVisualDebugPrompt, generateCodeReviewPrompt, generateCodingProblemPrompt, extractJson, callOpenRouter, callOpenRouterStream } from '../../core/api/aiService';
+import { generateCodeReviewPrompt, generateCodingProblemPrompt, extractJson, callOpenRouterStream } from '../../core/api/aiService';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
-import { ArrowLeft, Loader } from 'lucide-react';
+import { ArrowLeft, ChevronRight, CheckCircle2, FileText, Code2, Terminal, Loader } from 'lucide-react';
 import { awardXP } from '../../core/gamification/xpEngine';
 import { updateQuestProgress } from '../../core/gamification/dailyQuests';
 import { checkAchievements } from '../../core/gamification/achievementChecker';
@@ -22,7 +22,17 @@ import SubmissionModal from './components/SubmissionModal';
 import AITutorDrawer from './components/AITutorDrawer';
 
 import './CodingPractice.css';
-import { db } from '../../data/db';
+import './PracticeWorkspace.css';
+
+// Below this width the workspace becomes a single-pane tab flow.
+const MOBILE_MAX_WIDTH = 900;
+
+// Starter snippets are stored with lowercase language keys, while the selected
+// language is a display name ("Python"). Accept both.
+const getStarterCode = (starterCode, language) => {
+  if (!starterCode || !language) return '';
+  return starterCode[language] ?? starterCode[String(language).toLowerCase()] ?? '';
+};
 
 export default function CodingWorkspace() {
   const { problemId } = useParams();
@@ -38,7 +48,7 @@ export default function CodingWorkspace() {
   const [generatingStream, setGeneratingStream] = useState('');
   const [generationError, setGenerationError] = useState(null);
   const generationStartedRef = useRef(false);
-  
+
   // AI Tutor State
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [aiMode, setAiMode] = useState('review'); // 'review' or 'explain-error'
@@ -50,13 +60,13 @@ export default function CodingWorkspace() {
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResults, setSubmitResults] = useState([]);
-  
-  // Mobile Layout State
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Layout State
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_MAX_WIDTH);
   const [activeTab, setActiveTab] = useState('problem'); // 'problem', 'code', 'tests'
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(window.innerWidth <= MOBILE_MAX_WIDTH);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -150,36 +160,36 @@ export default function CodingWorkspace() {
     (async () => {
       // Find problem data from our local test case file
       const localProblem = localProblems.find(p => p.id === problemId);
-      
+
       // Fetch DB record for user progress
       const pRecord = await getCodingProblem(problemId);
-      
+
       if (!localProblem && !pRecord) {
         toast('Problem not found', 'error');
-        navigate('/coding'); 
-        return; 
+        navigate('/coding');
+        return;
       }
-      
+
       // Merge local problem data (which has test cases) with db record (if any)
-      const mergedProblem = { 
-        ...(pRecord || {}), 
+      const mergedProblem = {
+        ...(pRecord || {}),
         ...(localProblem || {}),
         status: pRecord?.status || 'unsolved'
       };
-      
+
       setProblem(mergedProblem);
       setDbRecord(pRecord);
-      
+
       // Set language from the problem record
       if (pRecord?.language) {
         setLanguage(pRecord.language);
       }
-      
+
       // Load saved code or starter code
       const savedCode = pRecord?.user_code;
-      const starterCode = localProblem?.starterCode?.[language] || '';
+      const starterCode = getStarterCode(localProblem?.starterCode, language);
       setCode(savedCode || starterCode);
-      
+
       setLoading(false);
 
       // If the problem is in 'generating' state, start streaming AI generation
@@ -197,7 +207,7 @@ export default function CodingWorkspace() {
         tests = [...tests, ...problem.hiddenTestCases];
       }
     }
-    
+
     if (tests.length === 0) {
       let tc = problem.test_cases_json || problem.test_cases;
       if (tc) {
@@ -211,38 +221,52 @@ export default function CodingWorkspace() {
     }
 
     if (tests.length === 0 && problem.sample_input && (problem.sample_output || problem.expected_output)) {
-       tests = [{
-         input: problem.sample_input,
-         expected: problem.sample_output || problem.expected_output,
-         expected_output: problem.sample_output || problem.expected_output,
-         is_hidden: false,
-         isHidden: false
-       }];
+      tests = [{
+        input: problem.sample_input,
+        expected: problem.sample_output || problem.expected_output,
+        expected_output: problem.sample_output || problem.expected_output,
+        is_hidden: false,
+        isHidden: false
+      }];
     }
-    
+
     return includeHidden ? tests : tests.filter(t => !t.isHidden && !t.is_hidden);
   };
 
   const handleRunTests = async () => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
-    
+
+    if (language === 'Python' && !pyodideConfig.pyodide) {
+      toast('Python is still loading — try again in a moment.', 'warning');
+      return;
+    }
+
     // Save code attempt to DB
     try {
       await updateCodingProblem(problemId, { user_code: code });
     } catch(err) { /* ignore if record doesn't exist yet */ }
-    
+
     const publicTests = getTestCases(false);
 
     if (publicTests.length === 0) {
       toast('No visible test cases found for this problem', 'warning');
       return;
     }
-    
+
     await runTests(code, publicTests, language);
+
+    // On phones the editor and the results live in separate tabs; show the
+    // results as soon as the run finishes.
+    if (isMobile) setActiveTab('tests');
   };
 
   const handleSubmit = async () => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
+
+    if (language === 'Python' && !pyodideConfig.pyodide) {
+      toast('Python is still loading — try again in a moment.', 'warning');
+      return;
+    }
 
     setIsSubmitting(true);
     setShowSubmissionModal(true);
@@ -252,7 +276,7 @@ export default function CodingWorkspace() {
     try {
       await updateCodingProblem(problemId, { user_code: code });
     } catch(err) { /* ignore if record doesn't exist yet */ }
-    
+
     const allTests = getTestCases(true);
 
     if (allTests.length === 0) {
@@ -262,36 +286,29 @@ export default function CodingWorkspace() {
       return;
     }
 
-    // We use the runTests hook to actually execute, but we'll capture results 
-    // Wait, runTests updates `results` state which is passed to TestCasePanel.
-    // For Submission Modal, we also want to intercept it or just use `results` state.
-    // Let's run it using the hook, and copy the results state to `submitResults`.
     await runTests(code, allTests, language, (currentResults) => {
       setSubmitResults([...currentResults]);
     });
 
     setIsSubmitting(false);
-
-    // After runTests finishes, check if all passed
-    // Note: since runTests is async, we can check submitResults after it resolves
   };
 
   // Gamification hook when submit passes all
   useEffect(() => {
     const passedCount = submitResults.filter(r => r.passed).length;
     const totalCount = submitResults.length;
-    
+
     if (!isSubmitting && submitResults.length > 0 && passedCount === totalCount && problem && problem.status !== 'solved') {
       (async () => {
         try {
           await updateCodingProblem(problemId, { status: 'solved', user_code: code });
           setProblem(prev => ({ ...prev, status: 'solved' }));
-          
+
           await awardXP('guest', 100, 'coding_problem', problemId);
           await updateQuestProgress('guest', 'solve_code', 1);
           await checkAchievements('guest');
           await logEvent('guest', problemId, 'coding_problem_solved', 0, 100);
-          
+
           toast('Solution Accepted! You earned XP.', 'success');
         } catch(err) {
           console.error("Failed to update status", err);
@@ -302,7 +319,7 @@ export default function CodingWorkspace() {
 
   const handleReset = () => {
     if (window.confirm('Are you sure you want to reset your code to the starter template?')) {
-      setCode(problem?.starterCode?.[language] || '');
+      setCode(getStarterCode(problem?.starterCode, language));
       resetTests();
       setSubmitResults([]);
     }
@@ -316,7 +333,7 @@ export default function CodingWorkspace() {
 
   const handleAskAI = async (mode = 'review') => {
     if (!code.trim()) { toast('Write some code first', 'error'); return; }
-    
+
     setAiMode(mode);
     setAiDrawerOpen(true);
     setAiAnalyzing(true);
@@ -325,13 +342,13 @@ export default function CodingWorkspace() {
 
     try {
       let messages;
-      
+
       if (mode === 'explain-error') {
         const failedTest = results.find(r => !r.passed);
-        const promptStr = failedTest 
+        const promptStr = failedTest
           ? `My code failed test case ${failedTest.name || failedTest.id}.\nInput: ${JSON.stringify(failedTest.input)}\nExpected: ${JSON.stringify(failedTest.expected)}\nActual output: ${failedTest.actual}\nError (if any): ${failedTest.stderr}\n\nHere is my code:\n` + code
           : `My code is failing tests. Please help me debug it.\n\nCode:\n` + code;
-          
+
         messages = [
           { role: 'system', content: 'You are an expert coding tutor. Explain why the code fails the given test case and suggest a fix. Be concise and focus on the logical error.' },
           { role: 'user', content: promptStr }
@@ -343,7 +360,7 @@ export default function CodingWorkspace() {
       await callOpenRouterStream(messages, (textSoFar) => {
         setAiStreamContent(textSoFar);
       });
-      
+
     } catch (err) {
       console.error(err);
       setAiError('The AI service did not respond. This is usually temporary.');
@@ -351,163 +368,198 @@ export default function CodingWorkspace() {
     setAiAnalyzing(false);
   };
 
-  if (loading) return <div className="loading-container"><div className="spinner spinner-lg"></div></div>;
+  if (loading) {
+    return (
+      <div className="practice-loading">
+        <Loader className="spin-icon" size={26} />
+        <span>Opening problem…</span>
+      </div>
+    );
+  }
+
+  const goToPractice = () => navigate('/coding');
 
   // Show generating state in the header
   const isCurrentlyGenerating = isGenerating || problem?.status === 'generating';
+  const isSolved = problem?.status === 'solved';
+  const starterCode = getStarterCode(problem?.starterCode, language);
+  const hasWork = code.trim().length > 0 && code !== starterCode;
 
-  let totalSubmissionTests = 0;
-  if (problem) {
-     totalSubmissionTests = getTestCases(true).length;
-  }
+  const headerStatus = isCurrentlyGenerating
+    ? { label: 'Building problem', tone: 'info' }
+    : isSolved
+      ? { label: 'Solved', tone: 'success' }
+      : hasWork
+        ? { label: 'In progress', tone: 'warning' }
+        : { label: 'Not started', tone: 'neutral' };
+
+  const env = language !== 'Python'
+    ? null
+    : pyodideConfig.loading
+      ? { label: 'Loading Python', tone: 'loading' }
+      : pyodideConfig.error
+        ? { label: 'Python unavailable', tone: 'error' }
+        : { label: 'Python ready', tone: 'ready' };
+
+  const publicTestCount = getTestCases(false).length;
+  const totalSubmissionTests = getTestCases(true).length;
+
+  const renderProblemPane = () => (
+    <ProblemPanel
+      problem={problem}
+      isGenerating={isCurrentlyGenerating}
+      generationError={generationError}
+      onRetry={handleRetryGeneration}
+    />
+  );
+
+  const renderTestsDock = (showToggle = true) => (
+    <TestCasePanel
+      results={results}
+      status={status}
+      runTime={runTime}
+      totalTests={publicTestCount}
+      onExplain={() => handleAskAI('explain-error')}
+      collapsible={showToggle}
+    />
+  );
+
+  const renderCodePane = (showTests = true) => (
+    <div className="practice-code">
+      <div className="practice-editor">
+        <CodeEditorPanel
+          code={code}
+          setCode={setCode}
+          language={language}
+          setLanguage={setLanguage}
+          onRun={handleRunTests}
+          isRunning={status === 'running'}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          onReset={handleReset}
+          onAskAI={handleAskAI}
+        />
+      </div>
+      {showTests && renderTestsDock()}
+    </div>
+  );
+
+  const mobileTabs = [
+    { id: 'problem', label: 'Problem', icon: FileText },
+    { id: 'code', label: 'Code', icon: Code2 },
+    { id: 'tests', label: 'Tests', icon: Terminal },
+  ];
+
+  const hasTestResults = status === 'passed' || status === 'failed';
 
   return (
-    <div className="coding-practice-page">
-      {/* Top Navbar */}
-      <div className="breadcrumb">
-        <button className="btn btn-ghost btn-icon" onClick={() => navigate('/coding')} style={{ padding: 0, marginRight: '8px' }}>
-          <ArrowLeft size={16} />
+    <div className="practice-workspace">
+      <header className="practice-bar">
+        <button
+          type="button"
+          className="practice-back"
+          onClick={goToPractice}
+          aria-label="Back to coding practice"
+          title="Back to coding practice"
+        >
+          <ArrowLeft size={17} />
         </button>
-        <span style={{ fontWeight: 500 }}>Coding Practice</span>
-        <span>/</span>
-        <span style={{ color: '#0f172a', fontWeight: 600 }}>{problem.title}</span>
-        
-        {isCurrentlyGenerating && (
-          <div className="badge badge-accent" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-            <Loader size={12} className="spin-icon" /> Generating Problem...
-          </div>
-        )}
-        {pyodideConfig.loading && !isCurrentlyGenerating && (
-          <div className="badge badge-accent" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-            <Loader size={12} className="spin-icon" /> Loading Python Environment...
-          </div>
-        )}
-      </div>
 
-      {/* Main Workspace Area */}
-      <div className="split-pane">
-        {isMobile ? (
-          <div className="mobile-workspace">
-            <div className="mobile-tab-bar">
-              <button 
-                className={`mobile-tab ${activeTab === 'problem' ? 'active' : ''}`}
-                onClick={() => setActiveTab('problem')}
+        <div className="practice-bar-main">
+          <nav className="practice-crumbs" aria-label="Breadcrumb">
+            <button type="button" className="practice-crumb-link" onClick={goToPractice}>
+              Coding practice
+            </button>
+            <ChevronRight size={12} className="practice-crumb-sep" aria-hidden="true" />
+            <span>{problem.topic || 'Practice'}</span>
+            {problem.difficulty && (
+              <>
+                <span className="practice-crumb-dot" aria-hidden="true" />
+                <span>{problem.difficulty}</span>
+              </>
+            )}
+          </nav>
+          <h1 className="practice-heading" title={problem.title}>{problem.title || 'New problem'}</h1>
+        </div>
+
+        <div className="practice-bar-side">
+          {env && (
+            <span className={`practice-env is-${env.tone}`} title={env.label}>
+              <span className="practice-env-dot" aria-hidden="true" />
+              {env.label}
+            </span>
+          )}
+          <span className={`practice-status is-${headerStatus.tone}`}>
+            {headerStatus.tone === 'info' && <Loader size={12} className="spin-icon" />}
+            {headerStatus.tone === 'success' && <CheckCircle2 size={12} />}
+            {headerStatus.label}
+          </span>
+        </div>
+      </header>
+
+      {isMobile ? (
+        <>
+          <div className="practice-mobile-tabs" role="tablist" aria-label="Workspace">
+            {mobileTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                className="practice-mobile-tab"
+                aria-selected={activeTab === id}
+                onClick={() => setActiveTab(id)}
               >
-                Problem
+                <Icon size={15} />
+                {label}
+                {id === 'tests' && hasTestResults && <span className="practice-tab-dot" aria-hidden="true" />}
               </button>
-              <button 
-                className={`mobile-tab ${activeTab === 'code' ? 'active' : ''}`}
-                onClick={() => setActiveTab('code')}
-              >
-                Code
-              </button>
-              <button 
-                className={`mobile-tab ${activeTab === 'tests' ? 'active' : ''}`}
-                onClick={() => setActiveTab('tests')}
-              >
-                Test Cases
-              </button>
-            </div>
-            
-            <div className="mobile-tab-content">
-              {activeTab === 'problem' && (
-                <div className="pane-left-content" style={{ height: '100%' }}>
-                  <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} generationError={generationError} onRetry={handleRetryGeneration} />
-                </div>
-              )}
-              {activeTab === 'code' && (
-                <div className="pane-right-top" style={{ height: '100%', flexShrink: 0 }}>
-                  <CodeEditorPanel 
-                    code={code} 
-                    setCode={setCode} 
-                    language={language} 
-                    setLanguage={setLanguage}
-                    onRun={handleRunTests}
-                    isRunning={status === 'running'}
-                    onSubmit={handleSubmit}
-                    isSubmitting={isSubmitting}
-                    onReset={handleReset}
-                    onAskAI={handleAskAI}
-                  />
-                </div>
-              )}
-              {activeTab === 'tests' && (
-                <div className="pane-right-bottom" style={{ height: '100%', flexShrink: 0 }}>
-                  <TestCasePanel 
-                    results={results}
-                    status={status}
-                    runTime={runTime}
-                  />
-                </div>
-              )}
-            </div>
+            ))}
           </div>
-        ) : (
+
+          <div className="practice-mobile-body">
+            {activeTab === 'problem' && renderProblemPane()}
+            {activeTab === 'code' && renderCodePane(false)}
+            {activeTab === 'tests' && renderTestsDock(false)}
+          </div>
+        </>
+      ) : (
+        <div className="practice-shell">
           <PanelGroup orientation="horizontal">
-            
-            {/* Left Pane: Problem Description */}
-            <Panel defaultSize={45} minSize={30}>
-              <div className="pane-left-content">
-                <ProblemPanel problem={problem} isGenerating={isCurrentlyGenerating} generationError={generationError} onRetry={handleRetryGeneration} />
-              </div>
+            <Panel defaultSize={44} minSize={30}>
+              {renderProblemPane()}
             </Panel>
 
-          <PanelResizeHandle style={{ width: '16px', background: 'transparent', cursor: 'col-resize' }} />
+            <PanelResizeHandle className="practice-resize">
+              <span className="practice-resize-grip" aria-hidden="true" />
+            </PanelResizeHandle>
 
-          {/* Right Pane: Editor & Tests */}
-          <Panel defaultSize={55} minSize={40}>
-            <div className="pane-right-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', gap: '16px', paddingRight: '4px' }}>
-              
-              <div className="pane-right-top" style={{ height: '90vh', flexShrink: 0 }}>
-                <CodeEditorPanel 
-                  code={code} 
-                  setCode={setCode} 
-                  language={language} 
-                  setLanguage={setLanguage}
-                  onRun={handleRunTests}
-                  isRunning={status === 'running'}
-                  onSubmit={handleSubmit}
-                  isSubmitting={isSubmitting}
-                  onReset={handleReset}
-                  onAskAI={handleAskAI}
-                />
-              </div>
-
-              <div className="pane-right-bottom" style={{ minHeight: '400px', flexShrink: 0, marginBottom: '24px' }}>
-                <TestCasePanel 
-                  results={results}
-                  status={status}
-                  runTime={runTime}
-                />
-              </div>
-              
-            </div>
-          </Panel>
-          
+            <Panel defaultSize={56} minSize={38}>
+              {renderCodePane()}
+            </Panel>
           </PanelGroup>
-        )}
+        </div>
+      )}
 
-        {/* Floating AI Tutor Drawer */}
-        <AITutorDrawer 
-          isOpen={aiDrawerOpen} 
-          onClose={() => setAiDrawerOpen(false)} 
-          streamContent={aiStreamContent}
-          isAnalyzing={aiAnalyzing}
-          mode={aiMode}
-          error={aiError}
-          onRetry={() => handleAskAI(aiMode)}
+      {/* Floating AI Tutor Drawer */}
+      <AITutorDrawer
+        isOpen={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        streamContent={aiStreamContent}
+        isAnalyzing={aiAnalyzing}
+        mode={aiMode}
+        error={aiError}
+        onRetry={() => handleAskAI(aiMode)}
+      />
+
+      {/* Submission Modal Overlay */}
+      {showSubmissionModal && (
+        <SubmissionModal
+          results={submitResults}
+          isRunning={isSubmitting}
+          totalTests={totalSubmissionTests}
+          onClose={() => setShowSubmissionModal(false)}
         />
-        
-        {/* Submission Modal Overlay */}
-        {showSubmissionModal && (
-          <SubmissionModal 
-            results={submitResults} 
-            isRunning={isSubmitting}
-            totalTests={totalSubmissionTests}
-            onClose={() => setShowSubmissionModal(false)} 
-          />
-        )}
-      </div>
+      )}
     </div>
   );
 }

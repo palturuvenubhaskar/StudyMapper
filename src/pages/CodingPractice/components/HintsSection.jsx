@@ -44,12 +44,12 @@ export function HintsSection({ hints, problemId }) {
   // If hints is just a markdown string (legacy or generated), we don't use the penalty system
   if (typeof hints === 'string') {
     return (
-      <div className="problem-section hints-section">
-        <div className="section-header">
-          <Lightbulb size={16} />
-          <span>Hints</span>
+      <div className="practice-section practice-hints-section">
+        <div className="practice-section-head">
+          <Lightbulb size={14} />
+          <h3 className="practice-section-title">Hints</h3>
         </div>
-        <div className="markdown-body" style={{ padding: '16px', background: 'var(--bg-panel)', borderRadius: '12px', border: '1px solid var(--border-strong)' }}>
+        <div className="practice-hints-note markdown-body">
           <MarkdownRenderer remarkPlugins={[remarkGfm]}>{hints}</MarkdownRenderer>
         </div>
       </div>
@@ -62,10 +62,10 @@ export function HintsSection({ hints, problemId }) {
   }
 
   return (
-    <div className="problem-section hints-section">
-      <div className="section-header">
-        <Lightbulb size={16} />
-        <span>Hints</span>
+    <div className="practice-section practice-hints-section">
+      <div className="practice-section-head">
+        <Lightbulb size={14} />
+        <h3 className="practice-section-title">Hints</h3>
       </div>
 
       {hints.map((hint, idx) => {
