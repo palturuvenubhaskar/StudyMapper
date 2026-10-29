@@ -1,154 +1,327 @@
-import { useState, useMemo } from 'react';
-import { Search, Bookmark, BookmarkCheck, Sparkles, ArrowRight, Map } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  Bookmark,
+  BookmarkCheck,
+  ChevronDown,
+  ChevronUp,
+  Code,
+  Compass,
+  Database,
+  GraduationCap,
+  Layers,
+  Lightbulb,
+  Search,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Sprout,
+  Wrench,
+  X,
+} from 'lucide-react';
 import { ALL_ROADMAPS, ROADMAP_CATEGORIES, getCategoryCounts } from './data/roadmapCatalog';
-import PremiumSelect from '../../components/PremiumSelect/PremiumSelect';
 
 const BOOKMARK_KEY = 'studymapper_roadmap_bookmarks';
+const PREVIEW_LIMIT = 8;
+
+const CATEGORY_META = {
+  role: { icon: Compass, hue: 217 },
+  language: { icon: Code, hue: 38 },
+  framework: { icon: Layers, hue: 262 },
+  tool: { icon: Wrench, hue: 172 },
+  database: { icon: Database, hue: 340 },
+  mobile: { icon: Smartphone, hue: 22 },
+  concept: { icon: Lightbulb, hue: 190 },
+  skill: { icon: GraduationCap, hue: 235 },
+  beginner: { icon: Sprout, hue: 142 },
+  'best-practices': { icon: ShieldCheck, hue: 215 },
+};
 
 const getBookmarks = () => {
-  try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); }
-  catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };
 
-const toggleBookmark = (id) => {
-  const bm = getBookmarks();
-  const next = bm.includes(id) ? bm.filter(b => b !== id) : [...bm, id];
-  localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
-  return next;
+const persistBookmarks = (ids) => {
+  try {
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(ids));
+  } catch {
+    // Storage can be unavailable; the in-memory state still works for this visit.
+  }
 };
+
+function RoadmapCard({ roadmap, saved, onOpen, onToggleSave }) {
+  const meta = CATEGORY_META[roadmap.category] || CATEGORY_META.skill;
+  const Icon = meta.icon;
+
+  return (
+    <article className="rm-card" style={{ '--rm-hue': meta.hue }}>
+      <button
+        type="button"
+        className="rm-card-main"
+        onClick={() => onOpen(roadmap.id)}
+      >
+        <span className="rm-card-icon" aria-hidden="true">
+          <Icon size={17} />
+        </span>
+        <span className="rm-card-text">
+          <span className="rm-card-title">{roadmap.title}</span>
+          <span className="rm-card-desc">{roadmap.description}</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        className={`rm-card-save ${saved ? 'is-saved' : ''}`}
+        onClick={() => onToggleSave(roadmap.id)}
+        aria-pressed={saved}
+        title={saved ? 'Remove from saved' : 'Save roadmap'}
+        aria-label={saved ? `Remove ${roadmap.title} from saved roadmaps` : `Save ${roadmap.title}`}
+      >
+        {saved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+      </button>
+    </article>
+  );
+}
 
 export default function RoadmapBrowser({ onSelectRoadmap, onGenerateCustom }) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [savedOnly, setSavedOnly] = useState(false);
   const [bookmarks, setBookmarks] = useState(getBookmarks);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   const counts = useMemo(() => getCategoryCounts(), []);
+  const categories = useMemo(
+    () => ROADMAP_CATEGORIES
+      .filter(category => category.id !== 'all' && counts[category.id] > 0)
+      .map(category => ({ ...category, count: counts[category.id] })),
+    [counts],
+  );
 
-  const categories = ROADMAP_CATEGORIES.map(c => ({
-    ...c,
-    count: counts[c.id] || 0,
-    displayLabel: `${c.label} (${counts[c.id] || 0})`
-  }));
+  const query = search.trim().toLowerCase();
 
-  const filteredRoadmaps = useMemo(() => {
-    let items = activeCategory === 'all'
-      ? ALL_ROADMAPS
-      : ALL_ROADMAPS.filter(r => r.category === activeCategory);
+  const filteredRoadmaps = useMemo(() => ALL_ROADMAPS.filter(roadmap => {
+    if (activeCategory !== 'all' && roadmap.category !== activeCategory) return false;
+    if (savedOnly && !bookmarks.includes(roadmap.id)) return false;
+    if (query && !`${roadmap.title} ${roadmap.description}`.toLowerCase().includes(query)) return false;
+    return true;
+  }), [activeCategory, savedOnly, bookmarks, query]);
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      items = items.filter(r => r.title.toLowerCase().includes(q));
-    }
-    return items;
-  }, [activeCategory, search]);
+  const groups = useMemo(
+    () => categories
+      .map(category => ({
+        ...category,
+        items: filteredRoadmaps.filter(roadmap => roadmap.category === category.id),
+      }))
+      .filter(group => group.items.length > 0),
+    [categories, filteredRoadmaps],
+  );
 
-  // Group roadmaps by category for "all" view
-  const groupedRoadmaps = useMemo(() => {
-    if (activeCategory !== 'all') {
-      return [{ label: activeCategory.replace(/-/g, ' ').toUpperCase() + ' ROADMAPS', items: filteredRoadmaps }];
-    }
+  const isFlatView = Boolean(query) || savedOnly || activeCategory !== 'all';
+  const activeCategoryLabel = categories.find(category => category.id === activeCategory)?.label;
 
-    const roleItems = filteredRoadmaps.filter(r => r.category === 'role');
-    const skillItems = filteredRoadmaps.filter(r => r.category === 'skill');
-    const toolItems = filteredRoadmaps.filter(r => r.category === 'tool');
-    const langItems = filteredRoadmaps.filter(r => r.category === 'language');
-    const frameworkItems = filteredRoadmaps.filter(r => r.category === 'framework');
-    const beginnerItems = filteredRoadmaps.filter(r => r.category === 'beginner');
-    const bpItems = filteredRoadmaps.filter(r => r.category === 'best-practices');
-
-    const groups = [];
-    if (roleItems.length) groups.push({ label: 'ROLE BASED ROADMAPS', items: roleItems });
-    if (skillItems.length) groups.push({ label: 'SKILL BASED ROADMAPS', items: skillItems });
-    if (toolItems.length) groups.push({ label: 'TOOLS', items: toolItems });
-    if (langItems.length) groups.push({ label: 'LANGUAGES', items: langItems });
-    if (frameworkItems.length) groups.push({ label: 'FRAMEWORKS', items: frameworkItems });
-    if (beginnerItems.length) groups.push({ label: 'ABSOLUTE BEGINNERS', items: beginnerItems });
-    if (bpItems.length) groups.push({ label: 'BEST PRACTICES', items: bpItems });
-    return groups;
-  }, [activeCategory, filteredRoadmaps]);
-
-  const handleBookmark = (e, id) => {
-    e.stopPropagation();
-    setBookmarks(toggleBookmark(id));
+  const handleToggleSave = (id) => {
+    const next = bookmarks.includes(id)
+      ? bookmarks.filter(bookmarkId => bookmarkId !== id)
+      : [id, ...bookmarks];
+    persistBookmarks(next);
+    setBookmarks(next);
   };
 
-  const handleCategoryChange = (e) => {
-    const selectedDisplay = e.target.value;
-    const cat = categories.find(c => c.displayLabel === selectedDisplay);
-    if (cat) setActiveCategory(cat.id);
+  const clearFilters = () => {
+    setSearch('');
+    setActiveCategory('all');
+    setSavedOnly(false);
   };
 
-  const currentActiveDisplay = categories.find(c => c.id === activeCategory)?.displayLabel || 'All Roadmaps (91)';
+  const flatHeading = query
+    ? `Results for “${search.trim()}”`
+    : savedOnly
+      ? 'Saved roadmaps'
+      : activeCategoryLabel;
+
+  const emptyCopy = query
+    ? {
+        title: `No roadmaps match “${search.trim()}”`,
+        body: 'Try a shorter or broader term, or create a path for exactly the skill you want to learn.',
+      }
+    : savedOnly
+      ? {
+          title: 'No saved roadmaps yet',
+          body: 'Tap the bookmark icon on any roadmap and it will wait for you here.',
+        }
+      : {
+          title: 'Nothing in this category yet',
+          body: 'Pick another category, or create a custom roadmap for your goal.',
+        };
 
   return (
     <div className="roadmap-browser">
-      {/* Top Header & Navigation */}
-      <div className="rb-hero-card">
-        <div className="hero-glow-roadmap"></div>
-        
-        <div className="rb-title-section">
-          <h1 className="rb-title">Skill <span>Roadmaps</span></h1>
-          <p className="rb-subtitle">Community driven, up-to-date paths to learn any tool or technology.</p>
+      <header className="rm-head">
+        <div className="rm-head-copy">
+          <span className="rm-eyebrow">
+            {ALL_ROADMAPS.length} guided paths · {categories.length} categories
+          </span>
+          <h1 className="rm-title">Skill <span>Roadmaps</span></h1>
+          <p className="rm-subtitle">
+            Community driven, up-to-date paths to learn any tool or technology.
+          </p>
         </div>
-        
-        <div className="rb-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: '220px', position: 'relative', zIndex: 10 }}>
-            <PremiumSelect 
-              value={currentActiveDisplay}
-              onChange={handleCategoryChange}
-              options={categories.map(c => c.displayLabel)}
-            />
-          </div>
-          
-          <div className="rb-search-wrapper" style={{ flex: 1, minWidth: '200px' }}>
-              <Search size={16} className="rb-search-icon" />
-              <input
-                type="text"
-                className="rb-search-input"
-                placeholder="Search roadmaps"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-          </div>
-          
-          <button className="btn btn-blue-gradient" onClick={onGenerateCustom} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
-            <Sparkles size={18} /> Create Custom Roadmap
+        <button type="button" className="btn rm-create" onClick={onGenerateCustom}>
+          <Sparkles size={16} aria-hidden="true" />
+          Create custom roadmap
+        </button>
+      </header>
+
+      <div className="rm-toolbar">
+        <div className="rm-search">
+          <Search size={16} aria-hidden="true" />
+          <input
+            type="search"
+            className="rm-search-input"
+            placeholder="Search roadmaps"
+            aria-label="Search roadmaps"
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+          {search && (
+            <button
+              type="button"
+              className="rm-search-clear"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <div className="rm-chips" role="group" aria-label="Filter roadmaps by category">
+          <button
+            type="button"
+            className={`rm-chip ${activeCategory === 'all' && !savedOnly ? 'is-active' : ''}`}
+            aria-pressed={activeCategory === 'all' && !savedOnly}
+            onClick={() => {
+              setActiveCategory('all');
+              setSavedOnly(false);
+            }}
+          >
+            All
+            <span className="rm-chip-count">{counts.all}</span>
+          </button>
+
+          {categories.map(category => (
+            <button
+              key={category.id}
+              type="button"
+              className={`rm-chip ${activeCategory === category.id && !savedOnly ? 'is-active' : ''}`}
+              aria-pressed={activeCategory === category.id && !savedOnly}
+              onClick={() => {
+                setActiveCategory(category.id);
+                setSavedOnly(false);
+              }}
+            >
+              {category.label}
+              <span className="rm-chip-count">{category.count}</span>
+            </button>
+          ))}
+
+          <span className="rm-chip-divider" aria-hidden="true" />
+
+          <button
+            type="button"
+            className={`rm-chip rm-chip-saved ${savedOnly ? 'is-active' : ''}`}
+            aria-pressed={savedOnly}
+            onClick={() => {
+              setSavedOnly(true);
+              setActiveCategory('all');
+            }}
+          >
+            <Bookmark size={13} aria-hidden="true" />
+            Saved
+            <span className="rm-chip-count">{bookmarks.length}</span>
           </button>
         </div>
       </div>
 
-      {/* Main content */}
-      <main className="rb-content">
-        {groupedRoadmaps.map(group => (
-          <div key={group.label} className="rb-group">
-            <h3 className="rb-group-label">{group.label}</h3>
-            <div className="rb-grid">
-              {group.items.map(roadmap => (
-                <div
-                  key={roadmap.id}
-                  className="rb-card"
-                  onClick={() => onSelectRoadmap(roadmap.id)}
-                >
-                  <span className="rb-card-title">{roadmap.title}</span>
-                </div>
-              ))}
-            </div>
+      {filteredRoadmaps.length === 0 ? (
+        <div className="rm-empty">
+          <span className="rm-empty-icon" aria-hidden="true">
+            <Compass size={22} />
+          </span>
+          <h2>{emptyCopy.title}</h2>
+          <p>{emptyCopy.body}</p>
+          <div className="rm-empty-actions">
+            <button type="button" className="btn btn-secondary" onClick={clearFilters}>
+              {savedOnly ? 'Browse all roadmaps' : 'Clear filters'}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={onGenerateCustom}>
+              <Sparkles size={16} aria-hidden="true" />
+              Create custom roadmap
+            </button>
           </div>
-        ))}
-
-        {filteredRoadmaps.length === 0 && (
-          <div className="rb-empty">
-            <p>No roadmaps found for "{search}"</p>
-          </div>
-        )}
-
-        {/* AI Banner */}
-        <div className="rb-ai-banner" onClick={onGenerateCustom}>
-          <Sparkles size={20} />
-          <span>Can't find what you're looking for? Generate a custom AI roadmap</span>
-          <ArrowRight size={20} />
         </div>
-      </main>
+      ) : isFlatView ? (
+        <section className="rm-section" aria-labelledby="rm-flat-title">
+          <div className="rm-section-head">
+            <h2 id="rm-flat-title">{flatHeading}</h2>
+            <span className="rm-section-count">{filteredRoadmaps.length}</span>
+            <span className="rm-section-line" aria-hidden="true" />
+          </div>
+          <div className="rm-grid">
+            {filteredRoadmaps.map(roadmap => (
+              <RoadmapCard
+                key={roadmap.id}
+                roadmap={roadmap}
+                saved={bookmarks.includes(roadmap.id)}
+                onOpen={onSelectRoadmap}
+                onToggleSave={handleToggleSave}
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
+        groups.map(group => {
+          const expanded = Boolean(expandedGroups[group.id]);
+          const visibleItems = expanded ? group.items : group.items.slice(0, PREVIEW_LIMIT);
+
+          return (
+            <section key={group.id} className="rm-section" aria-labelledby={`rm-group-${group.id}`}>
+              <div className="rm-section-head">
+                <h2 id={`rm-group-${group.id}`}>{group.label}</h2>
+                <span className="rm-section-count">{group.items.length}</span>
+                <span className="rm-section-line" aria-hidden="true" />
+              </div>
+              <div className="rm-grid">
+                {visibleItems.map(roadmap => (
+                  <RoadmapCard
+                    key={roadmap.id}
+                    roadmap={roadmap}
+                    saved={bookmarks.includes(roadmap.id)}
+                    onOpen={onSelectRoadmap}
+                    onToggleSave={handleToggleSave}
+                  />
+                ))}
+              </div>
+              {group.items.length > PREVIEW_LIMIT && (
+                <button
+                  type="button"
+                  className="rm-show-all"
+                  aria-expanded={expanded}
+                  onClick={() => setExpandedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                >
+                  {expanded
+                    ? <><ChevronUp size={14} aria-hidden="true" /> Show fewer</>
+                    : <><ChevronDown size={14} aria-hidden="true" /> Show all {group.items.length}</>}
+                </button>
+              )}
+            </section>
+          );
+        })
+      )}
     </div>
   );
 }
