@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Sidebar.css';
@@ -7,6 +8,8 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const navListRef = useRef(null);
+  const [indicator, setIndicator] = useState({ top: 0, height: 42 });
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -18,6 +21,36 @@ export default function Sidebar() {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
+  const isActive = (itemPath, currentPath) => {
+    if (itemPath === '/') {
+      return currentPath === '/' || currentPath.startsWith('/subject') || currentPath.startsWith('/qb') || currentPath.startsWith('/topic') || currentPath === '/create';
+    }
+    return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+  };
+
+  const activeIndex = navItems.findIndex(item => isActive(item.path, location.pathname));
+  const showIndicator = activeIndex !== -1;
+
+  // Measure the active item instead of assuming a fixed row height, so the
+  // highlight stays aligned when font scaling or zoom changes row sizes.
+  useLayoutEffect(() => {
+    const nav = navListRef.current;
+    if (!nav || activeIndex === -1) return undefined;
+
+    const item = nav.querySelectorAll('.nav-item')[activeIndex];
+    if (!item) return undefined;
+
+    const update = () => {
+      setIndicator({ top: item.offsetTop, height: item.offsetHeight });
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(item);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [activeIndex]);
+
   return (
     <aside className="app-sidebar">
       <div className="sidebar-header">
@@ -27,48 +60,33 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-nav-scrollable">
-        <nav className="sidebar-nav">
-          {(() => {
-            const isActive = (itemPath, currentPath) => {
-              if (itemPath === '/') {
-                return currentPath === '/' || currentPath.startsWith('/subject') || currentPath.startsWith('/qb') || currentPath.startsWith('/topic') || currentPath === '/create';
-              }
-              return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
-            };
-
-            const activeIndex = navItems.findIndex(item => isActive(item.path, location.pathname));
-            const showIndicator = activeIndex !== -1;
-            // 42px height + 8px gap = 50px offset per item
-            const offset = activeIndex * 50; 
-
-            return (
-              <>
-                {showIndicator && (
-                  <div 
-                    className="active-indicator" 
-                    style={{ transform: `translateY(${offset}px)` }} 
-                  />
-                )}
-                {navItems.map((item) => (
-                  <button
-                    key={item.path}
-                    className={`nav-item ${!item.isAction && isActive(item.path, location.pathname) ? 'active' : ''}`}
-                    aria-current={isActive(item.path, location.pathname) ? 'page' : undefined}
-                    onClick={() => {
-                      if (item.isAction) {
-                        window.dispatchEvent(new CustomEvent('toggle-ai-coach'));
-                      } else {
-                        navigate(item.path);
-                      }
-                    }}
-                  >
-                    <item.icon size={18} />
-                    <span>{item.name}</span>
-                  </button>
-                ))}
-              </>
-            );
-          })()}
+        <nav className="sidebar-nav" ref={navListRef}>
+          {showIndicator && (
+            <div
+              className="active-indicator"
+              style={{
+                transform: `translateY(${indicator.top}px)`,
+                height: `${indicator.height}px`,
+              }}
+            />
+          )}
+          {navItems.map((item) => (
+            <button
+              key={item.path}
+              className={`nav-item ${!item.isAction && isActive(item.path, location.pathname) ? 'active' : ''}`}
+              aria-current={isActive(item.path, location.pathname) ? 'page' : undefined}
+              onClick={() => {
+                if (item.isAction) {
+                  window.dispatchEvent(new CustomEvent('toggle-ai-coach'));
+                } else {
+                  navigate(item.path);
+                }
+              }}
+            >
+              <item.icon size={18} />
+              <span>{item.name}</span>
+            </button>
+          ))}
         </nav>
 
       </div>
