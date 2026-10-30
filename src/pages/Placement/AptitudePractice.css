@@ -212,3 +212,74 @@
     padding: 16px;
   }
 }
+
+/* Redesigned setup layout */
+.control-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pill-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.question-count-section {
+  margin-bottom: 40px;
+}
+
+.count-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.count-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.count-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.count-option:hover {
+  background: var(--bg-surface-hover);
+  transform: translateY(-1px);
+}
+
+.count-option.active {
+  background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.generate-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.generate-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-left: 8px;
+}

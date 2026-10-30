@@ -36,6 +36,7 @@ export default function AptitudePractice() {
 
   // New scope selector state
   const [testScope, setTestScope] = useState(saved?.testScope || 'all');
+  const [questionCount, setQuestionCount] = useState(saved?.questionCount || 5);
   const [learnedTopicsCount, setLearnedTopicsCount] = useState(0);
   const [weakTopicsCount, setWeakTopicsCount] = useState(0);
   const resultSavedRef = useRef(false);
@@ -69,8 +70,8 @@ export default function AptitudePractice() {
   // Keep a ref of current state for cleanup
   const stateRef = useRef({});
   useEffect(() => {
-    stateRef.current = { subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope };
-  }, [subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope]);
+    stateRef.current = { subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope, questionCount };
+  }, [subcategory, difficulty, questions, currentIdx, selectedAnswer, showExplanation, timer, quizDone, sessionId, testScope, questionCount]);
 
   // Save state on unmount
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function AptitudePractice() {
     setGenerating(true);
     setGenerateError(null);
     try {
-      const messages = generateAptitudeQuestionsPrompt(subcategory, difficulty, 5);
+      const messages = generateAptitudeQuestionsPrompt(subcategory, difficulty, questionCount);
       const responseText = await callOpenRouter(messages);
       const parsed = extractJson(responseText);
 
@@ -146,6 +147,12 @@ export default function AptitudePractice() {
 
   const correctCount = questions.filter(q => q.is_correct).length;
   const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const scopeLabel = {
+    learned: 'Learned topics',
+    weak: 'Weak areas',
+    all: 'All topics',
+  };
+  const testScopeScopeLabel = () => scopeLabel[testScope] || 'All topics';
 
   return (
     <div className="practice-page">
@@ -156,24 +163,45 @@ export default function AptitudePractice() {
       <h1 className="page-title">Aptitude Practice</h1>
 
       <div className="controls-section">
-        <select className="modern-select" value={subcategory} onChange={e => setSubcategory(e.target.value)}>
-          <option>Quantitative Aptitude</option>
-          <option>Logical Reasoning</option>
-          <option>Verbal Ability</option>
-        </select>
-        <select className="modern-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
-          <option>Easy</option>
-          <option>Medium</option>
-          <option>Hard</option>
-        </select>
+        <div className="control-pill">
+          <label className="pill-label">Topic</label>
+          <select className="modern-select" value={subcategory} onChange={e => setSubcategory(e.target.value)}>
+            <option>Quantitative Aptitude</option>
+            <option>Logical Reasoning</option>
+            <option>Verbal Ability</option>
+          </select>
+        </div>
+        <div className="control-pill">
+          <label className="pill-label">Difficulty</label>
+          <select className="modern-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="question-count-section">
+        <label className="count-label">Questions</label>
+        <div className="count-options">
+          {[5, 10, 15, 20].map((count) => (
+            <button
+              key={count}
+              className={`count-option ${questionCount === count ? 'active' : ''}`}
+              onClick={() => setQuestionCount(count)}
+            >
+              {count}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="test-scope-selector">
         <label className="scope-option">
-          <input 
-            type="radio" 
-            name="scope" 
-            value="learned" 
+          <input
+            type="radio"
+            name="scope"
+            value="learned"
             checked={testScope === 'learned'}
             onChange={(e) => setTestScope(e.target.value)}
           />
@@ -185,12 +213,12 @@ export default function AptitudePractice() {
             </div>
           </div>
         </label>
-        
+
         <label className="scope-option">
-          <input 
-            type="radio" 
-            name="scope" 
-            value="weak" 
+          <input
+            type="radio"
+            name="scope"
+            value="weak"
             checked={testScope === 'weak'}
             onChange={(e) => setTestScope(e.target.value)}
           />
@@ -202,12 +230,12 @@ export default function AptitudePractice() {
             </div>
           </div>
         </label>
-        
+
         <label className="scope-option">
-          <input 
-            type="radio" 
-            name="scope" 
-            value="all" 
+          <input
+            type="radio"
+            name="scope"
+            value="all"
             checked={testScope === 'all'}
             onChange={(e) => setTestScope(e.target.value)}
           />
@@ -223,8 +251,13 @@ export default function AptitudePractice() {
 
       <div className="generate-action">
         <button className="btn-generate" onClick={generateQuestions} disabled={generating}>
-          {generating ? <><Loader size={20} className="spin-icon" /> Generating...</> : <><RefreshCw size={20} /> Generate 5 Questions</>}
+          {generating ? (
+            <><Loader size={20} className="spin-icon" /> Generating...</>
+          ) : (
+            <><RefreshCw size={20} /> Generate {questionCount} Questions</>
+          )}
         </button>
+        <span className="generate-hint">{questionCount} questions • {testScopeScopeLabel()}</span>
       </div>
 
       {generateError && !generating && (
