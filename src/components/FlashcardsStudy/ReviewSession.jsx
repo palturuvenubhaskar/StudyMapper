@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import SwipeCard from './SwipeCard';
 import MnemonicGenerator from './MnemonicGenerator';
 import { calculateNextReview, mapRatingToSM2 } from '../../core/flashcards/srs';
@@ -105,9 +105,9 @@ const ReviewSession = ({ deckId, onFinish }) => {
       </div>
 
       {reviewMessage ? (
-        <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <div className="review-toast">
           <CheckCircle2 size={48} style={{ color: '#10b981', marginBottom: '1rem' }} />
-          <h3 style={{ fontSize: '1.5rem', color: '#10b981' }}>{reviewMessage}</h3>
+          <h3 style={{ fontSize: '1.5rem', color: '#10b981', margin: 0 }}>{reviewMessage}</h3>
         </div>
       ) : (
         <>
@@ -116,12 +116,16 @@ const ReviewSession = ({ deckId, onFinish }) => {
             flashcard={currentCard} 
             onSwipe={handleSwipe} 
           />
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
-            <button className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleSwipe('left')}>
-              Don't Know (Left)
+          <div className="review-actions">
+            <button className="review-btn review-btn-again" onClick={() => handleSwipe('left')}>
+              <ArrowLeft size={16} />
+              <span>Don't know</span>
+              <kbd>←</kbd>
             </button>
-            <button className="btn btn-outline" style={{ color: '#22c55e', borderColor: '#22c55e' }} onClick={() => handleSwipe('right')}>
-              Know It (Right)
+            <button className="review-btn review-btn-good" onClick={() => handleSwipe('right')}>
+              <span>Know it</span>
+              <ArrowRight size={16} />
+              <kbd>→</kbd>
             </button>
           </div>
           <MnemonicGenerator flashcard={currentCard} />

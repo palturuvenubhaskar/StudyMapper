@@ -168,6 +168,97 @@
   text-align: left;
 }
 
+/* --- Review session --- */
+.review-session {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.review-toast {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.review-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background: var(--bg-surface);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.review-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.review-btn:active {
+  transform: translateY(0);
+}
+
+.review-btn:focus-visible {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+.review-btn-again {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: var(--danger-soft);
+}
+
+.review-btn-again:hover {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.review-btn-good {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: var(--success-soft);
+}
+
+.review-btn-good:hover {
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+.review-btn kbd {
+  display: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.65;
+}
+
+@media (hover: hover) and (min-width: 769px) {
+  .review-btn kbd {
+    display: inline-block;
+  }
+}
+
 .flashcards-controls {
   display: flex;
   align-items: center;
