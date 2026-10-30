@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { ToastProvider } from './components/ToastProvider/ToastProvider';
 import { ThemeProvider } from './context/ThemeProvider';
 import { PlacementStateProvider } from './context/PlacementStateContext';
@@ -262,6 +263,7 @@ export default function App() {
             <PlacementStateProvider>
               <AppContent />
             </PlacementStateProvider>
+            <Analytics />
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>
