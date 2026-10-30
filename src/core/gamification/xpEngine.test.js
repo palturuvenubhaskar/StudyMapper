@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../../data/db';
-import { calculateLevel, getXPForNextLevel, getXPProgress, awardXP, getGamificationProfile } from './xpEngine';
+import { calculateLevel, getXPProgress, awardXP, getGamificationProfile } from './xpEngine';
 
 describe('XP Engine Tests', () => {
   beforeEach(async () => {

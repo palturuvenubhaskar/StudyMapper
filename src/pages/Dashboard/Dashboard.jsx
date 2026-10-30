@@ -40,6 +40,40 @@ export default function Dashboard() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const loadAnalytics = async () => {
+    try {
+      const exams = await db.mock_exams.toArray();
+      const avgScore = exams.length > 0
+        ? Math.round(exams.reduce((sum, e) => sum + (e.score || 0), 0) / exams.length)
+        : 0;
+
+      const sessions = await db.study_sessions.toArray();
+      const dayKey = (value) => {
+        const d = new Date(value);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      };
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return {
+          dateStr: dayKey(d),
+          dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          minutes: 0,
+        };
+      });
+
+      sessions.forEach(s => {
+        if (s.completed === 0) return;
+        const day = last7Days.find(d => d.dateStr === dayKey(s.created_at));
+        if (day) day.minutes += (s.duration_minutes || 0);
+      });
+
+      setAnalytics({ weekData: last7Days, mockAvg: avgScore });
+    } catch (err) {
+      console.error('Analytics load error:', err);
+    }
+  };
+
   const loadSubjects = async () => {
     setLoading(true);
     const [subs, allQbanks] = await Promise.all([getAllSubjects(), getAllQuestionBanks()]);
@@ -56,39 +90,25 @@ export default function Dashboard() {
       resumeProgress: subs.length > 0 ? progress[subs[0].id] ?? 0 : 0,
     });
 
-    // Load Analytics Data
-    try {
-      const exams = await db.mock_exams.toArray();
-      const avgScore = exams.length > 0 
-        ? Math.round(exams.reduce((sum, e) => sum + (e.score || 0), 0) / exams.length)
-        : 0;
-      
-      const sessions = await db.study_sessions.toArray();
-      const last7Days = Array.from({length: 7}, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return {
-          dateStr: d.toISOString().split('T')[0],
-          dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-          minutes: 0
-        };
-      });
-      
-      sessions.forEach(s => {
-        const dStr = new Date(s.created_at).toISOString().split('T')[0];
-        const day = last7Days.find(d => d.dateStr === dStr);
-        if (day) day.minutes += (s.duration_minutes || 0);
-      });
-
-      setAnalytics({ weekData: last7Days, mockAvg: avgScore });
-    } catch (err) {
-      console.error('Analytics load error:', err);
-    }
-
+    await loadAnalytics();
     setLoading(false);
   };
 
   useEffect(() => { loadSubjects(); }, []);
+
+  // Keep the weekly focus chart honest when a session finishes on this page.
+  useEffect(() => {
+    let timer;
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(loadAnalytics, 150);
+    };
+    window.addEventListener('studymapper:xp', refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('studymapper:xp', refresh);
+    };
+  }, []);
 
   const maxStudyMinutes = Math.max(...analytics.weekData.map(d => d.minutes), 60);
   const resumeSubject = subjects[0];

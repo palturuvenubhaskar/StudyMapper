@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getGamificationProfile, getXPProgress } from '../../core/gamification/xpEngine';
 import { getOrCreateDailyQuests } from '../../core/gamification/dailyQuests';
 import { db } from '../../data/db';
@@ -16,12 +16,8 @@ export default function GamificationDashboard({ userId = 'guest' }) {
   const [recentAchievements, setRecentAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [userId]);
-
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     const p = await getGamificationProfile(userId);
     setProfile(p);
     
@@ -36,7 +32,23 @@ export default function GamificationDashboard({ userId = 'guest' }) {
     setRecentAchievements(hydrated);
     
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadData(true);
+
+    // Refresh silently whenever XP changes (session/quest/achievement).
+    let timer;
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => loadData(false), 120);
+    };
+    window.addEventListener('studymapper:xp', refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('studymapper:xp', refresh);
+    };
+  }, [userId, loadData]);
 
   const toast = useToast();
 

@@ -56,4 +56,25 @@ describe('Streak Tracker Tests', () => {
     expect(result.streakActive).toBe(false);
     expect(result.streakDays).toBe(1);
   });
+
+  it('does not increment when the clock jumps backwards', async () => {
+    await updateStreak('test', '2023-10-16T12:00:00Z');
+    const result = await updateStreak('test', '2023-10-15T12:00:00Z');
+
+    expect(result.streakDays).toBe(1);
+    expect(result.streakActive).toBe(true);
+  });
+
+  it('awards a milestone bonus on the 7th day', async () => {
+    await updateStreak('test', '2023-10-09T12:00:00Z');
+    const profile = await getGamificationProfile('test');
+    await db.gamification_profiles.update(profile.id, { streak_days: 6 });
+
+    const result = await updateStreak('test', '2023-10-10T12:00:00Z');
+
+    expect(result.streakDays).toBe(7);
+    expect(result.newMilestone).toBe(true);
+    expect(result.milestoneXP).toBeGreaterThan(0);
+    expect((await getGamificationProfile('test')).total_xp).toBe(result.milestoneXP);
+  });
 });

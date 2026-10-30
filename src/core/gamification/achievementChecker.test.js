@@ -32,7 +32,7 @@ describe('Achievement Checker Tests', () => {
     // Add 50 sessions
     const sessions = [];
     for (let i = 0; i < 50; i++) {
-      sessions.push({ id: `sess_${i}`, topic_id: 't1', duration_minutes: 25, created_at: new Date().toISOString() });
+      sessions.push({ id: `sess_${i}`, user_id: 'test', topic_id: 't1', duration_minutes: 25, completed: 1, created_at: new Date().toISOString() });
     }
     await db.study_sessions.bulkAdd(sessions);
 
@@ -51,7 +51,7 @@ describe('Achievement Checker Tests', () => {
   it('does not unlock twice', async () => {
     const sessions = [];
     for (let i = 0; i < 50; i++) {
-      sessions.push({ id: `sess_${i}`, topic_id: 't1', duration_minutes: 25, created_at: new Date().toISOString() });
+      sessions.push({ id: `sess_${i}`, user_id: 'test', topic_id: 't1', duration_minutes: 25, completed: 1, created_at: new Date().toISOString() });
     }
     await db.study_sessions.bulkAdd(sessions);
 

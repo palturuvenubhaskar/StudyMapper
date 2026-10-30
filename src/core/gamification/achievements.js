@@ -8,7 +8,7 @@ export const ACHIEVEMENTS = [
     icon_name: 'Moon',
     xp_reward: 100,
     condition_checker: async (userId) => {
-      const sessions = await db.study_sessions.toArray();
+      const sessions = await db.study_sessions.where('user_id').equals(userId).toArray();
       return sessions.some(s => {
         const hour = new Date(s.created_at).getHours();
         return hour >= 22 || hour < 4; // 10 PM to 4 AM
@@ -22,8 +22,8 @@ export const ACHIEVEMENTS = [
     icon_name: 'Timer',
     xp_reward: 500,
     condition_checker: async (userId) => {
-      const count = await db.study_sessions.count();
-      return count >= 50;
+      const sessions = await db.study_sessions.where('user_id').equals(userId).toArray();
+      return sessions.filter(s => s.completed !== 0).length >= 50;
     }
   },
   {
@@ -55,7 +55,7 @@ export const ACHIEVEMENTS = [
     icon_name: 'Sun',
     xp_reward: 100,
     condition_checker: async (userId) => {
-      const sessions = await db.study_sessions.toArray();
+      const sessions = await db.study_sessions.where('user_id').equals(userId).toArray();
       return sessions.some(s => {
         const hour = new Date(s.created_at).getHours();
         return hour >= 4 && hour < 7;

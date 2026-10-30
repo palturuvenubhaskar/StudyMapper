@@ -2,6 +2,42 @@ import { db } from '../../data/db';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * Single source of truth for XP payouts.
+ * Keep every activity's reward here so the economy can be balanced in one place.
+ */
+export const XP_RULES = {
+  // Time-boxed study: the more minutes you invest, the more you earn.
+  pomodoroPerMinute: 2,
+  pomodoroCompletionBonus: 0.25,
+  // Instant actions.
+  generateNotes: 50,
+  codingProblem: 100,
+  dailyQuest: 100,
+};
+
+/**
+ * Streak multiplier: longer streaks make every session worth more.
+ * Capped at 1.5x (30+ days) so the economy cannot run away.
+ */
+export const getStreakMultiplier = (streakDays = 0) => {
+  if (streakDays >= 30) return 1.5;
+  if (streakDays >= 14) return 1.35;
+  if (streakDays >= 7) return 1.2;
+  if (streakDays >= 3) return 1.1;
+  return 1;
+};
+
+/**
+ * XP for a finished focus session: base rate per minute, a completion bonus,
+ * then the streak multiplier. Rounded to a whole number.
+ */
+export const calculatePomodoroXP = (durationMinutes, streakDays = 0) => {
+  const minutes = Math.max(0, Number(durationMinutes) || 0);
+  const base = minutes * XP_RULES.pomodoroPerMinute;
+  return Math.round(base * (1 + XP_RULES.pomodoroCompletionBonus) * getStreakMultiplier(streakDays));
+};
+
+/**
  * Calculate the level based on total XP.
  * Formula: Each level requires current_level * 150 XP to reach the next.
  * Total XP for level N = sum(i * 150 for i=1 to N-1) = 150 * (N-1)*N/2
@@ -89,5 +125,12 @@ export const awardXP = async (userId = 'guest', amount, source, sourceId = null)
     navigator.vibrate([30]);
   }
 
-  return checkAndAwardLevelUp(userId);
+  const levelResult = await checkAndAwardLevelUp(userId);
+
+  // Let any mounted gamification UI refresh itself.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('studymapper:xp', { detail: { userId } }));
+  }
+
+  return levelResult;
 };
