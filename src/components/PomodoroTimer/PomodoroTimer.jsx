@@ -162,8 +162,22 @@ export default function PomodoroTimer({ topicId = null, userId = USER_ID }) {
     if (!result || result.alreadyCompleted) return;
 
     const parts = [`+${result.xp} XP`];
+    if (result.firstSessionBonusXP > 0) parts.push(`Includes First-of-Day Bonus (+${result.firstSessionBonusXP})`);
+    if (result.comboBonus > 0) parts.push(`Combo (+${result.comboBonus})`);
     if (result.streakDays > 1) parts.push(`${result.streakDays}-day streak`);
     toast(`Focus session complete · ${minutes} min · ${parts.join(' · ')}`, 'success');
+
+    if (result.freezeUsed) {
+      window.setTimeout(() => {
+        toast(`Streak freeze used! Your streak was saved (${result.freezesRemaining} remaining).`, 'info');
+      }, 300);
+    }
+
+    if (result.allQuestsComplete) {
+      window.setTimeout(() => {
+        toast('All daily quests completed! +150 XP bonus earned!', 'success');
+      }, 400);
+    }
 
     if (result.leveledUp) {
       window.setTimeout(() => {

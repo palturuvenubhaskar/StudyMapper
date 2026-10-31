@@ -1,54 +1,83 @@
 .streak-flame-premium {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-active);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.streak-flame-premium.active {
+  border-color: rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.07);
 }
 
 .streak-flame-icon-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: var(--bg-surface-active);
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.16);
   color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .streak-flame-premium.active .streak-flame-icon-box {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
-  box-shadow: 0 0 16px rgba(249, 115, 22, 0.2);
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.28);
 }
 
 .streak-flame-premium.hot .streak-flame-icon-box {
   background: linear-gradient(135deg, #f97316, #ef4444);
-  color: white;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-  animation: pulse-hot-flame 2s infinite;
-}
-
-@keyframes pulse-hot-flame {
-  0% { transform: scale(1); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
-  50% { transform: scale(1.05); box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5); }
-  100% { transform: scale(1); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
 }
 
 .streak-flame-text-box {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  min-width: 0;
+}
+
+.streak-flame-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .streak-flame-count {
-  font-size: 1.1rem;
-  font-weight: 800;
   color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.streak-freeze-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-full);
+  background: rgba(56, 189, 248, 0.14);
+  color: #0284c7;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .streak-freeze-tag {
+  color: #7dd3fc;
 }
 
 .streak-flame-best {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
 }

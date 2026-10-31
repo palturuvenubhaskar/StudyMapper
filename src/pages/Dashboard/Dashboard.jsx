@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSubjects, getSubjectsProgress, getAllQuestionBanks } from '../../data/repository';
 import { db } from '../../data/db';
-import { Search, Play, BookOpen, FileText, Plus, Award, Activity } from 'lucide-react';
+import { Search, Play, BookOpen, FileText, Plus, Award, Activity, Timer } from 'lucide-react';
 import GamificationDashboard from '../../components/GamificationDashboard/GamificationDashboard';
 import PomodoroTimer from '../../components/PomodoroTimer/PomodoroTimer';
 import './Dashboard.css';
@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   const [qbanks, setQbanks] = useState([]);
   const [stats, setStats] = useState({ totalUnits: 0, avgProgress: 0, resumeProgress: 0 });
-  const [analytics, setAnalytics] = useState({ weekData: [], mockAvg: 0 });
+  const [analytics, setAnalytics] = useState({ weekData: [], mockAvg: 0, mockCount: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -68,7 +68,7 @@ export default function Dashboard() {
         if (day) day.minutes += (s.duration_minutes || 0);
       });
 
-      setAnalytics({ weekData: last7Days, mockAvg: avgScore });
+      setAnalytics({ weekData: last7Days, mockAvg: avgScore, mockCount: exams.length });
     } catch (err) {
       console.error('Analytics load error:', err);
     }
@@ -110,7 +110,9 @@ export default function Dashboard() {
     };
   }, []);
 
-  const maxStudyMinutes = Math.max(...analytics.weekData.map(d => d.minutes), 60);
+  const maxStudyMinutes = Math.max(...analytics.weekData.map(d => d.minutes), 30);
+  const weekMinutes = analytics.weekData.reduce((sum, d) => sum + d.minutes, 0);
+  const avgMinutes = Math.round(weekMinutes / 7);
   const resumeSubject = subjects[0];
   const resumeProgress = resumeSubject ? stats.resumeProgress : 0;
   const resumeTitle = resumeSubject ? resumeSubject.title : 'Create your first subject';
@@ -288,54 +290,106 @@ export default function Dashboard() {
             <GamificationDashboard userId="guest" />
           </div>
 
-             {/* Analytics Dashboard */}
-             <div className="surface-card premium-card analytics-panel">
-               <div className="analytics-header">
-                 <Activity size={24} className="analytics-icon" aria-hidden="true" />
-                 <h2>Study Analytics</h2>
-               </div>
-               
-               <div className="analytics-grid">
-                 {/* 7-Day Study Time Chart */}
-                 <div className="analytics-chart-container">
-                   <h3>Study Time (Last 7 Days)</h3>
-                   <div className="bar-chart-wrapper">
-                      {analytics.weekData.map((day) => {
-                        const heightPct = Math.min((day.minutes / maxStudyMinutes) * 100, 100);
-                        return (
-                          <div key={day.dateStr} className="bar-column">
-                            <div className="bar-fill-wrapper">
-                              <div 
-                                className="bar-fill" 
-                                style={{ height: `${heightPct}%`, minHeight: day.minutes > 0 ? '4px' : '0' }}
-                              >
-                                 <span className="bar-tooltip">{day.minutes} min</span>
-                              </div>
-                            </div>
-                            <span className="bar-label">{day.dayName}</span>
-                          </div>
-                        );
-                      })}
-                   </div>
-                 </div>
+          {/* Analytics Dashboard */}
+          <div className="surface-card premium-card analytics-panel">
+            <div className="analytics-header">
+              <div className="analytics-heading">
+                <span className="analytics-icon-chip" aria-hidden="true">
+                  <Activity size={18} />
+                </span>
+                <div>
+                  <h2>Study analytics</h2>
+                  <p className="analytics-subtitle">How your last seven days are shaping up</p>
+                </div>
+              </div>
+              <span className="analytics-range">Last 7 days</span>
+            </div>
 
-                 {/* Mock Exam Average */}
-                 <div className="analytics-performance-container">
-                    <h3>Mock Exam Performance</h3>
-                    <div className="performance-card">
-                      <div className="radial-progress-wrapper" style={{ background: `conic-gradient(var(--accent-primary) ${analytics.mockAvg * 3.6}deg, var(--bg-hover) 0deg)` }}>
-                        <div className="radial-progress-inner">
-                          <span>{analytics.mockAvg}%</span>
-                        </div>
-                      </div>
-                      <div className="performance-info">
-                        <div className="performance-title">Average Score</div>
-                        <div className="performance-subtitle">Across all subjects</div>
-                      </div>
+            <div className="analytics-grid">
+              {/* 7-Day Study Time Chart */}
+              <section className="analytics-chart-container" aria-label="Focus time over the last 7 days">
+                <div className="analytics-stat-head">
+                  <div>
+                    <span className="analytics-stat-label">Focus time</span>
+                    <div className="analytics-stat-value">
+                      {weekMinutes}<span className="analytics-stat-unit">min</span>
                     </div>
-                 </div>
-               </div>
-             </div>
+                  </div>
+                  <span className="analytics-stat-meta">{avgMinutes} min/day avg</span>
+                </div>
+
+                <div className="focus-chart">
+                  <div className="focus-chart-grid" aria-hidden="true">
+                    <span /><span /><span /><span />
+                  </div>
+                  <div className="focus-chart-columns">
+                    {analytics.weekData.map((day, idx) => {
+                      const heightPct = Math.min((day.minutes / maxStudyMinutes) * 100, 100);
+                      const isToday = idx === analytics.weekData.length - 1;
+                      return (
+                        <div
+                          key={day.dateStr}
+                          className={`focus-column ${isToday ? 'is-today' : ''}`}
+                        >
+                          <div className="focus-bar-track">
+                            <div
+                              className="focus-bar-fill"
+                              style={{ height: `${heightPct}%`, minHeight: day.minutes > 0 ? '4px' : '0' }}
+                            >
+                              <span className="focus-bar-tooltip">{day.minutes} min</span>
+                            </div>
+                          </div>
+                          <span className="focus-day-label">{day.dayName}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {weekMinutes === 0 && (
+                    <div className="focus-chart-empty">
+                      <Timer size={16} aria-hidden="true" />
+                      <span>No focus sessions yet</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Mock Exam Average */}
+              <section className="analytics-performance-container" aria-label="Mock exam performance">
+                <div className="analytics-stat-head">
+                  <div>
+                    <span className="analytics-stat-label">Mock exams</span>
+                    <div className="analytics-stat-value">
+                      {analytics.mockAvg}<span className="analytics-stat-unit">%</span>
+                    </div>
+                  </div>
+                  <span className="analytics-stat-meta">
+                    {analytics.mockCount} taken
+                  </span>
+                </div>
+
+                <div className="performance-card">
+                  <div
+                    className="radial-progress-wrapper"
+                    style={{
+                      background: `conic-gradient(#38bdf8 ${analytics.mockAvg * 3.6}deg, var(--border-strong) ${analytics.mockAvg * 3.6}deg)`,
+                    }}
+                  >
+                    <div className="radial-progress-inner">
+                      <span>{analytics.mockAvg}%</span>
+                    </div>
+                  </div>
+                  <div className="performance-info">
+                    <div className="performance-title">Average score</div>
+                    <div className="performance-subtitle">
+                      {analytics.mockCount === 0
+                        ? 'Take a mock exam to set a baseline.'
+                        : `Across ${analytics.mockCount} mock exam${analytics.mockCount === 1 ? '' : 's'}.`}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
 
          </div>
        )}
