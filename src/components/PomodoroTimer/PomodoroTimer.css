@@ -234,20 +234,27 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .pomodoro-dial {
-    width: 200px;
-    height: 200px;
-  }
-  .pomodoro-display {
-    font-size: 3rem;
+@media (min-width: 769px) {
+  .pomodoro-timer {
+    padding: 14px 14px 12px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
   .pomodoro-timer-body {
-    padding: 32px 0 14px;
+    padding: 8px 0 0;
+    min-height: 0;
+  }
+  .pomodoro-display {
+    font-size: 2rem;
+    min-height: 2rem;
   }
   .pomodoro-btn {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
+  }
+  .pomodoro-controls {
+    min-height: 44px;
+    gap: 16px;
   }
 }
 
