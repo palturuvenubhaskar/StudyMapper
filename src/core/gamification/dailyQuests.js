@@ -3,10 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { awardXP, XP_RULES } from './xpEngine';
 
 const QUEST_TEMPLATES = [
-  { id: 'q_notes', type: 'generate_notes', title: 'Generate notes for 1 topic', target: 1, universal: true },
-  { id: 'q_pomodoro', type: 'pomodoro', title: 'Complete 2 focus sessions', target: 2, universal: true },
-  { id: 'q_code', type: 'solve_code', title: 'Solve 1 coding problem', target: 1, universal: false },
-  { id: 'q_flashcard', type: 'review_flashcard', title: 'Review 10 flashcards', target: 10, universal: false },
+  // Universal quests (anyone can complete)
+  { id: 'q_notes',       type: 'generate_notes',   title: 'Generate notes for 1 topic',      target: 1,  universal: true,  weight: 3 },
+  { id: 'q_pomodoro',    type: 'pomodoro',          title: 'Complete 2 focus sessions',        target: 2,  universal: true,  weight: 3 },
+  { id: 'q_pomodoro_long', type: 'pomodoro_long',   title: 'Complete a 45+ min focus session', target: 1,  universal: true,  weight: 1 },
+  { id: 'q_study_30',    type: 'study_minutes',     title: 'Study for 30 minutes total',       target: 30, universal: true,  weight: 2 },
+  { id: 'q_topics_2',    type: 'study_topics',      title: 'Study 2 different topics',         target: 2,  universal: true,  weight: 2 },
+  // Specialized quests (not everyone has these features active)
+  { id: 'q_code',        type: 'solve_code',        title: 'Solve 1 coding problem',           target: 1,  universal: false, weight: 2 },
+  { id: 'q_code_2',      type: 'solve_code',        title: 'Solve 2 coding problems',          target: 2,  universal: false, weight: 1 },
+  { id: 'q_flashcard',   type: 'review_flashcard',  title: 'Review 10 flashcards',             target: 10, universal: false, weight: 2 },
+  { id: 'q_flashcard_20', type: 'review_flashcard', title: 'Review 20 flashcards',             target: 20, universal: false, weight: 1 },
+  { id: 'q_questions',   type: 'create_questions',  title: 'Add 3 questions to a bank',        target: 3,  universal: false, weight: 1 },
 ];
 
 const QUESTS_PER_DAY = 3;
@@ -22,24 +30,42 @@ export const getTodayString = (date = new Date()) => {
   return `${d.getFullYear()}-${month}-${day}`;
 };
 
-const shuffle = (items) => {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+/**
+ * Weighted random selection: items with higher weight appear more often.
+ */
+const weightedShuffle = (items) => {
+  const pool = [];
+  for (const item of items) {
+    for (let i = 0; i < (item.weight || 1); i++) pool.push(item);
   }
-  return copy;
+  // Fisher-Yates on the pool, then deduplicate by id keeping first occurrence.
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const seen = new Set();
+  return pool.filter(item => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 };
 
 const pickQuests = () => {
-  // Always include one "anyone can finish this" quest so the daily set is
-  // never impossible (the old random pick could hand a non-coder only code quests).
   const universal = QUEST_TEMPLATES.filter(q => q.universal);
   const optional = QUEST_TEMPLATES.filter(q => !q.universal);
-  const guaranteed = shuffle(universal)[0];
-  const rest = shuffle([...universal.filter(q => q.id !== guaranteed.id), ...optional])
+  // Guarantee at least one universal quest.
+  const shuffledUniversal = weightedShuffle(universal);
+  const guaranteed = shuffledUniversal[0];
+  const rest = weightedShuffle([...shuffledUniversal.slice(1), ...optional])
     .slice(0, QUESTS_PER_DAY - 1);
-  return shuffle([guaranteed, ...rest]);
+  // Final shuffle so the guaranteed quest isn't always first.
+  const picked = [guaranteed, ...rest];
+  for (let i = picked.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [picked[i], picked[j]] = [picked[j], picked[i]];
+  }
+  return picked;
 };
 
 const findToday = (userId, today) =>
@@ -69,7 +95,7 @@ export const getOrCreateDailyQuests = async (userId = 'guest') => {
  * Update today's quest progress. Creates today's quests on demand: previously
  * a session completed before the dashboard was opened was silently discarded.
  *
- * @returns {{newlyCompleted: number, completedQuests: Array, xpAwarded: number}}
+ * @returns {{newlyCompleted: number, completedQuests: Array, xpAwarded: number, allQuestsComplete: boolean}}
  */
 export const updateQuestProgress = async (userId = 'guest', type, amount = 1) => {
   const today = getTodayString();
@@ -80,7 +106,7 @@ export const updateQuestProgress = async (userId = 'guest', type, amount = 1) =>
   }
 
   const record = dailyRecord || (await findToday(userId, today));
-  if (!record) return { newlyCompleted: 0, completedQuests: [], xpAwarded: 0 };
+  if (!record) return { newlyCompleted: 0, completedQuests: [], xpAwarded: 0, allQuestsComplete: false };
 
   const quests = JSON.parse(record.quests_json);
   let updated = false;
@@ -97,17 +123,28 @@ export const updateQuestProgress = async (userId = 'guest', type, amount = 1) =>
     }
   }
 
-  if (!updated) return { newlyCompleted: 0, completedQuests: [], xpAwarded: 0 };
+  if (!updated) return { newlyCompleted: 0, completedQuests: [], xpAwarded: 0, allQuestsComplete: false };
 
-  const xpAwarded = completedQuests.length * XP_RULES.dailyQuest;
+  const completedCount = quests.filter(q => q.completed).length;
+  const wasAllComplete = record.completed_count === quests.length;
+  const isAllComplete = completedCount === quests.length && !wasAllComplete;
+
+  let xpAwarded = completedQuests.length * XP_RULES.dailyQuest;
+
   await db.daily_quests.update(record.id, {
     quests_json: JSON.stringify(quests),
-    completed_count: quests.filter(q => q.completed).length,
+    completed_count: completedCount,
   });
 
   if (xpAwarded > 0) {
     await awardXP(userId, xpAwarded, 'daily_quest');
   }
 
-  return { newlyCompleted: completedQuests.length, completedQuests, xpAwarded };
+  // All-quests-complete bonus
+  if (isAllComplete) {
+    await awardXP(userId, XP_RULES.allQuestsCompleteBonus, 'all_quests_bonus');
+    xpAwarded += XP_RULES.allQuestsCompleteBonus;
+  }
+
+  return { newlyCompleted: completedQuests.length, completedQuests, xpAwarded, allQuestsComplete: isAllComplete };
 };

@@ -5,7 +5,7 @@ export const db = new Dexie('StudyMapperDB');
 // Only the current schema needs to be declared. The previous 13 version
 // declarations were removed because none had upgrade hooks; Dexie diffs the
 // installed schema against this one and upgrades older databases in place.
-db.version(19).stores({
+db.version(20).stores({
   // Study library
   subjects: 'id, title, created_at',
   units: 'id, subject_id, title, order_index',
@@ -60,6 +60,7 @@ db.version(19).stores({
   achievements: 'id, user_id, achievement_id, unlocked_at, viewed',
   daily_quests: 'id, [user_id+date], user_id, date, completed_count',
   xp_transactions: 'id, user_id, amount, source, source_id, created_at',
+  weekly_challenges: 'id, [user_id+week_key], user_id, week_key, completed_count',
 
   // Analytics
   user_analytics: 'id, user_id, topic_id, action_type, duration_seconds, accuracy_score, created_at',

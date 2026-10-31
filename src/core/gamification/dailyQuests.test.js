@@ -45,16 +45,19 @@ describe('Daily quests', () => {
   it('completes a quest once and awards its XP', async () => {
     await seedQuests('test', [
       { id: 'q_pomodoro', type: 'pomodoro', title: 'Complete 2 focus sessions', target: 2, progress: 0, completed: false },
+      { id: 'q_notes', type: 'generate_notes', title: 'Generate notes for 1 topic', target: 1, progress: 0, completed: false },
     ]);
 
     const first = await updateQuestProgress('test', 'pomodoro', 1);
     expect(first.newlyCompleted).toBe(0);
     expect(first.xpAwarded).toBe(0);
+    expect(first.allQuestsComplete).toBe(false);
 
     const second = await updateQuestProgress('test', 'pomodoro', 1);
     expect(second.newlyCompleted).toBe(1);
     expect(second.xpAwarded).toBe(XP_RULES.dailyQuest);
     expect(second.completedQuests[0].title).toContain('2 focus sessions');
+    expect(second.allQuestsComplete).toBe(false);
 
     const profile = await getGamificationProfile('test');
     expect(profile.total_xp).toBe(XP_RULES.dailyQuest);
@@ -62,7 +65,19 @@ describe('Daily quests', () => {
     // Finishing more sessions must not pay the same quest again.
     const third = await updateQuestProgress('test', 'pomodoro', 1);
     expect(third.xpAwarded).toBe(0);
+    expect(third.allQuestsComplete).toBe(false);
     expect((await getGamificationProfile('test')).total_xp).toBe(XP_RULES.dailyQuest);
+  });
+
+  it('awards bonus when all quests are completed', async () => {
+    await seedQuests('test_all', [
+      { id: 'q_notes', type: 'generate_notes', title: 'Generate notes', target: 1, progress: 0, completed: false },
+    ]);
+
+    const res = await updateQuestProgress('test_all', 'generate_notes', 1);
+    expect(res.newlyCompleted).toBe(1);
+    expect(res.allQuestsComplete).toBe(true);
+    expect(res.xpAwarded).toBe(XP_RULES.dailyQuest + XP_RULES.allQuestsCompleteBonus);
   });
 
   it('keeps quests separate per user', async () => {

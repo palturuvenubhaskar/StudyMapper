@@ -4,6 +4,9 @@ import SwipeCard from './SwipeCard';
 import MnemonicGenerator from './MnemonicGenerator';
 import { calculateNextReview, mapRatingToSM2 } from '../../core/flashcards/srs';
 import * as repository from '../../data/repository';
+import { updateQuestProgress } from '../../core/gamification/dailyQuests';
+import { awardXP } from '../../core/gamification/xpEngine';
+import { checkAchievements } from '../../core/gamification/achievementChecker';
 
 const ReviewSession = ({ deckId, onFinish }) => {
   const [cards, setCards] = useState([]);
@@ -63,6 +66,14 @@ const ReviewSession = ({ deckId, onFinish }) => {
       next_review_date: nextDateStr,
       last_review_date: new Date().toISOString()
     });
+
+    try {
+      await awardXP('guest', 10, 'flashcard_review', card.id);
+      await updateQuestProgress('guest', 'review_flashcard', 1);
+      await checkAchievements('guest');
+    } catch (e) {
+      console.warn('Gamification update failed', e);
+    }
 
     setReviewMessage(`Next Review: ${nextInterval} day${nextInterval !== 1 ? 's' : ''}`);
     

@@ -12,6 +12,7 @@ import MermaidRenderer from '../../components/MarkdownRenderer/MermaidRenderer';
 import YouTubeLinker from '../../components/YouTubeLinker/YouTubeLinker';
 import { awardXP } from '../../core/gamification/xpEngine';
 import { updateQuestProgress } from '../../core/gamification/dailyQuests';
+import { updateWeeklyChallengeProgress } from '../../core/gamification/weeklyChallenges';
 import { checkAchievements } from '../../core/gamification/achievementChecker';
 import { updateStreak } from '../../core/gamification/streakTracker';
 import { logEvent } from '../../core/analytics/tracker';
@@ -359,6 +360,7 @@ export default function TopicStudy() {
         if (!regenerate) {
           await awardXP('guest', 50, 'generate_notes', topicId);
           await updateQuestProgress('guest', 'generate_notes', 1);
+          await updateWeeklyChallengeProgress('guest', 'notes', 1);
           await updateStreak('guest');
           await checkAchievements('guest');
           await logEvent('guest', topicId, 'generate_notes', 0, null);

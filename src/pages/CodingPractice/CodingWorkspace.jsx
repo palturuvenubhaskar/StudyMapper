@@ -6,6 +6,7 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { ArrowLeft, ChevronRight, CheckCircle2, FileText, Code2, Terminal, Loader } from 'lucide-react';
 import { awardXP } from '../../core/gamification/xpEngine';
 import { updateQuestProgress } from '../../core/gamification/dailyQuests';
+import { updateWeeklyChallengeProgress } from '../../core/gamification/weeklyChallenges';
 import { checkAchievements } from '../../core/gamification/achievementChecker';
 import { logEvent } from '../../core/analytics/tracker';
 
@@ -306,6 +307,7 @@ export default function CodingWorkspace() {
 
           await awardXP('guest', 100, 'coding_problem', problemId);
           await updateQuestProgress('guest', 'solve_code', 1);
+          await updateWeeklyChallengeProgress('guest', 'code', 1);
           await checkAchievements('guest');
           await logEvent('guest', problemId, 'coding_problem_solved', 0, 100);
 

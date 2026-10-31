@@ -15,6 +15,7 @@ const clearAll = async () => {
     db.xp_transactions.clear(),
     db.daily_quests.clear(),
     db.achievements.clear(),
+    db.weekly_challenges.clear(),
   ]);
 };
 
@@ -31,6 +32,7 @@ describe('Pomodoro session rewards', () => {
 
     expect(result.alreadyCompleted).toBe(false);
     expect(result.sessionXP).toBe(calculatePomodoroXP(25, 1));
+    expect(result.xp).toBeGreaterThanOrEqual(result.sessionXP);
 
     const session = await db.study_sessions.get('sess-1');
     expect(session).toBeDefined();
@@ -40,7 +42,7 @@ describe('Pomodoro session rewards', () => {
     expect(session.duration_minutes).toBe(25);
 
     const profile = await getGamificationProfile('test');
-    expect(profile.total_xp).toBe(result.sessionXP);
+    expect(profile.total_xp).toBe(result.xp);
     expect(profile.streak_days).toBe(1);
 
     const stats = await getTodayFocusStats('test');
@@ -55,7 +57,7 @@ describe('Pomodoro session rewards', () => {
     expect(second.alreadyCompleted).toBe(true);
 
     const profile = await getGamificationProfile('test');
-    expect(profile.total_xp).toBe(first.sessionXP);
+    expect(profile.total_xp).toBe(first.xp);
     expect(await db.study_sessions.count()).toBe(1);
   });
 
@@ -73,8 +75,8 @@ describe('Pomodoro session rewards', () => {
     const base = calculatePomodoroXP(25, 0);
     const hot = calculatePomodoroXP(25, 30);
 
-    expect(base).toBe(63); // 25 * 2 XP * 1.25 completion bonus
-    expect(hot).toBe(94); // same session, 1.5x streak multiplier
+    expect(base).toBe(75); // 15*2 + 10*3 = 60 XP * 1.25 completion bonus
+    expect(hot).toBe(131); // same session, 1.75x streak multiplier
     expect(hot).toBeGreaterThan(base);
   });
 });
