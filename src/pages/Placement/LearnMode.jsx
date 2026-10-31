@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
-import { 
-  ArrowLeft, BookOpen, CheckCircle, Circle, Clock, Lock
+import {
+  ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock, Lock, Target,
 } from 'lucide-react';
 import { db } from '../../data/db';
 import { TopicDetail } from './TopicDetail';
@@ -10,14 +10,35 @@ import { usePlacementState } from '../../context/PlacementStateContext';
 import { TRACKS_BY_ID } from './placementCatalog';
 import './LearnMode.css';
 
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'easy', label: 'Easy' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'hard', label: 'Hard' },
+  { id: 'completed', label: 'Learned' },
+  { id: 'pending', label: 'Remaining' },
+];
+
+const STATUS_LABEL = {
+  completed: 'Learned',
+  in_progress: 'In progress',
+};
+
+function formatDuration(minutes) {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
 export default function LearnMode() {
   const { categoryId, topicId } = useParams();
   const navigate = useNavigate();
   const config = TRACKS_BY_ID[categoryId];
   const { saveState, loadState } = usePlacementState(`learn-${categoryId}`);
-  
-  useDocumentTitle(`Learn - ${config?.name || 'Placement Prep'}`);
-  
+
+  useDocumentTitle(config ? config.name : 'Placement Prep');
+
   // Restore saved state on mount, preferring a topic from the URL
   const savedState = loadState();
   const urlTopic = topicId ? config?.topics.find(t => t.id === topicId) : null;
@@ -38,12 +59,12 @@ export default function LearnMode() {
 
   useEffect(() => {
     if (config) {
-        loadProgress();
+      loadProgress();
     }
   }, [categoryId, config]);
 
   const loadProgress = async () => {
-    if(!config) return;
+    if (!config) return;
     const topicIds = config.topics.map(t => `${categoryId}-${t.id}`);
     const progress = await db.placement_learning_progress.where('topic_id').anyOf(topicIds).toArray();
     const map = {};
@@ -58,7 +79,24 @@ export default function LearnMode() {
 
   if (!config) return <div>Category not found.</div>;
 
-  const filteredTopics = config.topics.filter(t => {
+  const topics = config.topics;
+  const learnedCount = topics.filter(t => getTopicStatus(t.id) === 'completed').length;
+  const percent = topics.length ? Math.round((learnedCount / topics.length) * 100) : 0;
+  const remainingMinutes = topics
+    .filter(t => getTopicStatus(t.id) !== 'completed')
+    .reduce((sum, t) => sum + t.estimated, 0);
+  const nextTopic = topics.find(t => getTopicStatus(t.id) !== 'completed') || null;
+
+  const counts = {
+    all: topics.length,
+    easy: topics.filter(t => t.difficulty === 'easy').length,
+    medium: topics.filter(t => t.difficulty === 'medium').length,
+    hard: topics.filter(t => t.difficulty === 'hard').length,
+    completed: learnedCount,
+    pending: topics.length - learnedCount,
+  };
+
+  const filteredTopics = topics.filter(t => {
     if (filter === 'all') return true;
     if (filter === 'completed') return getTopicStatus(t.id) === 'completed';
     if (filter === 'pending') return getTopicStatus(t.id) !== 'completed';
@@ -67,7 +105,7 @@ export default function LearnMode() {
 
   if (selectedTopic) {
     return (
-      <TopicDetail 
+      <TopicDetail
         categoryId={categoryId}
         topic={selectedTopic}
         config={config}
@@ -81,96 +119,184 @@ export default function LearnMode() {
   }
 
   return (
-    <div className="learn-mode">
-      {/* Header */}
-      <div className="learn-header">
-        <button onClick={() => navigate('/placement')} className="back-btn">
-          <ArrowLeft size={18} />
-          Back to Placement Prep
-        </button>
-        <h1>{config.name}</h1>
-        <p>Master these topics before taking the test. AI-generated explanations tailored for placement prep.</p>
-      </div>
+    <div className="learn-page" style={{ '--track': config.color }}>
+      <button onClick={() => navigate('/placement')} className="back-btn">
+        <ArrowLeft size={16} aria-hidden="true" />
+        Placement Prep
+      </button>
 
-      {/* Filters */}
-      <div className="learn-filters">
-        {['all', 'easy', 'medium', 'hard', 'completed', 'pending'].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`filter-btn ${filter === f ? 'active' : ''}`}
+      <header className="learn-head">
+        <div className="learn-head-copy">
+          <p className="learn-eyebrow">Placement prep · Learn</p>
+          <h1>{config.name}</h1>
+          <p className="learn-subtitle">
+            {config.description}
+          </p>
+        </div>
+
+        <Link className="learn-test-link" to={config.testPath}>
+          <Target size={15} aria-hidden="true" />
+          Practice test
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+      </header>
+
+      <section className="learn-summary" aria-label="Track progress">
+        <div className="learn-summary-count">
+          <span className="learn-summary-value">
+            {learnedCount}
+            <span className="learn-summary-total">/{topics.length}</span>
+          </span>
+          <span className="learn-summary-label">topics learned</span>
+        </div>
+
+        <div className="learn-summary-body">
+          <div
+            className="learn-summary-bar"
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${config.name} progress`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
+            <span className="learn-summary-fill" style={{ width: `${percent}%` }} />
+          </div>
+          <p className="learn-summary-note">
+            {nextTopic
+              ? `${getTopicStatus(nextTopic.id) === 'in_progress' ? 'Continue' : 'Next up'}: ${nextTopic.title} · ${formatDuration(remainingMinutes)} of study left`
+              : `Track complete · all ${topics.length} topics learned`}
+          </p>
+        </div>
+      </section>
+
+      <div className="learn-toolbar">
+        <div className="learn-filters" role="group" aria-label="Filter topics">
+          {FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFilter(id)}
+              className={`learn-filter ${filter === id ? 'is-active' : ''}`}
+              aria-pressed={filter === id}
+            >
+              {label}
+              <span className="learn-filter-count">{counts[id]}</span>
+            </button>
+          ))}
+        </div>
+        <p className="learn-toolbar-note">
+          {filteredTopics.length} of {topics.length} shown
+        </p>
       </div>
 
-      {/* Topics Grid */}
-      <div className="topics-grid">
-        {filteredTopics.map((topic, index) => {
-          const status = getTopicStatus(topic.id);
-          const isLocked = index > 0 && getTopicStatus(config.topics[index - 1].id) !== 'completed';
-          
-          return (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              status={status}
-              isLocked={isLocked}
-              categoryColor={config.color}
-              onClick={() => !isLocked && setSelectedTopic(topic)}
-            />
-          );
-        })}
+      <div className="learn-section-head">
+        <h2>Topics</h2>
+        <p>In order — each topic unlocks when the one before it is learned.</p>
       </div>
+
+      {filteredTopics.length === 0 ? (
+        <div className="learn-empty">
+          <p>No topics match this filter yet.</p>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setFilter('all')}>
+            Show all {topics.length} topics
+          </button>
+        </div>
+      ) : (
+        <div className="topic-grid">
+          {filteredTopics.map((topic) => {
+            const position = topics.indexOf(topic);
+            const status = getTopicStatus(topic.id);
+            const prerequisite = position > 0 ? topics[position - 1] : null;
+            const isLocked = Boolean(prerequisite) && getTopicStatus(prerequisite.id) !== 'completed';
+            const isNext = nextTopic?.id === topic.id;
+
+            return (
+              <TopicTile
+                key={topic.id}
+                topic={topic}
+                position={position}
+                status={status}
+                isLocked={isLocked}
+                isNext={isNext}
+                prerequisite={prerequisite}
+                onOpen={() => setSelectedTopic(topic)}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-function TopicCard({ topic, status, isLocked, categoryColor, onClick }) {
-  const difficultyColors = {
-    easy: '#22c55e',
-    medium: '#f59e0b',
-    hard: '#ef4444',
-  };
+function TopicTile({ topic, position, status, isLocked, isNext, prerequisite, onOpen }) {
+  const stateLabel = STATUS_LABEL[status];
+  const action = status === 'completed' ? 'Review guide'
+    : status === 'in_progress' ? 'Continue guide'
+      : 'Open guide';
+
+  const ariaLabel = isLocked
+    ? `${topic.title}. Locked until you learn ${prerequisite.title}.`
+    : `${topic.title}. ${stateLabel || 'Not started'}. ${topic.estimated} minutes.`;
 
   return (
-    <div 
-      className={`topic-card ${status} ${isLocked ? 'locked' : ''}`}
-      onClick={onClick}
-      style={{ '--topic-color': categoryColor }}
+    <button
+      type="button"
+      className={[
+        'topic-tile',
+        status === 'completed' ? 'is-learned' : '',
+        isLocked ? 'is-locked' : '',
+        isNext ? 'is-next' : '',
+      ].filter(Boolean).join(' ')}
+      onClick={onOpen}
+      disabled={isLocked}
+      aria-label={ariaLabel}
     >
-      {isLocked && (
-        <div className="topic-lock-overlay">
-          <Lock size={24} />
-          <span>Complete previous topic</span>
-        </div>
-      )}
-      
-      <div className="topic-card-header">
-        <span 
-          className="difficulty-badge"
-          style={{ background: `${difficultyColors[topic.difficulty]}20`, color: difficultyColors[topic.difficulty] }}
-        >
-          {topic.difficulty}
-        </span>
-        {status === 'completed' && <CheckCircle size={18} className="status-icon completed" />}
-        {status === 'in_progress' && <Circle size={18} className="status-icon in-progress" />}
-      </div>
+      <span className="topic-tile-head">
+        <span className="topic-position">{String(position + 1).padStart(2, '0')}</span>
+        <span className={`topic-difficulty is-${topic.difficulty}`}>{topic.difficulty}</span>
+        {status === 'completed' && (
+          <span className="topic-state is-learned">
+            <CheckCircle2 size={13} aria-hidden="true" />
+            Learned
+          </span>
+        )}
+        {status === 'in_progress' && (
+          <span className="topic-state is-progress">
+            <CircleDot size={13} aria-hidden="true" />
+            In progress
+          </span>
+        )}
+        {isNext && status !== 'in_progress' && (
+          <span className="topic-state is-next">Next up</span>
+        )}
+        {isLocked && (
+          <span className="topic-state is-locked">
+            <Lock size={13} aria-hidden="true" />
+          </span>
+        )}
+      </span>
 
-      <h3>{topic.title}</h3>
-      
-      <div className="topic-meta">
-        <span><Clock size={14} /> {topic.estimated} min</span>
-        <span><BookOpen size={14} /> AI Guide</span>
-      </div>
+      <span className="topic-tile-title">{topic.title}</span>
 
-      <div className="topic-progress-bar">
-        <div 
-          className="topic-progress-fill" 
-          style={{ width: status === 'completed' ? '100%' : status === 'in_progress' ? '50%' : '0%' }}
-        />
-      </div>
-    </div>
+      <span className="topic-tile-meta">
+        <Clock size={13} aria-hidden="true" />
+        {topic.estimated} min
+      </span>
+
+      <span className="topic-tile-foot">
+        {isLocked ? (
+          <>
+            <Lock size={12} aria-hidden="true" />
+            After {prerequisite.title}
+          </>
+        ) : (
+          <>
+            {action}
+            <ArrowRight size={14} className="topic-tile-arrow" aria-hidden="true" />
+          </>
+        )}
+      </span>
+    </button>
   );
 }
