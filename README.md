@@ -53,6 +53,11 @@ StudyMapper transforms static notes into interactive, adaptive learning experien
    ```
    *Note: You will need a Firebase project configuration and an OpenRouter API key.*
 
+   The OpenRouter key is **server-side only**: set `OPENROUTER_API_KEY` in
+   Vercel → Project → Settings → Environment Variables. AI requests go through
+   `api/chat.js` (and the matching Vite dev proxy), so the key is never included
+   in the browser bundle. Do not use a `VITE_` prefixed key for production.
+
 4. **Start the development server**
    ```bash
    npm run dev

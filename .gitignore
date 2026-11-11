@@ -27,6 +27,7 @@ dist-ssr
 .env
 .env.local
 .env.*
+!.env.example
 
 # Agent tooling and skills
 .agents/

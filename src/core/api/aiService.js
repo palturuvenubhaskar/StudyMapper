@@ -4,6 +4,7 @@ import { jsonrepair } from 'jsonrepair';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
+const AI_PROXY_URL = "/api/chat";
 
 // Free models — ordered with OpenRouter free router and high-capacity verified free models
 const FREE_MODELS = [
@@ -27,6 +28,67 @@ const VISION_MODELS = [
 const NON_RETRYABLE_STATUSES = new Set([401, 403]);
 const apiError = (status, body) => Object.assign(new Error(`API error (${status}): ${body}`), { status });
 
+// Local development talks to OpenRouter directly so the Vite dev server does
+// not need to run the serverless function.
+const preferDirect = import.meta.env.DEV && Boolean(OPENROUTER_API_KEY);
+
+const directRequest = (body, signal) => fetch(OPENROUTER_BASE_URL, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+    "HTTP-Referer": window.location.origin,
+    "X-Title": "StudyMapper",
+  },
+  body,
+  signal,
+});
+
+const isProxyResponse = (response) => {
+  const type = (response.headers.get("content-type") || "").toLowerCase();
+  return response.headers.get("x-ai-proxy") === "studymapper"
+    || type.includes("application/json")
+    || type.includes("text/event-stream");
+};
+
+// All AI traffic goes through the server-side proxy so the key never ships in
+// the browser bundle. A build-time key is only used as a fallback so the app
+// keeps working until OPENROUTER_API_KEY is configured on the deployment.
+const aiFetch = async (payload, signal) => {
+  const body = JSON.stringify(payload);
+  if (preferDirect) return directRequest(body, signal);
+
+  let response;
+  try {
+    response = await fetch(AI_PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      signal,
+    });
+  } catch {
+    if (OPENROUTER_API_KEY) return directRequest(body, signal);
+    throw apiError(503, "The AI proxy could not be reached.");
+  }
+
+  // Static hosts answer unknown /api routes with the app's HTML shell, and a
+  // plain 404 means the function is not deployed.
+  if (!isProxyResponse(response)) {
+    if (OPENROUTER_API_KEY) return directRequest(body, signal);
+    throw apiError(503, "The AI proxy is not deployed. Set OPENROUTER_API_KEY on the server.");
+  }
+
+  if (
+    response.status === 503
+    && response.headers.get("x-ai-proxy-error") === "no-key"
+    && OPENROUTER_API_KEY
+  ) {
+    return directRequest(body, signal);
+  }
+
+  return response;
+};
+
 // Non-streaming call (used for syllabus extraction and JSON responses)
 export const callOpenRouter = async (messages) => {
   let lastError = null;
@@ -36,20 +98,7 @@ export const callOpenRouter = async (messages) => {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout — big models take time to start
 
     try {
-      const response = await fetch(OPENROUTER_BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "StudyMapper",
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-        }),
-        signal: controller.signal
-      });
+      const response = await aiFetch({ model, messages }, controller.signal);
 
       clearTimeout(timeoutId);
 
@@ -93,17 +142,7 @@ export const callOpenRouterVision = async (base64Image, prompt) => {
         }
       ];
 
-      const response = await fetch(OPENROUTER_BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "StudyMapper",
-        },
-        body: JSON.stringify({ model, messages }),
-        signal: controller.signal
-      });
+      const response = await aiFetch({ model, messages }, controller.signal);
 
       clearTimeout(timeoutId);
 
@@ -134,25 +173,16 @@ export const callOpenRouterStream = async (messages, onChunk) => {
 
   for (const model of FREE_MODELS) {
     try {
-      const response = await fetch(OPENROUTER_BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "StudyMapper",
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          stream: true,
-        }),
-      });
+      const response = await aiFetch({ model, messages, stream: true });
 
       if (!response.ok) {
         const err = await response.text();
         throw apiError(response.status, err);
       }
+
+      // A HTML fallback page (missing proxy) has no readable stream; treat it
+      // as a failure so the next model is tried instead of hanging.
+      if (!response.body) throw new Error('Response has no stream body');
 
       // If we reach here, connection is successful!
       const reader = response.body.getReader();
