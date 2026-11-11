@@ -26,13 +26,36 @@ export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const handleQueryChange = (value) => {
+    setQuery(value);
+    // Results for the previous query would be misleading once the text changes.
+    setSearched(false);
+    setResults([]);
+    setError(null);
+  };
+
   const handleSearch = async () => {
-    if (!query.trim()) return;
-    const r = await searchAll(query.trim());
-    setResults(r);
-    setSearched(true);
+    const term = query.trim();
+    if (!term || loading) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await searchAll(term);
+      setResults(r);
+      setSearched(true);
+    } catch (err) {
+      console.error('Search failed:', err);
+      setResults([]);
+      setSearched(false);
+      setError('Search could not be completed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResultClick = (result) => {
@@ -54,16 +77,24 @@ export default function SearchPage() {
           className="input search-input"
           placeholder="Type to search..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           autoFocus
         />
-        <button className="btn btn-primary" onClick={handleSearch}>
-          <SearchIcon size={16} /> Search
+        <button className="btn btn-primary" onClick={handleSearch} disabled={loading || !query.trim()}>
+          <SearchIcon size={16} /> {loading ? 'Searching…' : 'Search'}
         </button>
       </div>
 
-      {searched && results.length === 0 && (
+      {error && (
+        <div className="empty-state" role="alert">
+          <SearchIcon size={48} />
+          <h3>Something went wrong</h3>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && searched && results.length === 0 && (
         <div className="empty-state">
           <SearchIcon size={48} />
           <h3>No results found</h3>
@@ -71,7 +102,7 @@ export default function SearchPage() {
         </div>
       )}
 
-      {results.length > 0 && (
+      {!loading && !error && results.length > 0 && (
         <div className="search-results">
           {results.map(r => (
             <button

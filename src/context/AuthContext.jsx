@@ -20,22 +20,51 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'User',
-          email: firebaseUser.email,
-          mobile: firebaseUser.phoneNumber,
-          avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.email || firebaseUser.phoneNumber || 'User'}`
-        });
-      } else {
-        setUser(null);
-      }
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
       setLoading(false);
-    });
+    };
 
-    return unsubscribe;
+    // Never block the whole app on Firebase. If the SDK cannot reach the
+    // network (offline, blocked, misconfigured project) we still show the
+    // local-first app instead of a blank screen.
+    const fallback = window.setTimeout(finish, 6000);
+
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (firebaseUser) => {
+          if (firebaseUser) {
+            setUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'User',
+              email: firebaseUser.email,
+              mobile: firebaseUser.phoneNumber,
+              avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.email || firebaseUser.phoneNumber || 'User'}`
+            });
+          } else {
+            setUser(null);
+          }
+          finish();
+        },
+        (error) => {
+          console.error('Auth state listener failed:', error);
+          finish();
+        }
+      );
+    } catch (error) {
+      console.error('Auth could not be initialized:', error);
+      finish();
+    }
+
+    return () => {
+      window.clearTimeout(fallback);
+      settled = true;
+      unsubscribe();
+    };
   }, []);
 
   const loginWithGoogle = async () => {
@@ -91,7 +120,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

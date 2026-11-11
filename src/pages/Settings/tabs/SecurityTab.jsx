@@ -84,7 +84,9 @@ export function SecurityTab() {
     try {
       await deleteUser(user);
       await db.delete();
-      window.location.href = '/';
+      // A hard reset is intentional here: every context still holds the deleted
+      // account's data, and replace() keeps it out of the history stack.
+      window.location.replace('/');
     } catch {
       setMessage({ type: 'error', text: 'Deleting the account needs a recent sign-in. Sign in again, then retry.' });
     }

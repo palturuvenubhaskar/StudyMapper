@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Mail, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
 import { db } from '../../data/db';
@@ -98,10 +99,10 @@ export function Support() {
         )}
 
         <div className="support-links">
-          <a href="/help" className="support-link">
+          <Link to="/help" className="support-link">
             <MessageSquare size={16} />
             Browse Help Center
-          </a>
+          </Link>
           <a href="mailto:support@studymapper.app" className="support-link">
             <Mail size={16} />
             support@studymapper.app

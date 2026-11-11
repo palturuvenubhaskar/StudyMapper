@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { LegalLayout } from '../../components/LegalLayout/LegalLayout';
 
 export function PrivacyPolicy() {
@@ -101,7 +102,7 @@ export function PrivacyPolicy() {
         </p>
         <ul>
           <li>Email: privacy@studymapper.app</li>
-          <li>Support: <a href="/support">Submit a ticket</a></li>
+          <li>Support: <Link to="/support">Submit a ticket</Link></li>
         </ul>
       </section>
     </LegalLayout>

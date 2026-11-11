@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Cookie, X, Settings, Check } from 'lucide-react';
 import './CookieConsent.css';
 
@@ -18,7 +19,7 @@ export function CookieConsentBanner({
           <p>
             We use cookies to enhance your study experience and analyze traffic. 
             By clicking &quot;Accept All&quot;, you consent to our use of cookies.{''}
-            <a href="/cookie-policy">Learn more</a>
+            <Link to="/cookie-policy">Learn more</Link>
           </p>
         </div>
         <div className="cookie-actions">

@@ -7,6 +7,7 @@ import './CommandPalette.css';
 export default function CommandPalette({ isOpen, onClose }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ subjects: [], topics: [] });
+  const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef(null);
 
@@ -16,23 +17,33 @@ export default function CommandPalette({ isOpen, onClose }) {
     } else {
       setQuery('');
       setResults({ subjects: [], topics: [] });
+      setSearching(false);
     }
   }, [isOpen]);
 
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults({ subjects: [], topics: [] });
+      setSearching(false);
       return;
     }
 
     let cancelled = false;
+    setSearching(true);
     const timer = setTimeout(async () => {
       const q = query.toLowerCase();
-      const [subjects, topics] = await Promise.all([
-        db.subjects.filter(s => s.title.toLowerCase().includes(q)).toArray(),
-        db.topics.filter(t => t.title.toLowerCase().includes(q)).toArray(),
-      ]);
-      if (!cancelled) setResults({ subjects, topics });
+      try {
+        const [subjects, topics] = await Promise.all([
+          db.subjects.filter(s => s.title.toLowerCase().includes(q)).toArray(),
+          db.topics.filter(t => t.title.toLowerCase().includes(q)).toArray(),
+        ]);
+        if (!cancelled) setResults({ subjects, topics });
+      } catch (err) {
+        console.error('Command palette search failed:', err);
+        if (!cancelled) setResults({ subjects: [], topics: [] });
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
     }, 200);
 
     return () => {
@@ -113,7 +124,9 @@ export default function CommandPalette({ isOpen, onClose }) {
             )}
 
             {results.subjects.length === 0 && results.topics.length === 0 && (
-              <div className="command-empty">No results found for "{query}"</div>
+              searching
+                ? <div className="command-empty">Searching…</div>
+                : <div className="command-empty">No results found for "{query}"</div>
             )}
           </div>
         )}
