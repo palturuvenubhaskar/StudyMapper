@@ -589,21 +589,25 @@ export const updateLearningLesson = async (lessonId, changes) => {
 // ========== STUDY PLANNER ==========
 export const getStudyPlan = async (profileId) => {
   if (!profileId) return null;
-  return await db.study_plans.where({ profile_id: profileId }).first();
+  // A profile can accumulate several plan rows; always return the newest one
+  // instead of whichever row Dexie happens to yield first.
+  const plans = await db.study_plans.where({ profile_id: profileId }).toArray();
+  if (plans.length === 0) return null;
+  return plans.sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))[0];
 };
 
 export const saveStudyPlan = async (profileId, planData) => {
   if (!profileId) return null;
+  const plan_json = typeof planData === 'string' ? planData : JSON.stringify(planData);
   const existing = await getStudyPlan(profileId);
   const updated_at = new Date().toISOString();
   if (existing) {
-    await db.study_plans.update(existing.id, { plan_data: planData, updated_at });
-    return { ...existing, plan_data: planData, updated_at };
-  } else {
-    const newPlan = { id: uuidv4(), profile_id: profileId, plan_data: planData, updated_at };
-    await db.study_plans.add(newPlan);
-    return newPlan;
+    await db.study_plans.update(existing.id, { plan_json, updated_at });
+    return { ...existing, plan_json, updated_at };
   }
+  const newPlan = { id: uuidv4(), profile_id: profileId, plan_json, updated_at };
+  await db.study_plans.add(newPlan);
+  return newPlan;
 };
 
 export const exportUserData = async (profileId) => {
@@ -712,12 +716,6 @@ export const offlineQueue = {
 };
 
 // ========== AI ROADMAPS ==========
-export const saveAIRoadmap = async (roadmapData) => {
-  await db.ai_roadmaps.put(roadmapData);
-  return roadmapData;
-};
-
-export const getAIRoadmap = async (id) => {
-  return await db.ai_roadmaps.get(id);
-};
+// NOTE: no `ai_roadmaps` table exists in the Dexie schema, so these helpers
+// could never work (they threw on every call) and nothing imports them.
 

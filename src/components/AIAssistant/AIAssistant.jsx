@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getAISessions, createAISession, getAIMessages, deleteAISession, updateAISession } from '../../data/repository';
 import { generateMorningDigest } from '../../core/analytics/morningDigest';
 import { Bot, X, Plus, Trash2, Edit2, Check, Menu, MoreVertical, MessageSquare, Maximize2, Minimize2, GraduationCap, AlertCircle, Sparkles } from 'lucide-react';
@@ -11,12 +11,16 @@ import './AIAssistant.css';
 export default function AIAssistant({ userId = 'guest', currentTopic = null, currentActivity = 'general' }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isCoding = location.pathname.startsWith('/coding');
-  const isDashboard = location.pathname === '/';
-  const isPlacement = location.pathname.startsWith('/placement');
-  const isStudyPlanner = location.pathname === '/planner';
   
-  // Determine context-aware AI actions based on current activity
+  // Where a daily quest can actually be acted on.
+  const questPath = (type) => {
+    if (type === 'solve_code') return '/coding';
+    if (type === 'create_questions') return '/qb/create';
+    return '/';
+  };
+
   const getContextAwareActions = () => {
     const baseActions = [
       { label: 'Study Coaching', onClick: () => setActiveSessionId('new'), description: 'Get personalized study advice' }
@@ -62,6 +66,7 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
   const [newTitle, setNewTitle] = useState('');
   
   const [digest, setDigest] = useState(null);
+  const [digestLoading, setDigestLoading] = useState(false);
 
   // Resizing state
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -69,14 +74,25 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
   });
   const [isResizing, setIsResizing] = useState(false);
 
+  // Load the digest when the coach is first opened, not on every page mount.
   useEffect(() => {
+    if (!isOpen || digest) return undefined;
+    let cancelled = false;
+    setDigestLoading(true);
     (async () => {
-      const morningData = await generateMorningDigest(userId);
-      if (morningData) {
-        setDigest(morningData);
+      try {
+        // force=true: a cached "already shown today" digest still has to be
+        // rendered, otherwise the panel would show a spinner forever.
+        const morningData = await generateMorningDigest(userId, true);
+        if (!cancelled && morningData) setDigest(morningData);
+      } catch (error) {
+        console.error('Morning digest failed:', error);
+      } finally {
+        if (!cancelled) setDigestLoading(false);
       }
     })();
-  }, [userId]);
+    return () => { cancelled = true; };
+  }, [isOpen, digest, userId]);
 
   useEffect(() => {
     const handleToggle = () => setIsOpen(prev => !prev);
@@ -364,9 +380,6 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
               <button className="ai-btn-ghost ai-fullscreen-btn" onClick={() => setIsFullScreen(!isFullScreen)}>
                 {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
-              <button className="ai-btn-ghost">
-                <MoreVertical size={20} />
-              </button>
               <button className="ai-btn-ghost" onClick={() => setIsOpen(false)}>
                 <X size={24} />
               </button>
@@ -399,17 +412,17 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
                         </div>
                         <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Based on your recent analytics, you seem to be struggling with:</p>
                         <ul>
-                          {digest.weakTopics.map((t, idx) => <li key={idx}>{t}</li>)}
+                          {digest.weakTopics.map((t, idx) => <li key={t.topic_id || idx}>{t.title || 'Unknown topic'}</li>)}
                         </ul>
                       </div>
                     )}
 
-                    {digest.recommendedQuests && digest.recommendedQuests.length > 0 && (
+                    {digest.incompleteQuests && digest.incompleteQuests.length > 0 && (
                       <div className="coach-quests">
                         <h4 style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>Recommended Quests</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {digest.recommendedQuests.map((q, idx) => (
-                            <div key={idx} style={{ 
+                          {digest.incompleteQuests.map((q, idx) => (
+                            <div key={q.id || idx} style={{ 
                               padding: '16px', 
                               background: 'var(--bg-glass)', 
                               border: '1px solid var(--border-light)', 
@@ -420,20 +433,34 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
                             }}>
                               <div>
                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{q.title}</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{q.type}</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                  {typeof q.progress === 'number' ? `${q.progress} / ${q.target}` : q.type}
+                                </div>
                               </div>
-                              <button className="btn btn-primary btn-sm" onClick={() => window.location.href = q.path}>Start</button>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  navigate(questPath(q.type));
+                                }}
+                              >
+                                Start
+                              </button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </>
-                ) : (
+                ) : digestLoading ? (
                   <GeneratingState
                     label="Preparing your morning digest"
                     hint="Reviewing your subjects, streaks, and tasks for today."
                   />
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+                    Your coach is ready. Start a chat to plan your session, review a topic, or get unstuck.
+                  </p>
                 )}
               </div>
               
@@ -466,8 +493,8 @@ export default function AIAssistant({ userId = 'guest', currentTopic = null, cur
                             cursor: 'pointer'
                           }}
                           onClick={() => {
+                            action.onClick?.();
                             setActiveSessionId('new');
-                            // Could optionally auto-focus AI on this topic
                           }}
                         >
                           {action.label}

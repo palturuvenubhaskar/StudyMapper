@@ -256,38 +256,87 @@ export default function TopicStudy() {
     };
   }, [displayData, collapsedSections]);
 
-  const loadTopicData = async () => {
+  const loadRequestRef = useRef(0);
+
+  const loadTopicData = async (id = topicId) => {
+    const requestId = ++loadRequestRef.current;
+    const isStale = () => requestId !== loadRequestRef.current;
+
     setLoading(true);
-    const topicData = await db.topics.get(topicId);
-    if (!topicData) { navigate('/'); return; }
-    setTopic(topicData);
 
-    const unit = await db.units.get(topicData.unit_id);
-    if (unit) {
-      const sub = await db.subjects.get(unit.subject_id);
-      setSubject(sub);
+    // Clear everything tied to the previous topic first. Without this, opening
+    // topic B briefly (or permanently, on a slow load) shows topic A's notes,
+    // quiz and podcast under B's title.
+    setTopic(null);
+    setSubject(null);
+    setPrerequisites([]);
+    setContent(null);
+    setParsedContent(null);
+    setStreamParsed(null);
+    setGenerateError(null);
+    setStreaming(false);
+    setBookmarked(false);
+    setNotes([]);
+    setQuickQuiz(null);
+    setQuizAnswers({});
+    setShowQuizResult(false);
+    setQuizError(null);
+    setPodcastScript('');
+    setPodcastError(null);
+    setShowPodcast(false);
+    setConceptWeb('');
+    setConceptWebError(null);
+    setShowConceptWeb(false);
+    previousContentRef.current = { content: null, parsed: null };
+
+    try {
+      const topicData = await db.topics.get(id);
+      if (isStale()) return;
+      if (!topicData) { navigate('/'); return; }
+      setTopic(topicData);
+
+      const unit = await db.units.get(topicData.unit_id);
+      if (isStale()) return;
+      if (unit) {
+        const sub = await db.subjects.get(unit.subject_id);
+        if (isStale()) return;
+        setSubject(sub);
+      }
+
+      if (topicData.prerequisite_topic_ids && topicData.prerequisite_topic_ids.length > 0) {
+        const prereqs = await db.topics.where('id').anyOf(topicData.prerequisite_topic_ids).toArray();
+        if (isStale()) return;
+        setPrerequisites(prereqs);
+      }
+
+      await recordTopicOpened(id);
+      const [bookmark, noteList] = await Promise.all([
+        isTopicBookmarked(id),
+        getNotesForTopic(id),
+      ]);
+      if (isStale()) return;
+      setBookmarked(bookmark);
+      setNotes(noteList);
+
+      const existing = await getLatestTopicContent(id);
+      if (isStale()) return;
+      if (existing) {
+        setContent(existing);
+        try {
+          setParsedContent(JSON.parse(existing.generated_json));
+        } catch {
+          setParsedContent(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load topic:', err);
+      if (!isStale()) toast('Could not load this topic. Please try again.', 'error');
+    } finally {
+      if (!isStale()) setLoading(false);
     }
-
-    if (topicData.prerequisite_topic_ids && topicData.prerequisite_topic_ids.length > 0) {
-      const prereqs = await db.topics.where('id').anyOf(topicData.prerequisite_topic_ids).toArray();
-      setPrerequisites(prereqs);
-    } else {
-      setPrerequisites([]);
-    }
-
-    await recordTopicOpened(topicId);
-    setBookmarked(await isTopicBookmarked(topicId));
-    setNotes(await getNotesForTopic(topicId));
-
-    const existing = await getLatestTopicContent(topicId);
-    if (existing) {
-      setContent(existing);
-      try { setParsedContent(JSON.parse(existing.generated_json)); } catch {}
-    }
-    setLoading(false);
   };
 
-  useEffect(() => { loadTopicData(); }, [topicId]);
+  useEffect(() => { loadTopicData(topicId); }, [topicId]);
 
   const handleRateDifficulty = async (rating) => {
     if (!topic) return;
@@ -486,7 +535,16 @@ export default function TopicStudy() {
     setPodcastScript('');
     try {
       const prompt = generatePodcastScriptPrompt(topic?.title, content);
-      await callOpenRouterStream(prompt, setPodcastScript);
+      // Throttle the stream updates: re-rendering this whole page on every
+      // token made the UI stutter while the script was being written.
+      let lastUpdate = 0;
+      const fullText = await callOpenRouterStream(prompt, (textSoFar) => {
+        const now = Date.now();
+        if (now - lastUpdate < 200) return;
+        lastUpdate = now;
+        setPodcastScript(textSoFar);
+      });
+      if (fullText) setPodcastScript(fullText);
     } catch (err) {
       console.error(err);
       setPodcastError('The AI service did not respond. Your notes are safe — try the script again.');
@@ -697,7 +755,7 @@ export default function TopicStudy() {
             <span>Back</span>
           </button>
           <span className="ts-empty-icon" aria-hidden="true"><Sparkles size={20} /></span>
-          {subject?.name && <span className="ts-eyebrow">{subject.name}</span>}
+          {subject?.title && <span className="ts-eyebrow">{subject.title}</span>}
           <h1 className="ts-empty-title">{topic?.title}</h1>
           <p>No notes yet. Generate a structured set of AI study notes for this topic, then come back to revise it anytime.</p>
           {generateError && (
@@ -730,10 +788,10 @@ export default function TopicStudy() {
                 <ArrowLeft size={15} aria-hidden="true" />
                 <span>Back</span>
               </button>
-              {subject?.name && (
+              {subject?.title && (
                 <span className="ts-crumb-path">
                   <span className="ts-crumb-sep" aria-hidden="true">/</span>
-                  <span className="ts-crumb-name">{subject.name}</span>
+                  <span className="ts-crumb-name">{subject.title}</span>
                 </span>
               )}
             </div>
@@ -751,7 +809,7 @@ export default function TopicStudy() {
           </div>
 
           <div className="ts-hero-copy">
-            {subject?.name && <span className="ts-eyebrow">{subject.name}</span>}
+            {subject?.title && <span className="ts-eyebrow">{subject.title}</span>}
             <h1 className="ts-title">{displayData?.topic_title || topic?.title}</h1>
 
             <div className="ts-meta">

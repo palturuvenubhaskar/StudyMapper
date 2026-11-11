@@ -132,19 +132,19 @@ export const getGamificationProfile = async (userId = 'guest') => {
 };
 
 export const checkAndAwardLevelUp = async (userId = 'guest') => {
-  const profile = await getGamificationProfile(userId);
-  const newLevel = calculateLevel(profile.total_xp);
-  
-  if (newLevel > profile.current_level) {
-    await db.gamification_profiles.update(profile.id, { current_level: newLevel });
-    return { leveledUp: true, oldLevel: profile.current_level, newLevel };
-  }
-  return { leveledUp: false };
+  return await db.transaction('rw', [db.gamification_profiles], async () => {
+    const profile = await getGamificationProfile(userId);
+    const newLevel = calculateLevel(profile.total_xp);
+
+    if (newLevel > profile.current_level) {
+      await db.gamification_profiles.update(profile.id, { current_level: newLevel });
+      return { leveledUp: true, oldLevel: profile.current_level, newLevel };
+    }
+    return { leveledUp: false };
+  });
 };
 
 export const awardXP = async (userId = 'guest', amount, source, sourceId = null) => {
-  const profile = await getGamificationProfile(userId);
-  
   await db.transaction('rw', [db.gamification_profiles, db.xp_transactions], async () => {
     // Record transaction
     await db.xp_transactions.add({
@@ -156,9 +156,28 @@ export const awardXP = async (userId = 'guest', amount, source, sourceId = null)
       created_at: new Date().toISOString()
     });
 
-    // Update profile
-    const newTotalXP = profile.total_xp + amount;
-    await db.gamification_profiles.update(profile.id, { total_xp: newTotalXP });
+    // Read the profile inside the transaction. Reading it beforehand meant two
+    // awards landing close together both saw the same total and one overwrote
+    // the other's XP.
+    let profile = await db.gamification_profiles.where('user_id').equals(userId).first();
+    if (!profile) {
+      profile = {
+        id: uuidv4(),
+        user_id: userId,
+        total_xp: 0,
+        current_level: 1,
+        streak_days: 0,
+        longest_streak: 0,
+        last_study_date: null,
+        streak_freezes: 1,
+        last_freeze_refill: null,
+      };
+      await db.gamification_profiles.add(profile);
+    }
+
+    await db.gamification_profiles.update(profile.id, {
+      total_xp: (profile.total_xp || 0) + amount,
+    });
   });
 
   // Subtle haptic feedback for XP gain

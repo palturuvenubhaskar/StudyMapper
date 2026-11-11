@@ -77,52 +77,63 @@ export default function StudyPlanner() {
   }, []);
 
   const loadProfileAndData = async () => {
-    const [prof, subs, units, topics] = await Promise.all([
-      getStudentProfile(),
-      getAllSubjects(),
-      db.units.toArray(),
-      db.topics.toArray(),
-    ]);
+    setIsLoading(true);
+    try {
+      const [prof, subs, units, topics] = await Promise.all([
+        getStudentProfile(),
+        getAllSubjects(),
+        db.units.toArray(),
+        db.topics.toArray(),
+      ]);
 
-    const topicMap = new Map(topics.map((topic) => [topic.id, topic]));
-    const unitMap = new Map(units.map((unit) => [unit.id, unit]));
-    const subjectMap = new Map(subs.map((subject) => [subject.id, subject]));
+      const topicMap = new Map(topics.map((topic) => [topic.id, topic]));
+      const unitMap = new Map(units.map((unit) => [unit.id, unit]));
+      const subjectMap = new Map(subs.map((subject) => [subject.id, subject]));
 
-    const counts = {};
-    const topicsPerUnit = new Map();
-    topics.forEach((topic) => {
-      topicsPerUnit.set(topic.unit_id, (topicsPerUnit.get(topic.unit_id) || 0) + 1);
-    });
-    units.forEach((unit) => {
-      counts[unit.subject_id] = (counts[unit.subject_id] || 0) + (topicsPerUnit.get(unit.id) || 0);
-    });
+      const counts = {};
+      const topicsPerUnit = new Map();
+      topics.forEach((topic) => {
+        topicsPerUnit.set(topic.unit_id, (topicsPerUnit.get(topic.unit_id) || 0) + 1);
+      });
+      units.forEach((unit) => {
+        counts[unit.subject_id] = (counts[unit.subject_id] || 0) + (topicsPerUnit.get(unit.id) || 0);
+      });
 
-    setProfile(prof);
-    setSubjects(subs);
-    setTopicCounts(counts);
-    setLookups({ topics: topicMap, units: unitMap, subjectById: subjectMap });
+      setProfile(prof);
+      setSubjects(subs);
+      setTopicCounts(counts);
+      setLookups({ topics: topicMap, units: unitMap, subjectById: subjectMap });
 
-    if (prof) {
-      const existingPlan = await getStudyPlan(prof.id);
-      if (existingPlan && existingPlan.plan_json) {
-        const parsed = JSON.parse(existingPlan.plan_json);
-        setPlan(existingPlan);
-        setSchedule(parsed);
-        setExamDate(existingPlan.exam_date || '');
+      if (prof) {
+        const existingPlan = await getStudyPlan(prof.id);
+        if (existingPlan && existingPlan.plan_json) {
+          try {
+            const parsed = JSON.parse(existingPlan.plan_json);
+            setPlan(existingPlan);
+            setSchedule(parsed);
+            setExamDate(existingPlan.exam_date || '');
 
-        const plannedSubjectIds = new Set();
-        Object.values(parsed).flat().forEach((task) => {
-          const topic = topicMap.get(task.topic_id);
-          const unit = topic ? unitMap.get(topic.unit_id) : null;
-          if (unit) plannedSubjectIds.add(unit.subject_id);
-        });
-        if (plannedSubjectIds.size > 0) {
-          setSelectedSubjects((current) => (current.length > 0 ? current : [...plannedSubjectIds]));
+            const plannedSubjectIds = new Set();
+            Object.values(parsed).flat().forEach((task) => {
+              const topic = topicMap.get(task.topic_id);
+              const unit = topic ? unitMap.get(topic.unit_id) : null;
+              if (unit) plannedSubjectIds.add(unit.subject_id);
+            });
+            if (plannedSubjectIds.size > 0) {
+              setSelectedSubjects((current) => (current.length > 0 ? current : [...plannedSubjectIds]));
+            }
+          } catch (err) {
+            console.error('Saved study plan is corrupted:', err);
+            toast('Your saved plan could not be read. You can generate a new one.', 'warning');
+          }
         }
       }
+    } catch (err) {
+      console.error('Failed to load the study planner:', err);
+      toast('Could not load your study planner. Please refresh and try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const handleSubjectToggle = (id) => {

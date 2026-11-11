@@ -157,13 +157,42 @@ export default function CodingWorkspace() {
     setIsGenerating(false);
   }, [toast]);
 
+  // Load the problem + saved attempt once per problem id. Language changes are
+  // handled by the effect below, otherwise switching language reloaded the
+  // record and threw away whatever the user had typed.
+  const streamGenerateRef = useRef(streamGenerateProblem);
+  streamGenerateRef.current = streamGenerateProblem;
+  const prevLanguageRef = useRef(language);
+
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    // Reset per-problem state so opening another problem never reuses the
+    // previous one's generation/run state.
+    generationStartedRef.current = false;
+    setIsGenerating(false);
+    setGeneratingStream('');
+    setGenerationError(null);
+    setAiDrawerOpen(false);
+    setAiStreamContent('');
+    setAiError(null);
+    setShowSubmissionModal(false);
+    setSubmitResults([]);
+    resetTests();
+
     (async () => {
       // Find problem data from our local test case file
       const localProblem = localProblems.find(p => p.id === problemId);
 
       // Fetch DB record for user progress
-      const pRecord = await getCodingProblem(problemId);
+      let pRecord = null;
+      try {
+        pRecord = await getCodingProblem(problemId);
+      } catch (err) {
+        console.error('Failed to load coding problem:', err);
+      }
+      if (cancelled) return;
 
       if (!localProblem && !pRecord) {
         toast('Problem not found', 'error');
@@ -178,27 +207,50 @@ export default function CodingWorkspace() {
         status: pRecord?.status || 'unsolved'
       };
 
+      const loadedLanguage = pRecord?.language || 'Python';
+
+      // Keep the language tracker in sync so the language effect below does
+      // not treat hydration as a user switch.
+      prevLanguageRef.current = loadedLanguage;
+
       setProblem(mergedProblem);
       setDbRecord(pRecord);
-
-      // Set language from the problem record
-      if (pRecord?.language) {
-        setLanguage(pRecord.language);
-      }
+      setLanguage(loadedLanguage);
 
       // Load saved code or starter code
       const savedCode = pRecord?.user_code;
-      const starterCode = getStarterCode(localProblem?.starterCode, language);
+      const starterCode = getStarterCode(localProblem?.starterCode, loadedLanguage);
       setCode(savedCode || starterCode);
 
       setLoading(false);
 
       // If the problem is in 'generating' state, start streaming AI generation
       if (pRecord && pRecord.status === 'generating') {
-        streamGenerateProblem(pRecord);
+        streamGenerateRef.current(pRecord);
       }
     })();
-  }, [problemId, language, navigate, toast, streamGenerateProblem]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [problemId, navigate, toast]);
+
+  // Swap in the new starter template when the user changes language, but keep
+  // any edits they made in the previous language.
+  useEffect(() => {
+    const previousLanguage = prevLanguageRef.current;
+    if (previousLanguage === language) return;
+    prevLanguageRef.current = language;
+
+    setCode(current => {
+      const previousStarter = getStarterCode(problem?.starterCode, previousLanguage);
+      const untouched = !current.trim() || current === previousStarter;
+      return untouched ? getStarterCode(problem?.starterCode, language) : current;
+    });
+
+    // Remember the choice for next time the problem is opened.
+    updateCodingProblem(problemId, { language }).catch(() => {});
+  }, [language, problemId, problem?.starterCode]);
 
   const getTestCases = (includeHidden) => {
     let tests = [];

@@ -97,7 +97,15 @@ export const generateAdaptivePlan = async (userId, examDateString, subjectIds) =
     updated_at: new Date().toISOString()
   };
 
-  await db.study_plans.add(plan);
+  // Regenerating used to append a new row every time, leaving the profile with
+  // a pile of stale plans. Update the existing row instead.
+  const existing = await db.study_plans.where({ profile_id: userId }).first();
+  if (existing) {
+    plan.id = existing.id;
+    await db.study_plans.put(plan);
+  } else {
+    await db.study_plans.add(plan);
+  }
   return plan;
 };
 
