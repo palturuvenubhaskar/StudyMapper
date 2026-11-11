@@ -16,28 +16,68 @@ const MockExamResults = () => {
   const [analysis, setAnalysis] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paper, setPaper] = useState(() => {
+    const state = location.state;
+    return state && state.questions && state.answers
+      ? { questions: state.questions, answers: state.answers }
+      : null;
+  });
 
   const analyzeResults = useCallback(async () => {
-    const state = location.state;
-    if (!state || !state.questions || !state.answers) {
+    setLoading(true);
+    setError(null);
+
+    // Results are passed through router state for the normal flow, but a
+    // refresh (or reopening from history) has no state — rebuild from IndexedDB.
+    let questions = location.state?.questions;
+    let answers = location.state?.answers;
+    let savedAnalysis = '';
+
+    if (!questions || !answers) {
+      const examIdNum = Number(examId);
+      const record = Number.isFinite(examIdNum)
+        ? await repository.db.mock_exams.get(examIdNum)
+        : null;
+
+      if (!record) {
+        setError('Missing exam data to analyze.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        questions = record.questions_json ? JSON.parse(record.questions_json) : [];
+        answers = record.answers_json ? JSON.parse(record.answers_json) : {};
+      } catch {
+        questions = [];
+        answers = {};
+      }
+      savedAnalysis = record.ai_analysis || '';
+    }
+
+    if (!questions || questions.length === 0) {
       setError('Missing exam data to analyze.');
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setPaper({ questions, answers: answers || {} });
+
+    if (savedAnalysis) {
+      setAnalysis(savedAnalysis);
+      setLoading(false);
+      return;
+    }
 
     try {
-      const { questions, answers } = state;
-      const result = await analyzeMockExamPerformance(questions, answers);
+      const result = await analyzeMockExamPerformance(questions, answers || {});
       setAnalysis(result);
       
       // Save the AI analysis back to the mock exam record
       if (examId) {
-        await repository.db.mock_exams.update(parseInt(examId), {
+        await repository.db.mock_exams.update(Number(examId), {
           ai_analysis: result
-        });
+        }).catch(() => {});
       }
     } catch (err) {
       console.error("Analysis failed", err);
@@ -51,8 +91,8 @@ const MockExamResults = () => {
     analyzeResults();
   }, [analyzeResults]);
 
-  const questions = location.state?.questions || [];
-  const answers = location.state?.answers || {};
+  const questions = paper?.questions || [];
+  const answers = paper?.answers || {};
 
   return (
     <div className="mock-exam-results-container">
@@ -78,7 +118,7 @@ const MockExamResults = () => {
             <GenerationError
               title="Couldn't analyze this exam"
               message={error}
-              onRetry={location.state?.questions ? analyzeResults : undefined}
+              onRetry={analyzeResults}
               retrying={loading}
             />
           ) : (

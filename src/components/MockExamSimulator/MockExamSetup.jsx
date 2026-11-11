@@ -71,7 +71,7 @@ const MockExamSetup = () => {
         <FileQuestion size={48} />
         <h2>No Questions Available</h2>
         <p>This question bank doesn't have any questions yet. Add some questions before starting a mock exam.</p>
-        <button className="btn btn-primary" onClick={() => navigate(`/question-bank/${bankId}`)}>
+        <button className="btn btn-primary" onClick={() => navigate(`/qb/${bankId}`)}>
           Go to Question Bank
         </button>
       </div>
@@ -136,7 +136,7 @@ const MockExamSetup = () => {
           </div>
 
           <div className="setup-actions">
-            <button className="btn btn-secondary" onClick={() => navigate(`/question-bank/${bankId}`)}>
+            <button className="btn btn-secondary" onClick={() => navigate(`/qb/${bankId}`)}>
               Cancel
             </button>
             <button className="btn btn-primary btn-large" onClick={handleStart}>

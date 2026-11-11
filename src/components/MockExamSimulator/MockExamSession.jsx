@@ -21,13 +21,21 @@ const MockExamSession = () => {
   const [submitting, setSubmitting] = useState(false);
   
   const timerRef = useRef(null);
+  const questionsRef = useRef([]);
+  const answersRef = useRef({});
+  const submittingRef = useRef(false);
+
+  // Keep refs in sync so the wall-clock timer can submit the *current*
+  // answers instead of the empty object captured on the first render.
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   useEffect(() => {
     const initializeExam = async () => {
       try {
         const config = location.state;
         if (!config) {
-          navigate(`/mock-exam/setup/${bankId}`);
+          navigate(`/mock-exam/setup/${bankId}`, { replace: true });
           return;
         }
 
@@ -55,22 +63,19 @@ const MockExamSession = () => {
         }
 
         setQuestions(selectedQuestions);
+        questionsRef.current = selectedQuestions;
         setLoading(false);
-        
-        // Start timer
-        timerRef.current = setInterval(() => {
-          setTimeLeft(prev => {
-            if (prev <= 1) {
-              clearInterval(timerRef.current);
-              handleSubmit(selectedQuestions, answers); // Auto-submit when time is up
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+
+        if (selectedQuestions.length > 0) {
+          // Start timer
+          timerRef.current = setInterval(() => {
+            setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
+          }, 1000);
+        }
 
       } catch (error) {
         console.error("Error initializing exam:", error);
+        setLoading(false);
       }
     };
 
@@ -81,6 +86,15 @@ const MockExamSession = () => {
     };
     // eslint-disable-next-line
   }, [bankId, location.state, navigate]);
+
+  // Auto-submit exactly once when the clock hits zero. Running this in an
+  // effect (not inside a setState updater) keeps StrictMode from firing twice.
+  useEffect(() => {
+    if (timeLeft !== 0 || loading || submittingRef.current) return;
+    if (questionsRef.current.length === 0) return;
+    handleSubmit(questionsRef.current, answersRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, loading]);
 
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
@@ -107,33 +121,44 @@ const MockExamSession = () => {
   };
 
   const handleSubmit = async (currentQuestions = questions, currentAnswers = answers) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitting(true);
     
-    // Save variants to DB if any
-    const variantQuestions = currentQuestions.filter(q => q.isVariant);
-    for (const vq of variantQuestions) {
-       await repository.db.question_variants.add({
-         original_question_id: vq.original_id,
-         text: vq.text,
-         marks: vq.marks,
-         created_at: new Date().toISOString()
-       });
+    try {
+      // Save variants to DB if any
+      const variantQuestions = currentQuestions.filter(q => q.isVariant);
+      for (const vq of variantQuestions) {
+         await repository.db.question_variants.add({
+           original_question_id: vq.original_id,
+           text: vq.text,
+           marks: vq.marks,
+           created_at: new Date().toISOString()
+         });
+      }
+
+      // Save Mock Exam Record — including the paper and answers so the
+      // results screen still works after a refresh or a later revisit.
+      const examRecord = {
+        bank_id: bankId,
+        duration_minutes: location.state?.duration,
+        total_questions: currentQuestions.length,
+        questions_json: JSON.stringify(currentQuestions),
+        answers_json: JSON.stringify(currentAnswers),
+        created_at: new Date().toISOString()
+      };
+      
+      const mockExamId = await repository.db.mock_exams.add(examRecord);
+
+      navigate(`/mock-exam/results/${mockExamId}`, {
+        state: { questions: currentQuestions, answers: currentAnswers }
+      });
+    } catch (error) {
+      console.error('Failed to submit exam:', error);
+      submittingRef.current = false;
+      setSubmitting(false);
     }
-
-    // Save Mock Exam Record
-    const examRecord = {
-      bank_id: bankId,
-      duration_minutes: location.state?.duration,
-      total_questions: currentQuestions.length,
-      created_at: new Date().toISOString()
-    };
-    
-    const mockExamId = await repository.db.mock_exams.add(examRecord);
-
-    navigate(`/mock-exam/results/${mockExamId}`, {
-      state: { questions: currentQuestions, answers: currentAnswers }
-    });
   };
 
   if (loading) {
@@ -144,6 +169,18 @@ const MockExamSession = () => {
           label="Preparing your exam"
           hint="Mixing questions and AI variants into a timed session."
         />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="mock-exam-error">
+        <h2>No questions available</h2>
+        <p>This question bank doesn’t have any questions to build an exam from.</p>
+        <button className="btn btn-primary" onClick={() => navigate(`/qb/${bankId}`)}>
+          Back to Question Bank
+        </button>
       </div>
     );
   }
