@@ -19,6 +19,9 @@ export function ThemeProvider({ children }) {
       } else {
         document.documentElement.setAttribute('data-theme', 'dark');
       }
+      // Keep the pre-paint background in sync when the theme is switched at
+      // runtime, otherwise the initial inline colour stays behind the page.
+      document.documentElement.style.backgroundColor = activeTheme === 'dark' ? '#0a0a0f' : '#ffffff';
     };
 
     applyTheme(theme);

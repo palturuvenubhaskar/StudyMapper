@@ -1,0 +1,48 @@
+// Single source of truth for route chunks.
+// Both <App /> (lazy) and the prefetcher use these loaders so a hovered/tapped
+// destination is already in memory by the time React Router changes route.
+
+export const routeLoaders = {
+  createSubject: () => import('../pages/CreateSubject/CreateSubject'),
+  subjectView: () => import('../pages/SubjectView/SubjectView'),
+  topicStudy: () => import('../pages/TopicStudy/TopicStudy'),
+  flashcardsStudy: () => import('../pages/TopicStudy/FlashcardsStudy'),
+  searchPage: () => import('../pages/SearchPage/SearchPage'),
+  bookmarksPage: () => import('../pages/BookmarksPage/BookmarksPage'),
+  createQuestionBank: () => import('../pages/CreateQuestionBank/CreateQuestionBank'),
+  questionBankView: () => import('../pages/QuestionBankView/QuestionBankView'),
+  mockExamSetup: () => import('../components/MockExamSimulator/MockExamSetup'),
+  mockExamSession: () => import('../components/MockExamSimulator/MockExamSession'),
+  mockExamResults: () => import('../components/MockExamSimulator/MockExamResults'),
+  skillRoadmap: () => import('../pages/SkillRoadmap/SkillRoadmap'),
+  placement: () => import('../pages/Placement/Placement'),
+  aptitudePractice: () => import('../pages/Placement/AptitudePractice'),
+  technicalInterview: () => import('../pages/Placement/TechnicalInterview'),
+  hrInterview: () => import('../pages/Placement/HRInterview'),
+  learnMode: () => import('../pages/Placement/LearnMode'),
+  codingPractice: () => import('../pages/CodingPractice/CodingPractice'),
+  codingWorkspace: () => import('../pages/CodingPractice/CodingWorkspace'),
+  learningWorkspace: () => import('../pages/CodingPractice/LearningWorkspace'),
+  studyPlanner: () => import('../pages/StudyPlanner/StudyPlanner'),
+  aiAssistant: () => import('../components/AIAssistant/AIAssistant'),
+  login: () => import('../pages/Login/Login'),
+  privacyPolicy: () => import('../pages/Legal/PrivacyPolicy'),
+  termsAndConditions: () => import('../pages/Legal/TermsAndConditions'),
+  cookiePolicy: () => import('../pages/Legal/CookiePolicy'),
+  disclaimer: () => import('../pages/Legal/Disclaimer'),
+  securityPolicy: () => import('../pages/Legal/SecurityPolicy'),
+  communityGuidelines: () => import('../pages/Legal/CommunityGuidelines'),
+  forgotPassword: () => import('../pages/Auth/ForgotPassword'),
+  resetPassword: () => import('../pages/Auth/ResetPassword'),
+  accountSettings: () => import('../pages/Settings/AccountSettings'),
+  support: () => import('../pages/Support/Support'),
+  helpCenter: () => import('../pages/Help/HelpCenter'),
+  helpArticle: () => import('../pages/Help/HelpArticle'),
+  notFound: () => import('../pages/Errors/NotFound'),
+  forbidden: () => import('../pages/Errors/Forbidden'),
+  internalError: () => import('../pages/Errors/InternalError'),
+  maintenance: () => import('../pages/Errors/Maintenance'),
+  offline: () => import('../pages/Errors/Offline'),
+};
+
+export default routeLoaders;

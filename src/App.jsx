@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useLayoutEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/ToastProvider/ToastProvider';
 import { ThemeProvider } from './context/ThemeProvider';
@@ -6,6 +6,8 @@ import { PlacementStateProvider } from './context/PlacementStateContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard/Dashboard';
 import { InlineLoading } from './components/Loading/InlineLoading';
+import { routeLoaders } from './routes/routeLoaders';
+import { prefetchNavRoutes, prefetchAIAssistant } from './utils/prefetch';
 
 import Sidebar from './components/Sidebar/Sidebar';
 import RightSidebar from './components/Sidebar/RightSidebar';
@@ -19,57 +21,79 @@ import { OfflineIndicator } from './components/OfflineIndicator/OfflineIndicator
 import { CookieConsentBanner } from './components/CookieConsent/CookieConsentBanner';
 import { CookiePreferencesModal } from './components/CookieConsent/CookiePreferencesModal';
 import { useCookieConsent } from './hooks/useCookieConsent';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 const lazyNamed = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
 
-const CreateSubject = lazy(() => import('./pages/CreateSubject/CreateSubject'));
-const SubjectView = lazy(() => import('./pages/SubjectView/SubjectView'));
-const TopicStudy = lazy(() => import('./pages/TopicStudy/TopicStudy'));
-const FlashcardsStudy = lazy(() => import('./pages/TopicStudy/FlashcardsStudy'));
-const SearchPage = lazy(() => import('./pages/SearchPage/SearchPage'));
-const BookmarksPage = lazy(() => import('./pages/BookmarksPage/BookmarksPage'));
-const CreateQuestionBank = lazy(() => import('./pages/CreateQuestionBank/CreateQuestionBank'));
-const QuestionBankView = lazy(() => import('./pages/QuestionBankView/QuestionBankView'));
-const MockExamSetup = lazy(() => import('./components/MockExamSimulator/MockExamSetup'));
-const MockExamSession = lazy(() => import('./components/MockExamSimulator/MockExamSession'));
-const MockExamResults = lazy(() => import('./components/MockExamSimulator/MockExamResults'));
-const SkillRoadmap = lazy(() => import('./pages/SkillRoadmap/SkillRoadmap'));
-const Placement = lazy(() => import('./pages/Placement/Placement'));
-const AptitudePractice = lazy(() => import('./pages/Placement/AptitudePractice'));
-const TechnicalInterview = lazy(() => import('./pages/Placement/TechnicalInterview'));
-const HRInterview = lazy(() => import('./pages/Placement/HRInterview'));
-const LearnMode = lazy(() => import('./pages/Placement/LearnMode'));
-const CodingPractice = lazy(() => import('./pages/CodingPractice/CodingPractice'));
-const CodingWorkspace = lazy(() => import('./pages/CodingPractice/CodingWorkspace'));
-const LearningWorkspace = lazy(() => import('./pages/CodingPractice/LearningWorkspace'));
-const StudyPlanner = lazy(() => import('./pages/StudyPlanner/StudyPlanner'));
-const AIAssistant = lazy(() => import('./components/AIAssistant/AIAssistant'));
-const Login = lazy(() => import('./pages/Login/Login'));
+const CreateSubject = lazy(routeLoaders.createSubject);
+const SubjectView = lazy(routeLoaders.subjectView);
+const TopicStudy = lazy(routeLoaders.topicStudy);
+const FlashcardsStudy = lazy(routeLoaders.flashcardsStudy);
+const SearchPage = lazy(routeLoaders.searchPage);
+const BookmarksPage = lazy(routeLoaders.bookmarksPage);
+const CreateQuestionBank = lazy(routeLoaders.createQuestionBank);
+const QuestionBankView = lazy(routeLoaders.questionBankView);
+const MockExamSetup = lazy(routeLoaders.mockExamSetup);
+const MockExamSession = lazy(routeLoaders.mockExamSession);
+const MockExamResults = lazy(routeLoaders.mockExamResults);
+const SkillRoadmap = lazy(routeLoaders.skillRoadmap);
+const Placement = lazy(routeLoaders.placement);
+const AptitudePractice = lazy(routeLoaders.aptitudePractice);
+const TechnicalInterview = lazy(routeLoaders.technicalInterview);
+const HRInterview = lazy(routeLoaders.hrInterview);
+const LearnMode = lazy(routeLoaders.learnMode);
+const CodingPractice = lazy(routeLoaders.codingPractice);
+const CodingWorkspace = lazy(routeLoaders.codingWorkspace);
+const LearningWorkspace = lazy(routeLoaders.learningWorkspace);
+const StudyPlanner = lazy(routeLoaders.studyPlanner);
+const AIAssistant = lazy(routeLoaders.aiAssistant);
+const Login = lazy(routeLoaders.login);
 
-const PrivacyPolicy = lazyNamed(() => import('./pages/Legal/PrivacyPolicy'), 'PrivacyPolicy');
-const TermsAndConditions = lazyNamed(() => import('./pages/Legal/TermsAndConditions'), 'TermsAndConditions');
-const CookiePolicy = lazyNamed(() => import('./pages/Legal/CookiePolicy'), 'CookiePolicy');
-const Disclaimer = lazyNamed(() => import('./pages/Legal/Disclaimer'), 'Disclaimer');
-const SecurityPolicy = lazyNamed(() => import('./pages/Legal/SecurityPolicy'), 'SecurityPolicy');
-const CommunityGuidelines = lazyNamed(() => import('./pages/Legal/CommunityGuidelines'), 'CommunityGuidelines');
+const PrivacyPolicy = lazyNamed(routeLoaders.privacyPolicy, 'PrivacyPolicy');
+const TermsAndConditions = lazyNamed(routeLoaders.termsAndConditions, 'TermsAndConditions');
+const CookiePolicy = lazyNamed(routeLoaders.cookiePolicy, 'CookiePolicy');
+const Disclaimer = lazyNamed(routeLoaders.disclaimer, 'Disclaimer');
+const SecurityPolicy = lazyNamed(routeLoaders.securityPolicy, 'SecurityPolicy');
+const CommunityGuidelines = lazyNamed(routeLoaders.communityGuidelines, 'CommunityGuidelines');
 
-const ForgotPassword = lazyNamed(() => import('./pages/Auth/ForgotPassword'), 'ForgotPassword');
-const ResetPassword = lazyNamed(() => import('./pages/Auth/ResetPassword'), 'ResetPassword');
+const ForgotPassword = lazyNamed(routeLoaders.forgotPassword, 'ForgotPassword');
+const ResetPassword = lazyNamed(routeLoaders.resetPassword, 'ResetPassword');
 
-const AccountSettings = lazyNamed(() => import('./pages/Settings/AccountSettings'), 'AccountSettings');
-const Support = lazyNamed(() => import('./pages/Support/Support'), 'Support');
-const HelpCenter = lazyNamed(() => import('./pages/Help/HelpCenter'), 'HelpCenter');
-const HelpArticle = lazyNamed(() => import('./pages/Help/HelpArticle'), 'HelpArticle');
+const AccountSettings = lazyNamed(routeLoaders.accountSettings, 'AccountSettings');
+const Support = lazyNamed(routeLoaders.support, 'Support');
+const HelpCenter = lazyNamed(routeLoaders.helpCenter, 'HelpCenter');
+const HelpArticle = lazyNamed(routeLoaders.helpArticle, 'HelpArticle');
 
-const NotFound = lazyNamed(() => import('./pages/Errors/NotFound'), 'NotFound');
-const Forbidden = lazyNamed(() => import('./pages/Errors/Forbidden'), 'Forbidden');
-const InternalError = lazyNamed(() => import('./pages/Errors/InternalError'), 'InternalError');
-const Maintenance = lazyNamed(() => import('./pages/Errors/Maintenance'), 'Maintenance');
-const Offline = lazyNamed(() => import('./pages/Errors/Offline'), 'Offline');
+const NotFound = lazyNamed(routeLoaders.notFound, 'NotFound');
+const Forbidden = lazyNamed(routeLoaders.forbidden, 'Forbidden');
+const InternalError = lazyNamed(routeLoaders.internalError, 'InternalError');
+const Maintenance = lazyNamed(routeLoaders.maintenance, 'Maintenance');
+const Offline = lazyNamed(routeLoaders.offline, 'Offline');
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useLayoutEffect(() => {
+    // The app shell scrolls inside .main-content-wrapper (desktop) or
+    // .content-container (mobile), not the window.
+    const scrollers = [
+      document.querySelector('.main-content-wrapper'),
+      document.querySelector('.content-container'),
+      document.scrollingElement,
+    ];
+    scrollers.forEach((node) => {
+      if (node) node.scrollTop = 0;
+    });
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 function AppContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const isDesktop = useMediaQuery('(min-width: 769px)');
   const isLoginPage = location.pathname === '/login' || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
   const isDashboard = location.pathname === '/';
 
@@ -94,6 +118,13 @@ function AppContent() {
     const handler = () => setShowCookiePrefs(true);
     window.addEventListener('openCookiePrefs', handler);
     return () => window.removeEventListener('openCookiePrefs', handler);
+  }, []);
+
+  // Warm the route chunks while the browser is idle so screen changes are instant.
+  useEffect(() => {
+    prefetchNavRoutes();
+    const idle = window.setTimeout(prefetchAIAssistant, 2500);
+    return () => window.clearTimeout(idle);
   }, []);
 
   useEffect(() => {
@@ -150,6 +181,7 @@ function AppContent() {
 
   return (
     <ErrorBoundary>
+      <ScrollToTop />
       {showWelcome && <Welcome onClose={handleCloseWelcome} />}
       <div className="app-layout">
         <a className="skip-link" href="#main-content">Skip to content</a>
@@ -223,7 +255,7 @@ function AppContent() {
             </Routes>
             </Suspense>
           </main>
-          {isDashboard && <RightSidebar />}
+          {isDashboard && isDesktop && <RightSidebar />}
         </div>
         {!isLoginPage && <MobileNav />}
         {!isLoginPage && (

@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, MapPin, Code2, TrendingUp, Settings } from 'lucide-react';
+import { prefetchPath } from '../../utils/prefetch';
 import './MobileNav.css';
 
 export default function MobileNav() {
@@ -29,6 +30,8 @@ export default function MobileNav() {
           <button
             key={item.path}
             className={`mobile-nav-item ${active ? 'active' : ''}`}
+            onPointerEnter={() => prefetchPath(item.path)}
+            onFocus={() => prefetchPath(item.path)}
             onClick={() => navigate(item.path)}
           >
             <item.icon size={20} className="mobile-nav-icon" />

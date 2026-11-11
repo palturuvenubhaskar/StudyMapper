@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { ALL_ROADMAPS, ROADMAP_CATEGORIES, getCategoryCounts } from './data/roadmapCatalog';
+import { prefetchRoadmapData } from '../../utils/prefetch';
 
 const BOOKMARK_KEY = 'studymapper_roadmap_bookmarks';
 const PREVIEW_LIMIT = 8;
@@ -62,6 +63,8 @@ function RoadmapCard({ roadmap, saved, onOpen, onToggleSave }) {
       <button
         type="button"
         className="rm-card-main"
+        onMouseEnter={prefetchRoadmapData}
+        onFocus={prefetchRoadmapData}
         onClick={() => onOpen(roadmap.id)}
       >
         <span className="rm-card-icon" aria-hidden="true">

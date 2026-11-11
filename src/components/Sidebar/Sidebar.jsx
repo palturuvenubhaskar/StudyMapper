@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { LayoutDashboard, MapPin, TrendingUp, Code2, Calendar, Bookmark, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { prefetchPath } from '../../utils/prefetch';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -75,6 +76,8 @@ export default function Sidebar() {
               key={item.path}
               className={`nav-item ${!item.isAction && isActive(item.path, location.pathname) ? 'active' : ''}`}
               aria-current={isActive(item.path, location.pathname) ? 'page' : undefined}
+              onPointerEnter={() => { if (!item.isAction) prefetchPath(item.path); }}
+              onFocus={() => { if (!item.isAction) prefetchPath(item.path); }}
               onClick={() => {
                 if (item.isAction) {
                   window.dispatchEvent(new CustomEvent('toggle-ai-coach'));
